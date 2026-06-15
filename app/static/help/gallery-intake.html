@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Artwork intake and crop workflow for FramersHaven.">
+  <title>Gallery &amp; Intake | FramersHaven Help</title>
+  <link rel="stylesheet" href="css/help-style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to help content</a>
+  <div class="help-shell">
+    <aside class="help-sidebar">
+      <div class="help-brand">
+        <i class="help-brand-mark" aria-hidden="true"></i>
+        <strong>FramersHaven</strong>
+        <span>Operator help</span>
+      </div>
+      <nav class="help-nav" aria-label="Help topics">
+        <ul>
+          <li><a href="/help/">Home</a></li>
+          <li><a href="/help/design-workspace.html">Design Workspace</a></li>
+          <li><a class="active" aria-current="page" href="/help/gallery-intake.html">Gallery &amp; Intake</a></li>
+          <li><a href="/help/orders-quotes.html">Orders &amp; Quotes</a></li>
+          <li><a href="/help/customer-management.html">Customer Management</a></li>
+          <li><a href="/help/admin-pricing.html">Admin &amp; Pricing</a></li>
+        </ul>
+      </nav>
+      <a class="back-to-app" href="/">Back to App</a>
+    </aside>
+
+    <main class="help-main" id="main-content" tabindex="-1">
+      <article class="help-article">
+        <header class="page-header">
+          <p class="section-label">Stage the artwork first</p>
+          <h1>Gallery &amp; Intake</h1>
+          <p>Gallery keeps image intake and crop work separate from quote building. The saved artwork list is on the left; the focused editor is on the right.</p>
+        </header>
+
+        <section class="doc-section">
+          <h2>Add new artwork</h2>
+          <ol class="step-list">
+            <li><strong>Choose the file.</strong> Select a JPG or PNG from the workstation.</li>
+            <li><strong>Enter physical dimensions.</strong> Record the actual artwork width and height in inches, not the image's pixel dimensions.</li>
+            <li><strong>Set orientation and crop.</strong> Use rotation, ratio, zoom, and pan controls until the crop represents the intended framed view.</li>
+            <li><strong>Save the intake record.</strong> Select Save New Artwork. The original upload and crop metadata are stored locally.</li>
+            <li><strong>Send it to Design.</strong> Select Use in Design to carry the image, dimensions, and crop rectangle into the mockup.</li>
+          </ol>
+          <figure class="screenshot-frame">
+            <img src="images/gallery-intake-overview.png" alt="Gallery workspace with saved artwork on the left and the crop editor on the right" width="1440" height="900">
+            <figcaption>Planned screenshot: the two-pane Gallery intake workspace.</figcaption>
+          </figure>
+        </section>
+
+        <section class="doc-section">
+          <h2>Edit saved artwork</h2>
+          <div class="two-column">
+            <div class="info-card">
+              <h3>Select the saved image</h3>
+              <p>Choose an item from the left list. Its recorded size, ratio, rotation, zoom, and crop position return to the editor.</p>
+            </div>
+            <div class="info-card">
+              <h3>Update metadata</h3>
+              <p>Change the framing view, then select Update Artwork. Existing crop edits are metadata-only; the original saved file stays intact.</p>
+            </div>
+          </div>
+          <div class="callout">
+            <strong>Rotation behaves differently during intake and later editing.</strong>
+            <p>Rotation on a new upload saves the file in that orientation. Rotation on saved artwork is stored as metadata and applied when Design renders the image.</p>
+          </div>
+        </section>
+
+        <section class="doc-section">
+          <h2>Crop controls</h2>
+          <ul>
+            <li>Zoom In and Zoom Out change the image beneath the crop window.</li>
+            <li>Reset Crop returns the current crop adjustment to its starting position.</li>
+            <li>Fit Artwork restores a full-image view when the crop has become too tight.</li>
+            <li>Ratio presets constrain the crop to common framing proportions; free mode allows an unconstrained crop.</li>
+            <li>The Design mockup honors the saved crop rectangle instead of simply center-cropping the whole image.</li>
+          </ul>
+          <figure class="screenshot-frame">
+            <img src="images/gallery-crop-controls.png" alt="Artwork crop editor showing size fields, ratio controls, zoom controls, and crop preview" width="1440" height="900" loading="lazy">
+            <figcaption>Planned screenshot: crop controls with a saved artwork record selected.</figcaption>
+          </figure>
+        </section>
+
+        <section class="doc-section">
+          <h2>Intake check</h2>
+          <ul>
+            <li>Make sure the physical size matches the customer's artwork.</li>
+            <li>Confirm the crop does not remove important content.</li>
+            <li>Use a clear filename or recognizable thumbnail so the image is easy to find later.</li>
+            <li>Select Use in Design only after the crop metadata is saved.</li>
+          </ul>
+        </section>
+
+        <footer class="page-footer">Next: <a href="/help/design-workspace.html">build the framing design</a>.</footer>
+      </article>
+    </main>
+  </div>
+</body>
+</html>

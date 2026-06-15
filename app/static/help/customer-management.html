@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Customer record workflow for FramersHaven.">
+  <title>Customer Management | FramersHaven Help</title>
+  <link rel="stylesheet" href="css/help-style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to help content</a>
+  <div class="help-shell">
+    <aside class="help-sidebar">
+      <div class="help-brand">
+        <i class="help-brand-mark" aria-hidden="true"></i>
+        <strong>FramersHaven</strong>
+        <span>Operator help</span>
+      </div>
+      <nav class="help-nav" aria-label="Help topics">
+        <ul>
+          <li><a href="/help/">Home</a></li>
+          <li><a href="/help/design-workspace.html">Design Workspace</a></li>
+          <li><a href="/help/gallery-intake.html">Gallery &amp; Intake</a></li>
+          <li><a href="/help/orders-quotes.html">Orders &amp; Quotes</a></li>
+          <li><a class="active" aria-current="page" href="/help/customer-management.html">Customer Management</a></li>
+          <li><a href="/help/admin-pricing.html">Admin &amp; Pricing</a></li>
+        </ul>
+      </nav>
+      <a class="back-to-app" href="/">Back to App</a>
+    </aside>
+
+    <main class="help-main" id="main-content" tabindex="-1">
+      <article class="help-article">
+        <header class="page-header">
+          <p class="section-label">Keep repeat work connected</p>
+          <h1>Customer Management</h1>
+          <p>Customer records keep contact details, notes, and prior jobs together. Saving a quote can create or refresh the matching customer automatically.</p>
+        </header>
+
+        <section class="doc-section">
+          <h2>Find a customer</h2>
+          <ol class="step-list">
+            <li><strong>Open Customers.</strong> Use the dedicated workspace instead of searching the jobs table when you need the full customer record.</li>
+            <li><strong>Search by known details.</strong> Search using the customer's name, phone, or saved email.</li>
+            <li><strong>Open the record.</strong> Review contact information, notes, and prior linked orders.</li>
+          </ol>
+          <figure class="screenshot-frame">
+            <img src="images/customer-management-overview.png" alt="Customer workspace with search results, editable contact details, notes, and prior orders" width="1440" height="900">
+            <figcaption>Planned screenshot: customer search and detail workspace.</figcaption>
+          </figure>
+        </section>
+
+        <section class="doc-section">
+          <h2>Create and update records</h2>
+          <div class="two-column">
+            <div class="info-card">
+              <h3>From a saved quote</h3>
+              <p>When a quote is saved, the app links it to a customer with the same name or creates a new customer record.</p>
+            </div>
+            <div class="info-card">
+              <h3>From Customers</h3>
+              <p>Create or edit the name, phone, email, and notes directly when contact details need maintenance outside a quote.</p>
+            </div>
+          </div>
+          <div class="callout warning">
+            <strong>Name and phone are operational requirements.</strong>
+            <p>A real customer name and valid phone number are required for quote and work-order provisioning. Generic walk-in placeholders are rejected.</p>
+          </div>
+        </section>
+
+        <section class="doc-section">
+          <h2>Linked job behavior</h2>
+          <ul>
+            <li>Prior orders appear on the customer detail view.</li>
+            <li>Renaming a customer updates linked order customer names.</li>
+            <li>Contact edits are reflected in linked jobs so the operator does not have to correct every record separately.</li>
+            <li>Customer notes are for local operator context; generated customer messages remain editable in the order inspector.</li>
+          </ul>
+        </section>
+
+        <section class="doc-section">
+          <h2>Good record hygiene</h2>
+          <ul>
+            <li>Search before creating a second record for the same customer.</li>
+            <li>Use a phone number the shop can actually reach.</li>
+            <li>Keep notes short and useful: material preferences, pickup constraints, or other framing context.</li>
+            <li>Review email before opening a draft from Handoff, especially when an older customer record was reused.</li>
+          </ul>
+        </section>
+
+        <footer class="page-footer">Return to <a href="/help/orders-quotes.html">Orders &amp; Quotes</a> for job status and handoff.</footer>
+      </article>
+    </main>
+  </div>
+</body>
+</html>

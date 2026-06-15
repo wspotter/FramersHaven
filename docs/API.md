@@ -1,0 +1,248 @@
+# API Reference (Current)
+
+## Health & Config
+- `GET /api/health` -> `{ status }`
+- `GET /api/config` -> branding + allowed statuses + active pricing rules
+
+## Settings
+- `GET /api/settings`
+  - response: `{ pricing }`
+- `POST /api/settings`
+  - fields:
+    - `tax_rate`
+    - `markup_moulding`
+    - `markup_mat`
+    - `markup_glazing`
+  - validation:
+    - all values must be non-negative
+
+## Services
+- `GET /api/services`
+  - response: `{ services: [] }`
+- `POST /api/services`
+  - fields:
+    - `{service}_label`
+    - `{service}_price`
+    - `{service}_active`
+  - supported services:
+    - `backing`
+    - `mounting`
+    - `frame_mounting`
+    - `printing`
+    - `various`
+    - `assembly`
+    - `royalties`
+
+## Backups
+- `GET /api/backups`
+  - response: `{ backups: [] }`
+- `POST /api/backups`
+  - creates a downloadable zip containing the SQLite database, uploads, exports, and a catalog snapshot
+- `GET /api/backups/{filename}`
+  - downloads the backup zip
+
+## Catalog
+- `POST /api/catalog/import`
+  - multipart: `file` (CSV)
+  - supported catalog categories:
+    - `moulding`
+    - `mat`
+    - `glazing`
+  - validation:
+    - filename must end in `.csv`
+    - content must be UTF-8 encoded
+    - service-like rows such as backing, mounting, printing, and assembly are skipped instead of being imported as catalog materials
+  - response: `{ inserted, updated, skipped }`
+- `POST /api/catalog/import/package`
+  - form field: `source`
+  - allowed values:
+    - `mats`
+    - `mouldings`
+  - behavior:
+    - reads operator-supplied CSV/ZIP files from the local `catalog_imports/` folder
+    - normalizes rows into the shared catalog table
+    - extracts preview assets into `/catalog-previews`
+- `GET /api/catalog/search?q=&category=&limit=`
+  - response: `{ items: [] }`
+  - `limit=0` returns the full local catalog without truncation
+- `POST /api/catalog/items`
+  - fields:
+    - `sku`, `name`, `category`, `cost`
+    - `vendor`, `width_in`, `height_in`, `rabbet_in`
+  - validation:
+    - `category` must be `moulding`, `mat`, or `glazing`
+- `POST /api/catalog/items/{item_id}`
+  - fields:
+    - `sku`, `name`, `category`, `cost`
+    - `vendor`, `width_in`, `height_in`, `rabbet_in`
+    - `active`
+  - validation:
+    - `category` must be `moulding`, `mat`, or `glazing`
+- `POST /api/catalog/items/{item_id}/texture`
+  - multipart: `file` JPG/PNG
+  - behavior:
+    - stores the uploaded preview under `catalog_previews/{category}/`
+    - updates the catalog row's `preview_filename`
+    - returns `{ item_id, preview_url }`
+
+## Images
+- `POST /api/images/upload`
+  - multipart fields:
+    - `file` JPG/PNG
+    - `width_in`, `height_in`
+    - `ratio_label`
+    - `crop_json`
+    - `rotation_deg`
+  - validation:
+    - `width_in`, `height_in` must be positive
+    - `rotation_deg` must be a multiple of `90`
+    - `crop_json` must be a JSON object
+- `GET /api/images`
+  - response: `{ images: [{ id, filename, url, width_in, height_in, ratio_label, crop_json, created_at }] }`
+  - `crop_json` is returned as an object so saved crop/zoom/pan metadata can be restored by the Gallery editor.
+  - current crop metadata shape:
+    - `version: 2`
+    - `cropper: { x, y, width, height, rotate, scaleX, scaleY }`
+    - `ratio_preset`, `ratio_w`, `ratio_h`
+    - `source_width`, `source_height`
+- `PATCH /api/images/{image_id}`
+  - multipart fields:
+    - `width_in`, `height_in`
+    - `ratio_label`
+    - `crop_json`
+  - behavior:
+    - updates size and crop metadata in place
+    - preserves the original uploaded image file
+  - validation:
+    - `width_in`, `height_in` must be positive
+    - `crop_json` must be a JSON object
+
+## Customers
+- `POST /api/customers`
+  - fields:
+    - `name` (required)
+    - `contact` (required phone number)
+    - `customer_email` (optional, stored separately from phone)
+    - `notes`
+- `GET /api/customers?q=`
+  - response: `{ customers: [] }`
+  - searches name, phone, and email
+- `GET /api/customers/{customer_id}`
+  - response: `{ customer, orders }`
+- `POST /api/customers/{customer_id}`
+  - fields:
+    - `name` (required)
+    - `contact` (required phone number)
+    - `customer_email` (optional, stored separately from phone)
+    - `notes`
+  - behavior:
+    - updates the customer record
+    - updates linked orders with the customer's current name, phone, and email
+
+## Quotes
+- `POST /api/quotes/calculate`
+  - supports either direct cost inputs or selected catalog IDs:
+    - `moulding_id`, `mat_id`, `glazing_id`
+    - stacked mat inputs:
+      - `top_mat_id`
+      - `second_mat_id`
+      - `third_mat_id`
+      - `second_mat_reveal_in`
+      - `third_mat_reveal_in`
+    - service option inputs:
+      - `backing_key`
+      - `mounting_key`
+      - `frame_mounting_key`
+      - `printing_key`
+      - `various_key`
+      - `assembly_key`
+      - `royalties_key`
+  - other fields:
+    - `width_in`, `height_in`, `labor_flat`, `image_id`, `mat_border_in`
+    - `global_discount_pct`
+    - per-row discount inputs:
+      - `backing_discount_pct`
+      - `mounting_discount_pct`
+      - `frame_mounting_discount_pct`
+      - `printing_discount_pct`
+      - `various_discount_pct`
+      - `assembly_discount_pct`
+      - `royalties_discount_pct`
+    - custom manual rows:
+      - `other_label`, `other_amount`, `other_discount_pct`
+      - `other2_label`, `other2_amount`, `other2_discount_pct`
+  - validation:
+    - dimensions must be positive
+    - cost/labor inputs must be non-negative
+    - `image_id`, if supplied, must exist
+    - `third_mat_id` requires `second_mat_id`
+    - `second_mat_id` requires `top_mat_id`
+  - behavior:
+    - mat stack pricing uses the outside mat size instead of the internal opening
+    - response `selected.mats` includes the ordered mat layers and reveal values
+    - response `selected.addons` includes chosen service rows and custom manual lines
+
+## Orders
+- `POST /api/orders`
+  - fields:
+    - `customer_name` (required)
+    - `customer_contact` (required phone number)
+    - `customer_email` (optional)
+    - `payload_json` (must be valid JSON)
+    - `subtotal`, `tax`, `total`
+  - behavior:
+    - creates the order in `quote` status
+    - inserts or refreshes a matching customer record by name
+  - validation:
+    - `customer_contact` must include a phone number; walk-in quotes are rejected
+    - `payload_json` must be a JSON object
+    - `subtotal`, `tax`, and `total` must be non-negative
+- `GET /api/orders`
+- `GET /api/orders?q=&status=`
+  - supports filtering by customer name, phone, email, or id text and exact status
+- `GET /api/orders/{order_id}`
+- `GET /api/orders/{order_id}/handoff`
+  - response:
+    - `customer_contact`
+    - `customer_email`
+    - `customer_phone`
+    - `quote_pdf_url` (always requests `document=quote`)
+    - `preview_jpg_url`
+    - `email_subject`
+    - `email_body`
+    - `sms_body`
+  - generated email/SMS copy does not expose local relative API paths as customer links
+  - the operator must add the PDF quote and mockup JPG as attachments unless a real public URL is provided outside this API
+- `POST /api/orders/{order_id}`
+  - fields:
+    - `customer_name` (required)
+    - `customer_contact` (required phone number)
+    - `customer_email` (optional)
+    - `note`
+  - behavior:
+    - updates order customer details
+    - writes an audit note into order history
+    - inserts or refreshes a matching customer record by name
+- `POST /api/orders/{order_id}/status`
+  - fields: `status`, `note`, `customer_approved`, `work_completed`
+  - transition enforcement:
+    - `quote -> work_order` requires `customer_approved`
+    - `work_order -> invoice` requires `work_completed`
+    - `invoice -> work_order` is allowed when a completed invoice needs to return to production, and it clears the completion/invoice timestamps
+  - response includes `approved_at`, `completed_at`, and `invoiced_at`
+
+## Export
+- `GET /api/orders/export.csv`
+- `GET /api/orders/{order_id}/export?format=pdf|jpg&document=quote|work_order|invoice`
+  - optional `disposition=inline|attachment`; defaults to `attachment`
+  - `inline` supports in-app/new-tab preview and `attachment` forces Save File behavior
+  - `document` is optional for PDF exports; when omitted, the order status chooses the form:
+    - `quote` -> quote form without item-level price columns
+    - `work_order` -> work order form without pricing columns
+    - `invoice` -> invoice form without item-level price columns
+  - quote and invoice totals remain in the summary area
+  - JPG export ignores `document` and creates the customer/internal preview image
+
+## Notes
+- Data store: local SQLite (`studio.db`).
+- Uploads and exports are local filesystem assets.

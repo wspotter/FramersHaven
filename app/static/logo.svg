@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">FramersHaven FH logo</title>
+  <desc id="desc">Dark navy F beside a coral H on a white square background.</desc>
+  <rect width="1024" height="1024" fill="#ffffff"/>
+  <path fill="#1f2e3a" d="M184 178h418v86H272v214h252v82H272v286h-88z"/>
+  <path fill="#ff6a4a" d="M608 178h86v304h204V178h86v668h-86V568H694v278h-86z"/>
+</svg>

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Operator help for FramersHaven.">
+  <title>Operator Guide | FramersHaven</title>
+  <link rel="stylesheet" href="css/help-style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to help content</a>
+  <div class="help-shell">
+    <aside class="help-sidebar">
+      <div class="help-brand">
+        <i class="help-brand-mark" aria-hidden="true"></i>
+        <strong>FramersHaven</strong>
+        <span>Operator help</span>
+      </div>
+      <nav class="help-nav" aria-label="Help topics">
+        <ul>
+          <li><a class="active" aria-current="page" href="/help/">Home</a></li>
+          <li><a href="/help/design-workspace.html">Design Workspace</a></li>
+          <li><a href="/help/gallery-intake.html">Gallery &amp; Intake</a></li>
+          <li><a href="/help/orders-quotes.html">Orders &amp; Quotes</a></li>
+          <li><a href="/help/customer-management.html">Customer Management</a></li>
+          <li><a href="/help/admin-pricing.html">Admin &amp; Pricing</a></li>
+        </ul>
+      </nav>
+      <a class="back-to-app" href="/">Back to App</a>
+    </aside>
+
+    <main class="help-main" id="main-content" tabindex="-1">
+      <article class="help-article">
+        <header class="page-header">
+          <p class="section-label">Local workstation manual</p>
+          <h1>FramersHaven Operator Guide</h1>
+          <p>Use this guide to move a framing job from artwork intake through design, quote approval, production paperwork, and customer handoff.</p>
+        </header>
+
+        <section class="doc-section">
+          <h2>Start here</h2>
+          <ol class="step-list">
+            <li><strong>Start the workstation app.</strong> Run <code>./scripts/run.sh</code>, then open <code>http://127.0.0.1:8000</code>.</li>
+            <li><strong>Stage the artwork.</strong> Upload or select the customer image in Gallery, confirm its physical size, and adjust the crop.</li>
+            <li><strong>Build the framing design.</strong> Move the artwork into Design, choose materials and services, and review the live mockup.</li>
+            <li><strong>Calculate and save.</strong> Enter a real customer name and phone number, calculate the quote, then save it.</li>
+            <li><strong>Track the job.</strong> Use Orders / Quotes for approval, work-order completion, exports, and manual customer handoff.</li>
+          </ol>
+          <div class="callout">
+            <strong>Local-first means local responsibility.</strong>
+            <p>The database, artwork, exports, and backups live on the workstation. Create a backup before major imports or workstation changes.</p>
+          </div>
+        </section>
+
+        <section class="doc-section">
+          <h2>Choose a workspace</h2>
+          <div class="topic-grid">
+            <div class="info-card">
+              <h3><a href="/help/design-workspace.html">Design Workspace</a></h3>
+              <p>Choose materials, tune openings, calculate pricing, and save a quote.</p>
+            </div>
+            <div class="info-card">
+              <h3><a href="/help/gallery-intake.html">Gallery &amp; Intake</a></h3>
+              <p>Upload artwork, record its size, adjust crop metadata, and send it to Design.</p>
+            </div>
+            <div class="info-card">
+              <h3><a href="/help/orders-quotes.html">Orders &amp; Quotes</a></h3>
+              <p>Filter jobs, advance approved work, preview files, and prepare handoff text.</p>
+            </div>
+            <div class="info-card">
+              <h3><a href="/help/customer-management.html">Customer Management</a></h3>
+              <p>Search customer records, update contact details, and review prior orders.</p>
+            </div>
+            <div class="info-card">
+              <h3><a href="/help/admin-pricing.html">Admin &amp; Pricing</a></h3>
+              <p>Import materials, maintain pricing rules and service rows, and create backups.</p>
+            </div>
+            <div class="info-card">
+              <h3>Theme selector</h3>
+              <p>The top bar theme selector changes appearance only. It does not change quote data or pricing.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="doc-section">
+          <h2>The normal job path</h2>
+          <div class="status-flow" aria-label="Normal job status flow">
+            <span>Quote</span><b aria-hidden="true">&rarr;</b><span>Work order</span><b aria-hidden="true">&rarr;</b><span>Invoice</span>
+          </div>
+          <p>A quote becomes a work order only after customer approval. A work order becomes an invoice only after the operator marks the build complete.</p>
+          <figure class="screenshot-frame">
+            <img src="images/help-home-overview.png" alt="FramersHaven navigation showing the five operator workspaces" width="1440" height="900">
+            <figcaption>Planned screenshot: the app shell and workspace navigation. Fresh application images will be added separately.</figcaption>
+          </figure>
+        </section>
+
+        <section class="doc-section">
+          <h2>Important limits</h2>
+          <ul>
+            <li>Email and SMS are manual. The app prepares editable text but does not send messages or attach files.</li>
+            <li>Payments and accounting remain outside the app.</li>
+            <li>The standard operator flow supports single openings and the current multi-opening tools; advanced freeform mat design remains limited.</li>
+            <li>Materials and services are separate. Moulding, mat, and glazing come from catalog data; backing, mounting, printing, assembly, and similar work come from Admin service pricing.</li>
+          </ul>
+        </section>
+
+        <footer class="page-footer">FramersHaven help is served locally with the workstation app.</footer>
+      </article>
+    </main>
+  </div>
+</body>
+</html>

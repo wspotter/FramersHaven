@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Catalog, pricing, services, and backup administration for FramersHaven.">
+  <title>Admin &amp; Pricing | FramersHaven Help</title>
+  <link rel="stylesheet" href="css/help-style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to help content</a>
+  <div class="help-shell">
+    <aside class="help-sidebar">
+      <div class="help-brand">
+        <i class="help-brand-mark" aria-hidden="true"></i>
+        <strong>FramersHaven</strong>
+        <span>Operator help</span>
+      </div>
+      <nav class="help-nav" aria-label="Help topics">
+        <ul>
+          <li><a href="/help/">Home</a></li>
+          <li><a href="/help/design-workspace.html">Design Workspace</a></li>
+          <li><a href="/help/gallery-intake.html">Gallery &amp; Intake</a></li>
+          <li><a href="/help/orders-quotes.html">Orders &amp; Quotes</a></li>
+          <li><a href="/help/customer-management.html">Customer Management</a></li>
+          <li><a class="active" aria-current="page" href="/help/admin-pricing.html">Admin &amp; Pricing</a></li>
+        </ul>
+      </nav>
+      <a class="back-to-app" href="/">Back to App</a>
+    </aside>
+
+    <main class="help-main" id="main-content" tabindex="-1">
+      <article class="help-article">
+        <header class="page-header">
+          <p class="section-label">Maintain the workstation</p>
+          <h1>Admin &amp; Pricing</h1>
+          <p>Admin owns catalog imports, manual material corrections, pricing rules, service prices, and local backups. Changes here affect future quote calculations.</p>
+        </header>
+
+        <section class="doc-section">
+          <h2>Materials and services stay separate</h2>
+          <div class="two-column">
+            <div class="info-card">
+              <h3>Catalog materials</h3>
+              <p>Moulding, mat, and glazing are catalog-backed items with SKU, cost, vendor, dimensions, preview image, and source metadata.</p>
+            </div>
+            <div class="info-card">
+              <h3>Shop services</h3>
+              <p>Backing, mounting, frame mounting, printing, various, assembly, royalties, and custom rows are admin-priced service options.</p>
+            </div>
+          </div>
+          <div class="callout warning">
+            <strong>Do not import service work as catalog items.</strong>
+            <p>The app rejects service-like catalog categories so material browsing and shop labor pricing cannot silently mix together.</p>
+          </div>
+        </section>
+
+        <section class="doc-section">
+          <h2>Import vendor catalogs</h2>
+          <ol class="step-list">
+            <li><strong>Prepare the source files.</strong> Put operator-supplied CSV and preview ZIP files in the local <code>catalog_imports/</code> folder.</li>
+            <li><strong>Choose the matching import.</strong> Use Import Mat Package or Import Moulding Package. A general CSV import is also available for the supported columns.</li>
+            <li><strong>Review the result.</strong> The import reports inserted, updated, skipped, duplicate, and preview counts.</li>
+            <li><strong>Spot-check the catalog.</strong> Search a few known SKUs and confirm names, costs, dimensions, and previews.</li>
+          </ol>
+          <p>Local package imports upsert existing rows by SKU and category. Valid existing items are updated instead of duplicated; invalid rows are skipped.</p>
+          <figure class="screenshot-frame">
+            <img src="images/admin-catalog-import.png" alt="Admin workspace showing catalog import controls, catalog statistics, and searchable material results" width="1440" height="900">
+            <figcaption>Planned screenshot: catalog import controls and the catalog snapshot.</figcaption>
+          </figure>
+        </section>
+
+        <section class="doc-section">
+          <h2>Pricing and manual corrections</h2>
+          <ul>
+            <li>Pricing Rules controls the saved tax rate and material markups used by quote calculation.</li>
+            <li>Manual Pricing controls service cost, markup, pricing basis, label, and active state.</li>
+            <li>Catalog Editor can create a missing material or correct an imported item without rerunning the full import.</li>
+            <li>Use the cropped texture uploader to attach a better moulding strip preview to the selected moulding.</li>
+            <li>Calculate a fresh quote after changing pricing; an already calculated on-screen quote may need to be recalculated.</li>
+          </ul>
+          <figure class="screenshot-frame">
+            <img src="images/admin-pricing-services.png" alt="Admin pricing rules and manual service pricing rows for framing quote calculation" width="1440" height="900" loading="lazy">
+            <figcaption>Planned screenshot: material markups beside manual service pricing.</figcaption>
+          </figure>
+        </section>
+
+        <section class="doc-section">
+          <h2>Backups and recovery</h2>
+          <ol class="step-list">
+            <li><strong>Create a backup.</strong> Use Create Backup before major imports or workstation changes.</li>
+            <li><strong>Download the ZIP.</strong> The archive includes the database, uploads, exports, catalog snapshot, and backup metadata.</li>
+            <li><strong>Restore only while stopped.</strong> Stop the app before replacing <code>studio.db</code> or working directories from a backup.</li>
+            <li><strong>Verify after restore.</strong> Restart, check catalog counts, then spot-check recent jobs in Orders / Quotes.</li>
+          </ol>
+          <div class="callout">
+            <strong>Keep the current files before restoring.</strong>
+            <p>Copy the existing database and working folders somewhere safe first. A restore should be reversible until the replacement is verified.</p>
+          </div>
+        </section>
+
+        <footer class="page-footer">Return to the <a href="/help/">help home page</a> for the full daily workflow.</footer>
+      </article>
+    </main>
+  </div>
+</body>
+</html>

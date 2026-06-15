@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Quote, work-order, invoice, export, and customer handoff workflow.">
+  <title>Orders &amp; Quotes | FramersHaven Help</title>
+  <link rel="stylesheet" href="css/help-style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to help content</a>
+  <div class="help-shell">
+    <aside class="help-sidebar">
+      <div class="help-brand">
+        <i class="help-brand-mark" aria-hidden="true"></i>
+        <strong>FramersHaven</strong>
+        <span>Operator help</span>
+      </div>
+      <nav class="help-nav" aria-label="Help topics">
+        <ul>
+          <li><a href="/help/">Home</a></li>
+          <li><a href="/help/design-workspace.html">Design Workspace</a></li>
+          <li><a href="/help/gallery-intake.html">Gallery &amp; Intake</a></li>
+          <li><a class="active" aria-current="page" href="/help/orders-quotes.html">Orders &amp; Quotes</a></li>
+          <li><a href="/help/customer-management.html">Customer Management</a></li>
+          <li><a href="/help/admin-pricing.html">Admin &amp; Pricing</a></li>
+        </ul>
+      </nav>
+      <a class="back-to-app" href="/">Back to App</a>
+    </aside>
+
+    <main class="help-main" id="main-content" tabindex="-1">
+      <article class="help-article">
+        <header class="page-header">
+          <p class="section-label">Track work after the quote</p>
+          <h1>Orders &amp; Quotes</h1>
+          <p>Use the jobs table to find saved quotes, open the job inspector, advance approved work, preview paperwork, and prepare manual customer handoff.</p>
+        </header>
+
+        <section class="doc-section">
+          <h2>Find and inspect a job</h2>
+          <ul>
+            <li>Use All Jobs, Needs Approval, Work Orders, or Invoices for quick stage filtering.</li>
+            <li>Use search to match a quote number, customer name, phone, or saved email.</li>
+            <li>Select a column heading once for ascending order and again for descending order.</li>
+            <li>Select a job row to open the inspector. Close it with Close, the backdrop, or Escape.</li>
+            <li>Use Overview, Build, History, Files, and Handoff to move through the job record.</li>
+          </ul>
+          <figure class="screenshot-frame">
+            <img src="images/orders-quotes-table.png" alt="Orders and Quotes workspace showing stage filters, sortable job columns, and the job inspector" width="1440" height="900">
+            <figcaption>Planned screenshot: full-width jobs table with an open inspector.</figcaption>
+          </figure>
+        </section>
+
+        <section class="doc-section">
+          <h2>Status gates</h2>
+          <div class="status-flow" aria-label="Order status gates">
+            <span>Quote</span><b aria-hidden="true">&rarr;</b><span>Work order</span><b aria-hidden="true">&rarr;</b><span>Invoice</span>
+          </div>
+          <div class="quick-grid">
+            <div class="info-card">
+              <h3>Approve quote</h3>
+              <p>Customer approval is required before a quote can become a work order.</p>
+            </div>
+            <div class="info-card">
+              <h3>Mark build done</h3>
+              <p>The operator must mark the work order complete before the job can become an invoice.</p>
+            </div>
+          </div>
+          <p>An invoice can return to work order when production changes are needed. Reopening clears the completion marker, so the build must be marked done again before reinvoicing.</p>
+        </section>
+
+        <section class="doc-section">
+          <h2>Preview and save files</h2>
+          <ol class="step-list">
+            <li><strong>Open Files.</strong> Choose Quote PDF, Work Order PDF, Invoice PDF, or Mockup JPG.</li>
+            <li><strong>Review the preview.</strong> Confirm customer details, framing components, layout, totals, and document type.</li>
+            <li><strong>Choose the next action.</strong> Save File downloads it, Open New Tab opens it separately, and Send carries the document name into Handoff.</li>
+          </ol>
+          <div class="callout warning">
+            <strong>Send does not attach or deliver the file.</strong>
+            <p>Download the PDF or JPG and attach it manually. Local workstation URLs are not customer-accessible and are intentionally excluded from generated messages.</p>
+          </div>
+        </section>
+
+        <section class="doc-section">
+          <h2>Customer handoff</h2>
+          <ul>
+            <li>Review the saved email and phone recipient before using a handoff action.</li>
+            <li>Edit the generated email subject, email body, or SMS body when the job needs specific wording.</li>
+            <li>Copy Email copies the draft. Open Email Draft opens the workstation's configured email client. Copy SMS copies the text for manual sending.</li>
+            <li>History records explicit copy or open actions. It does not claim that the message was delivered.</li>
+          </ul>
+          <figure class="screenshot-frame">
+            <img src="images/orders-files-handoff.png" alt="Job inspector Files and Handoff tabs with document preview and editable customer messages" width="1440" height="900" loading="lazy">
+            <figcaption>Planned screenshot: file preview and editable handoff fields.</figcaption>
+          </figure>
+        </section>
+
+        <footer class="page-footer">Customer details can also be maintained in <a href="/help/customer-management.html">Customer Management</a>.</footer>
+      </article>
+    </main>
+  </div>
+</body>
+</html>

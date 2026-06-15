@@ -1,0 +1,23 @@
+name: Feature request
+description: Suggest a focused FramersHaven improvement
+title: "Feature: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Operator problem
+      description: What framing workflow pain would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes or constraints
+      description: Include local-first, data safety, or usability constraints if relevant.

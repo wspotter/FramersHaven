@@ -1,0 +1,45 @@
+# Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# JavaScript
+node_modules/
+npm-debug.log*
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+data/
+
+# Workstation data and generated output
+studio.db
+studio.db-*
+uploads/
+exports/
+backups/
+catalog_previews/
+catalog_imports/
+tmp/
+*.log
+
+# IDE and local tooling
+.idea/
+.vscode/
+*.code-workspace
+.playwright-cli/
+.playwright-mcp/
+.superpowers/
+.kilo/
+
+# Loose development artifacts
+designer_mockup.html
+test_frame_render.png
+test_render.py

@@ -1,0 +1,5248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FramersHaven</title>
+  <style>
+    :root {
+      --ink: #1e293b; /* slate-800 */
+      --muted: #64748b; /* slate-500 */
+      --line: rgba(0, 0, 0, 0.08); /* light subtle border */
+      --paper: #fafafc; /* main page canvas bg */
+      --panel: rgba(255, 255, 255, 0.75); /* translucent white glass card */
+      --accent: #4f46e5; /* premium royal blue/indigo accent */
+      --accent-strong: #3730a3;
+      --accent-soft: rgba(79, 70, 229, 0.08); /* accent hover tint */
+      --nav: #ffffff;
+      --nav-soft: #f1f5f9;
+      --shadow: 0 12px 36px rgba(15, 23, 42, 0.04); /* soft shadow */
+      --bg-glow: rgba(79, 70, 229, 0.04); /* soft indigo radial vignette */
+      --bg-start: #f8fafc;
+      --bg-mid: #f1f5f9;
+      --bg-end: #e2e8f0;
+      --sidebar-start: #ffffff; /* light sidebar start */
+      --sidebar-end: #f8fafc; /* light sidebar end */
+      --sidebar-text: #0f172a; /* dark slate text for light sidebar */
+      --sidebar-muted: #64748b; /* slate-500 */
+      --sidebar-border: rgba(0, 0, 0, 0.08); /* subtle light border */
+      --nav-active-bg: rgba(79, 70, 229, 0.08); /* light active navigation background */
+      --nav-active-border: #4f46e5; /* active accent border */
+      --topbar-bg: rgba(255, 255, 255, 0.8);
+      --field-bg: #ffffff; /* clean white input fields */
+      --ghost-bg: rgba(79, 70, 229, 0.05);
+      --ghost-border: rgba(79, 70, 229, 0.25);
+      --status-bg: rgba(79, 70, 229, 0.1);
+      --status-border: #4f46e5;
+      --code-bg: #f8fafc;
+      --code-ink: #0f172a;
+      --mockup-bg-start: #f1ede4; /* light canvas background as in design */
+      --mockup-bg-end: #e4e1d7;
+    }
+
+        body[data-theme="framershaven"] {
+      --ink: #111111;
+      --muted: #555555;
+      --line: #F9C6D3; /* Pink border */
+      --paper: #ffffff;
+      --panel: #ffffff;
+      --accent: #F9C6D3; /* Pink */
+      --accent-strong: #0f6f69;
+      --accent-soft: #53C2BA; /* Teal */
+      --nav: #ffffff;
+      --nav-soft: #f0f7f7; /* Very light teal */
+      --shadow: 0 18px 40px rgba(17, 17, 17, 0.08);
+      --bg-glow: rgba(249, 198, 211, 0.15); /* Soft pink */
+      --bg-start: #ffffff;
+      --bg-mid: #ffffff;
+      --bg-end: #e6f5f4; /* Soft teal */
+      --sidebar-start: #ffffff;
+      --sidebar-end: #f8fafc;
+      --sidebar-text: #111111;
+      --sidebar-muted: #555555;
+      --sidebar-border: #F9C6D3;
+      --nav-active-bg: #fff0f4; /* Light pink */
+      --nav-active-border: #53C2BA; /* Teal */
+      --topbar-bg: rgba(255, 255, 255, 0.94);
+      --field-bg: #ffffff;
+      --ghost-bg: #e6f5f4;
+      --ghost-border: #53C2BA;
+      --status-bg: #fff0f4;
+      --status-border: #F9C6D3;
+      --code-bg: #f8fafc;
+      --code-ink: #111111;
+      --mockup-bg-start: #ffffff;
+      --mockup-bg-end: #e6f5f4;
+    }
+
+
+        body[data-theme="gallery"] {
+      --ink: #0f172a; /* slate-900 */
+      --muted: #475569; /* slate-600 */
+      --line: rgba(20, 184, 166, 0.2); /* teal border */
+      --paper: #ffffff;
+      --panel: rgba(255, 255, 255, 0.85); /* translucent white */
+      --accent: #ec4899; /* pink-500 */
+      --accent-strong: #9d174d; /* pink-800 */
+      --accent-soft: rgba(236, 72, 153, 0.1);
+      --nav: rgba(255, 255, 255, 0.6);
+      --nav-soft: rgba(20, 184, 166, 0.08); /* soft teal */
+      --shadow: 0 20px 40px rgba(20, 184, 166, 0.08), 0 8px 16px rgba(236, 72, 153, 0.06);
+      --bg-glow: rgba(236, 72, 153, 0.08); /* pink radial glow */
+      --bg-start: #ffffff;
+      --bg-mid: #fdf2f8; /* pink-50 */
+      --bg-end: #f0fdfa; /* teal-50 */
+      --sidebar-start: rgba(255, 255, 255, 0.9);
+      --sidebar-end: rgba(253, 242, 248, 0.9); /* pink-50 tint */
+      --sidebar-text: #0f172a;
+      --sidebar-muted: #475569;
+      --sidebar-border: rgba(236, 72, 153, 0.15);
+      --nav-active-bg: rgba(236, 72, 153, 0.1);
+      --nav-active-border: #ec4899; /* pink-500 */
+      --topbar-bg: rgba(255, 255, 255, 0.85);
+      --field-bg: rgba(255, 255, 255, 0.9);
+      --ghost-bg: rgba(20, 184, 166, 0.1); /* soft teal */
+      --ghost-border: rgba(20, 184, 166, 0.4);
+      --status-bg: rgba(236, 72, 153, 0.1);
+      --status-border: #ec4899;
+      --code-bg: #fdf2f8;
+      --code-ink: #ec4899;
+      --mockup-bg-start: #f8fafc;
+      --mockup-bg-end: #f1f5f9;
+    }
+
+    body[data-theme="gallery"] button:not(.job-row) {
+      background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+      color: white;
+      border: none;
+      box-shadow: 0 4px 12px rgba(244, 63, 94, 0.25);
+    }
+    
+    body[data-theme="gallery"] button:not(.job-row):hover:not(:disabled) {
+      box-shadow: 0 6px 16px rgba(244, 63, 94, 0.35);
+      transform: translateY(-2px);
+    }
+
+    body[data-theme="gallery"] button.secondary {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      box-shadow: none;
+    }
+
+    body[data-theme="gallery"] button.ghost {
+      background: transparent;
+      color: var(--muted);
+      border: none;
+      box-shadow: none;
+    }
+    body[data-theme="gallery"] button.ghost:hover {
+      background: var(--ghost-bg);
+      color: var(--ink);
+    }
+
+    body[data-theme="gallery"] .nav-button,
+    body[data-theme="gallery"] .topbar-nav-button {
+      background: transparent;
+      color: var(--sidebar-text);
+      border: 1px solid transparent;
+      box-shadow: none;
+    }
+    body[data-theme="gallery"] .nav-button.active,
+    body[data-theme="gallery"] .topbar-nav-button.active {
+      color: var(--accent);
+      background: var(--nav-active-bg);
+      border-color: var(--nav-active-border);
+      box-shadow: none;
+    }
+    body[data-theme="gallery"] .topbar-nav-button {
+      border: 1px solid var(--line);
+    }
+
+    body[data-theme="gallery"] {
+      background:
+        radial-gradient(circle at top left, rgba(236, 72, 153, 0.08), transparent 40%),
+        radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.08), transparent 40%),
+        linear-gradient(135deg, #ffffff 0%, #fdf2f8 50%, #f0fdfa 100%);
+    }
+
+    body[data-theme="gallery"] .sidebar {
+      backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(236, 72, 153, 0.1);
+    }
+
+    * { box-sizing: border-box; }
+        body {
+      margin: 0;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, var(--bg-glow), rgba(255,255,255,0) 34%),
+        linear-gradient(135deg, var(--bg-start) 0%, var(--bg-mid) 45%, var(--bg-end) 100%);
+      min-height: 100vh;
+    }
+
+        body[data-theme="framershaven"] {
+      --ink: #111111;
+      --muted: #555555;
+      --line: #F9C6D3; /* Pink border */
+      --paper: #ffffff;
+      --panel: #ffffff;
+      --accent: #F9C6D3; /* Pink */
+      --accent-strong: #0f6f69;
+      --accent-soft: #53C2BA; /* Teal */
+      --nav: #ffffff;
+      --nav-soft: #f0f7f7; /* Very light teal */
+      --shadow: 0 18px 40px rgba(17, 17, 17, 0.08);
+      --bg-glow: rgba(249, 198, 211, 0.15); /* Soft pink */
+      --bg-start: #ffffff;
+      --bg-mid: #ffffff;
+      --bg-end: #e6f5f4; /* Soft teal */
+      --sidebar-start: #ffffff;
+      --sidebar-end: #f8fafc;
+      --sidebar-text: #111111;
+      --sidebar-muted: #555555;
+      --sidebar-border: #F9C6D3;
+      --nav-active-bg: #fff0f4; /* Light pink */
+      --nav-active-border: #53C2BA; /* Teal */
+      --topbar-bg: rgba(255, 255, 255, 0.94);
+      --field-bg: #ffffff;
+      --ghost-bg: #e6f5f4;
+      --ghost-border: #53C2BA;
+      --status-bg: #fff0f4;
+      --status-border: #F9C6D3;
+      --code-bg: #f8fafc;
+      --code-ink: #111111;
+      --mockup-bg-start: #ffffff;
+      --mockup-bg-end: #e6f5f4;
+    }
+
+
+    .shell {
+      display: grid;
+      grid-template-columns: 236px 1fr;
+      min-height: 100vh;
+    }
+
+    body:not([data-workspace="design"]) .shell {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    body:not([data-workspace="design"]) .sidebar {
+      display: none;
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, var(--sidebar-start) 0%, var(--sidebar-end) 100%);
+      color: var(--sidebar-text);
+      padding: 24px 18px;
+      min-width: 0;
+    }
+
+
+    .brand {
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--sidebar-border);
+      margin-bottom: 20px;
+    }
+
+    .brand h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      line-height: 1.1;
+      letter-spacing: 0.02em;
+    }
+
+    .brand-logo {
+      display: block;
+      width: 100%;
+      max-height: 92px;
+      object-fit: contain;
+      object-position: left center;
+      margin-bottom: 10px;
+    }
+
+    .brand p, .menu-note, .status-chip small {
+      margin: 0;
+      color: var(--sidebar-muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .menu-label {
+      margin: 0 0 10px;
+      color: var(--sidebar-muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+    }
+
+    .nav-button {
+      width: 100%;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--sidebar-text);
+      text-align: left;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: 120ms ease;
+    }
+
+    .nav-button strong, .nav-button span {
+      display: block;
+    }
+
+    .nav-button span {
+      margin-top: 2px;
+      color: var(--sidebar-muted);
+      font-size: 12px;
+    }
+
+    .nav-button.active {
+      background: var(--nav-active-bg);
+      border-color: var(--nav-active-border);
+      transform: translateX(4px);
+    }
+
+    .nav-button:hover:not(.active) {
+      background: var(--nav-soft);
+      transform: translateX(2px);
+    }
+
+    .sidebar-footer {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid var(--sidebar-border);
+    }
+
+    .sidebar.drawer-active .sidebar-footer {
+      display: none;
+    }
+
+    .content {
+      padding: 20px;
+    }
+
+    .topbar {
+      background: var(--topbar-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 10px 14px;
+      display: grid;
+      grid-template-columns: minmax(160px, 0.55fr) minmax(360px, 1.4fr) minmax(160px, 0.55fr);
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    .topbar h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .topbar p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .topbar-nav {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .topbar-nav-button {
+      width: auto;
+      margin-top: 0;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--field-bg);
+      color: var(--ink);
+      font-size: 11px;
+      line-height: 1.1;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .topbar-nav-button.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      box-shadow: inset 0 0 0 1px var(--accent-soft);
+      font-weight: 700;
+    }
+
+    .topbar-nav-button:hover,
+    .topbar-nav-button:focus-visible {
+      border-color: var(--accent);
+    }
+
+    .topbar-help-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 30px;
+      text-decoration: none;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+
+    .theme-picker {
+      min-width: 160px;
+    }
+
+    .theme-picker label {
+      margin-top: 0;
+    }
+
+    .theme-picker small {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .workspace {
+      margin-top: 8px;
+    }
+
+    .notice {
+      display: none;
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--status-border, var(--line));
+      background: var(--status-bg, var(--ghost-bg));
+      color: var(--ink);
+      box-shadow: var(--shadow);
+      font-size: 12px;
+    }
+
+    .notice.visible {
+      display: block;
+    }
+
+    .catalog-drawer {
+      position: static;
+      width: 100%;
+      max-height: calc(100vh - 190px);
+      overflow: hidden;
+      display: none;
+      border-radius: 14px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      color: var(--ink);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .catalog-drawer.visible {
+      display: block;
+    }
+
+    .opening-drawer {
+      display: none;
+    }
+
+    .opening-drawer.visible {
+      display: block;
+    }
+
+    .catalog-drawer-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 8px;
+      padding: 10px 10px 8px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .catalog-drawer-head h3 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .drawer-active-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 4px;
+      padding: 3px 7px;
+      width: fit-content;
+      max-width: 100%;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--field-bg);
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.2;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .catalog-drawer-body {
+      padding: 10px;
+    }
+
+    .catalog-drawer-search {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .catalog-drawer-search input,
+    .catalog-drawer-search button {
+      margin-top: 0;
+    }
+
+    .catalog-drawer-count {
+      min-height: 16px;
+      margin: -2px 0 7px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.25;
+    }
+
+    .opening-drawer .catalog-drawer-body {
+      display: grid;
+      gap: 8px;
+    }
+
+    .opening-drawer .position-slider-grid {
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 0;
+    }
+
+    .opening-drawer .position-slider {
+      padding: 6px 7px;
+    }
+
+    .opening-drawer.single-opening .diptych-only {
+      display: none;
+    }
+
+    .opening-drawer .inline-actions {
+      margin-top: 0;
+    }
+
+    .catalog-result-list {
+      max-height: calc(100vh - 315px);
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .catalog-result {
+      display: grid;
+      grid-template-columns: 56px minmax(0, 1fr);
+      gap: 8px;
+      padding: 7px;
+      border-bottom: 1px solid var(--line);
+      border-radius: 10px;
+      cursor: pointer;
+      min-height: 70px;
+    }
+
+    .catalog-result:last-child {
+      border-bottom: 0;
+    }
+
+    .catalog-result:hover,
+    .catalog-result:focus {
+      background: var(--nav-soft);
+      outline: 1px solid var(--line);
+    }
+
+    .catalog-result.selected {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      box-shadow: inset 0 0 0 1px var(--accent-soft);
+    }
+
+    .catalog-result.sample {
+      background: var(--ghost-bg);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 8px;
+    }
+
+    .catalog-result strong,
+    .catalog-result span,
+    .catalog-result small {
+      display: block;
+    }
+
+    .catalog-result-thumb {
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
+      border: 1px solid #111;
+      background: #fff;
+      object-fit: cover;
+      align-self: start;
+    }
+
+    .catalog-result-swatch {
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
+      border: 1px solid #111;
+      align-self: start;
+    }
+
+    .catalog-result img {
+      width: 56px;
+      height: 56px;
+      border-radius: 10px;
+      border: 1px solid #111;
+      background: #fff;
+      object-fit: cover;
+    }
+
+    .catalog-result-main {
+      min-width: 0;
+    }
+
+    .catalog-result-main strong,
+    .catalog-result-main span,
+    .catalog-result-main small {
+      overflow-wrap: anywhere;
+    }
+
+    .catalog-result-main strong {
+      font-size: 11px;
+    }
+
+    .catalog-result-main span {
+      margin-top: 2px;
+      color: var(--ink);
+      font-size: 10px;
+      line-height: 1.25;
+    }
+
+    .catalog-result-main small {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.25;
+    }
+
+    .catalog-result-flag {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid var(--ghost-border);
+      background: var(--ghost-bg);
+      color: var(--ink);
+      font-size: 9px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .slot-active-badge,
+    .slot-selected-badge {
+      display: inline-flex;
+      align-items: center;
+      margin-left: 4px;
+      padding: 1px 4px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--field-bg);
+      color: var(--muted);
+      font-size: 8px;
+      line-height: 1.1;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .slot-active-badge {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .notice.error {
+      border-color: #d4b0a8;
+      background: #f8ebe8;
+    }
+
+    .notice.success {
+      border-color: #b9cfbf;
+      background: #ecf5ee;
+    }
+
+    .tab-panel {
+      display: none;
+      animation: rise 180ms ease;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .grid-2, .grid-3 {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid-2 { grid-template-columns: minmax(280px, 360px) 1fr; }
+    .grid-3 { grid-template-columns: 1.1fr 1fr 360px; }
+    .design-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .design-layout > .stack:first-child {
+      order: 2;
+    }
+
+    .design-layout > .stack:last-child {
+      order: 1;
+    }
+
+    .design-full {
+      margin-top: 16px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .card h3 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .card p {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    input, select, button, textarea {
+      width: 100%;
+      margin-top: 6px;
+      padding: 11px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      font: inherit;
+      background: var(--field-bg);
+      color: var(--ink);
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-soft);
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    button {
+      cursor: pointer;
+      background: var(--accent);
+      color: white;
+      border: 1px solid var(--accent);
+      transition: all 0.2s ease;
+    }
+    button:hover:not(:disabled) {
+      opacity: 0.95;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+    }
+
+    button.secondary {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+
+    button.ghost {
+      background: var(--ghost-bg);
+      color: var(--ink);
+      border-color: var(--ghost-border);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.48;
+    }
+
+    body[data-theme="framershaven"] button {
+      color: #111111;
+    }
+
+    body[data-theme="framershaven"] .nav-button {
+      color: var(--sidebar-text);
+    }
+
+    body[data-theme="framershaven"] .nav-button.active {
+      color: #111111;
+    }
+
+    body[data-theme="gallery"] .nav-button {
+      color: var(--sidebar-text);
+    }
+
+    body[data-theme="gallery"] .nav-button.active {
+      color: var(--accent);
+      background: var(--nav-active-bg);
+      border-color: var(--nav-active-border);
+    }
+
+    .inline-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .inline-actions button {
+      flex: 1 1 160px;
+    }
+
+    .texture-crop {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--field-bg);
+      display: grid;
+      gap: 10px;
+    }
+
+    .texture-crop canvas {
+      width: 100%;
+      height: auto;
+      border-radius: 6px;
+      border: 1px dashed rgba(32, 71, 79, 0.28);
+      background: #f7f9fb;
+    }
+
+    button.mini-button {
+      width: auto;
+      margin-top: 0;
+      padding: 7px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .intake-card label,
+    .intake-toolbar label {
+      margin-top: 0;
+    }
+
+    .intake-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      align-items: end;
+    }
+
+    .intake-span-2 {
+      grid-column: 1 / -1;
+    }
+
+    .ratio-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .intake-card input[type="range"],
+    .intake-toolbar input[type="range"] {
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    .intake-toolbar {
+      margin-bottom: 16px;
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      text-align: left;
+    }
+
+    .intake-toolbar .intake-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px 12px;
+    }
+
+    .intake-file,
+    .intake-actions {
+      grid-column: span 2;
+    }
+
+    .intake-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .intake-actions button {
+      margin-top: 0;
+    }
+
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .list {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel);
+      min-height: 120px;
+      max-height: 420px;
+      overflow: auto;
+      padding: 8px;
+    }
+
+    .list.compact {
+      max-height: 260px;
+    }
+
+    .item {
+      border: 1px solid transparent;
+      border-radius: 14px;
+      padding: 10px 12px;
+      cursor: pointer;
+      margin-bottom: 8px;
+      background: var(--nav-soft);
+    }
+
+    .item:last-child {
+      margin-bottom: 0;
+    }
+
+    .item strong, .item small, .item span {
+      display: block;
+    }
+
+    .item small, .item span {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    .item.selected {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .item:hover:not(.selected) {
+      background: var(--ghost-bg);
+      border-color: var(--line);
+    }
+
+    .gallery-workstation {
+      display: grid;
+      grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .gallery-rail {
+      position: sticky;
+      top: 8px;
+      max-height: calc(100vh - 24px);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .gallery-rail .section-head {
+      align-items: flex-start;
+    }
+
+    .gallery-rail-actions {
+      display: flex;
+      gap: 6px;
+      flex: 0 0 auto;
+    }
+
+    .gallery-rail-actions button {
+      width: auto;
+      margin-top: 0;
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+
+    .gallery-list {
+      flex: 1 1 auto;
+      max-height: none;
+      min-height: 520px;
+    }
+
+    .gallery-list .item {
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+      padding: 8px;
+    }
+
+    .gallery-list .item strong {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .gallery-thumb {
+      width: 58px;
+      height: 58px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--nav-soft);
+      object-fit: cover;
+    }
+
+    .gallery-editor-card {
+      display: grid;
+      gap: 12px;
+    }
+
+    .gallery-editor-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .gallery-editor-actions {
+      display: flex;
+      gap: 8px;
+      align-items: start;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .gallery-editor-actions button {
+      width: auto;
+      min-width: 150px;
+      flex: 0 1 190px;
+      margin-top: 0;
+      padding: 10px 14px;
+      border-radius: 14px;
+    }
+
+    .gallery-detail-strip {
+      display: grid;
+      grid-template-columns: 72px minmax(74px, auto) minmax(160px, 1fr) minmax(82px, auto) minmax(72px, auto);
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+    }
+
+    .gallery-editor-thumb {
+      width: 72px;
+      height: 54px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--nav-soft);
+      object-fit: cover;
+      display: none;
+    }
+
+    .gallery-detail-strip span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .gallery-detail-strip strong {
+      display: block;
+      min-width: 0;
+      margin-top: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    .gallery-editor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+      gap: 10px 12px;
+      align-items: end;
+    }
+
+    .gallery-editor-grid label {
+      margin-top: 0;
+    }
+
+    .gallery-editor-grid input[type="range"] {
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    .gallery-zoom-control {
+      min-width: 0;
+    }
+
+    .materials {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .materials .list {
+      max-height: 240px;
+    }
+
+    .design-builder-card {
+      padding: 5px;
+      position: sticky;
+      top: 8px;
+      max-height: calc(100vh - 24px);
+      overflow: auto;
+      scrollbar-width: thin;
+    }
+
+    .design-builder-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 6px;
+      align-items: end;
+      margin-bottom: 4px;
+    }
+
+    .design-builder-size {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .design-builder-size span {
+      display: block;
+      color: var(--muted);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .design-builder-size strong {
+      display: block;
+      margin-top: 1px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .builder-section {
+       margin-top: 2px;
+       padding: 3px;
+       border: 1px solid var(--line);
+       border-radius: 7px;
+       background: var(--nav-soft);
+     }
+
+    .builder-section h3 {
+      margin: 0;
+      font-size: 11px;
+      line-height: 1.1;
+    }
+
+    .builder-section .section-head {
+      margin-bottom: 2px;
+    }
+
+    .design-builder-card label {
+      margin-top: 3px;
+      font-size: 9px;
+      letter-spacing: 0.08em;
+    }
+
+    .design-builder-card input,
+    .design-builder-card select,
+    .design-builder-card button,
+    .design-builder-card textarea {
+      padding: 2px 4px;
+      border-radius: 6px;
+      font-size: 10px;
+      min-height: 19px;
+      line-height: 1.2;
+    }
+
+    .design-builder-card input[type="number"] {
+      appearance: textfield;
+      text-align: center;
+    }
+
+    .design-builder-card input[type="number"]::-webkit-outer-spin-button,
+    .design-builder-card input[type="number"]::-webkit-inner-spin-button {
+      appearance: none;
+      margin: 0;
+    }
+
+    .design-builder-card button.mini-button {
+      padding: 2px 6px;
+      border-radius: 7px;
+      font-size: 9px;
+    }
+
+    .design-builder-card .section-head p {
+      margin-top: 1px;
+      font-size: 10px;
+      line-height: 1.2;
+    }
+
+    .design-builder-card .section-head p {
+      display: none;
+    }
+
+    .subject-inline-meta {
+      margin: 0 0 2px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.2;
+    }
+
+    .subject-action {
+      width: auto;
+      min-width: 96px;
+      margin-top: 0;
+      padding: 2px 8px;
+      border-radius: 8px;
+      font-size: 10px;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .dimension-row {
+      display: flex;
+      gap: 4px;
+      align-items: end;
+    }
+
+    .dimension-field {
+      flex: 0 0 92px;
+    }
+
+    .dimension-field input {
+      max-width: 92px;
+    }
+
+    .search-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+
+    .search-row input,
+    .search-row button {
+      margin-top: 0;
+    }
+
+    .quote-compact-row {
+      display: grid;
+      gap: 3px;
+      margin-top: 2px;
+    }
+
+    .quote-compact-row.cols-2 {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .quote-compact-row input,
+    .quote-compact-row select {
+      margin-top: 0;
+    }
+
+    .quote-compact-label {
+      margin-top: 2px;
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .quote-fields {
+      display: grid;
+      gap: 2px;
+      margin-top: 2px;
+    }
+
+    .quote-fields .row-2 {
+      gap: 6px;
+    }
+
+    .quote-fields label {
+      display: none;
+    }
+
+    .builder-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      align-items: start;
+    }
+
+    .builder-grid-2 label {
+      display: none;
+    }
+
+    .picker-summary {
+      margin-bottom: 6px;
+      padding: 5px 7px;
+      border: 1px dashed #c5cfde;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.72);
+    }
+
+    .picker-summary strong,
+    .picker-summary span,
+    .picker-summary small {
+      display: block;
+    }
+
+    .picker-summary span,
+    .picker-summary small {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .slot-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .slot-toolbar .picker-summary {
+      flex: 1 1 auto;
+      margin-bottom: 0;
+    }
+
+    .slot-toolbar .picker-summary small {
+      display: none;
+    }
+
+    .design-builder-card .list.compact {
+      min-height: 34px;
+      max-height: 52px;
+      border-radius: 10px;
+      padding: 3px;
+    }
+
+    .design-builder-card .item {
+      padding: 5px 7px;
+      border-radius: 10px;
+      margin-bottom: 4px;
+    }
+
+    .design-builder-card .item span,
+    .design-builder-card .item small {
+      margin-top: 2px;
+      font-size: 10px;
+      line-height: 1.2;
+    }
+
+    .design-builder-card #glazingList .item {
+      padding: 2px 4px;
+    }
+
+    .design-builder-card #glazingList .item span,
+    .design-builder-card #glazingList .item small {
+      display: none;
+    }
+
+    .quote-actions {
+      margin-top: 8px;
+    }
+
+    .mat-stack-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      align-items: start;
+    }
+
+    .mat-layer-card.hidden {
+      display: none;
+    }
+
+    .material-slot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr));
+      gap: 3px;
+      margin-top: 2px;
+    }
+
+    .material-slot {
+      min-width: 0;
+      padding: 2px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--field-bg);
+    }
+
+    .material-slot.hidden {
+      display: none;
+    }
+
+    .material-slot.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      box-shadow: inset 0 0 0 1px var(--accent-soft);
+    }
+
+    .material-slot.has-selection {
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 1px var(--accent-soft);
+      background: var(--nav-soft);
+    }
+
+    body[data-theme="framershaven"] .material-slot.has-selection {
+      border-color: #F9C6D3;
+      box-shadow: inset 0 0 0 2px #53C2BA;
+      background: var(--nav-soft);
+    }
+
+    body[data-theme="gallery"] .material-slot.has-selection {
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 2px var(--accent-soft);
+      background: var(--nav-soft);
+    }
+
+    .material-slot-head {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 2px;
+    }
+
+    .material-slot-preview {
+      width: 22px;
+      height: 22px;
+      flex: 0 0 22px;
+      border-radius: 5px;
+      border: 1px solid rgba(0,0,0,0.12);
+      background: #fff;
+      object-fit: cover;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3);
+    }
+
+    .material-slot-head button {
+      margin-top: 0;
+    }
+
+    .material-slot-title {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .material-slot input {
+      margin-top: 0;
+    }
+
+    .material-slot-grid .material-slot:not(.hidden) {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      gap: 2px;
+    }
+
+    .material-slot-grid .material-slot-head {
+      grid-column: 1;
+      margin-bottom: 0;
+    }
+
+    .material-slot-grid .material-slot-title {
+      display: none;
+    }
+
+    .material-slot-grid .material-slot input[id^="selection"] {
+      grid-column: 2;
+      grid-row: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .material-slot-grid .material-slot input[type="number"] {
+      grid-column: 2;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .material-slot-note {
+      display: none;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.15;
+    }
+
+    #secondMatCard .material-slot-note,
+    #thirdMatCard .material-slot-note {
+      display: block;
+    }
+
+    .material-results {
+      margin-top: 6px;
+    }
+
+    .material-results-empty {
+      color: var(--muted);
+      font-size: 10px;
+      padding: 8px 6px;
+    }
+
+    .material-slot-grid + .material-results {
+      max-height: 82px;
+    }
+
+    .worksheet-grid {
+      display: grid;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .worksheet-grid.two {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .worksheet-grid.two .material-slot {
+      min-width: 0;
+    }
+
+    .worksheet-grid.two .material-slot input {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .worksheet-line {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .worksheet-line input,
+    .worksheet-line select,
+    .worksheet-line button {
+      margin-top: 0;
+    }
+
+    .worksheet-line-label {
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .option-grid {
+      display: grid;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .option-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 32px 46px;
+      gap: 3px;
+      align-items: center;
+    }
+
+    .option-row input,
+    .option-row select {
+      margin-top: 0;
+    }
+
+    .option-price {
+      text-align: right;
+      color: var(--muted);
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .option-header {
+      display: none;
+      grid-template-columns: minmax(0, 1fr) 38px 50px;
+      gap: 4px;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .service-option-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px 2px;
+    }
+
+    .service-option-grid .option-row {
+      grid-template-columns: minmax(0, 1fr) 26px;
+      gap: 2px;
+    }
+
+    .service-option-grid .option-price {
+      display: none;
+    }
+
+    .pricing-panel {
+      border-color: #53C2BA;
+      box-shadow: inset 0 0 0 1px #53C2BA;
+    }
+
+    .pricing-panel .section-head {
+      align-items: center;
+    }
+
+    .frame-parts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 3px;
+      margin-top: 3px;
+    }
+
+    .frame-parts-grid .material-slot {
+      min-width: 0;
+    }
+
+    .frame-parts-grid .material-slot-head {
+      display: grid;
+      gap: 2px;
+      margin-bottom: 2px;
+    }
+
+    .frame-parts-grid .material-slot-title {
+      display: block;
+      font-size: 9px;
+    }
+
+    .frame-parts-grid .material-slot input {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .quote-service-panel {
+      margin-top: 6px;
+      padding: 6px;
+      border: 1px solid #d9e2ee;
+      border-radius: 7px;
+      background: rgba(255,255,255,0.66);
+    }
+
+    .quote-service-grid {
+      display: grid;
+      gap: 2px;
+      margin-top: 4px;
+    }
+
+    .quote-service-grid .option-row {
+      grid-template-columns: minmax(0, 1fr) 30px 48px;
+    }
+
+    .quote-service-grid .option-price {
+      display: block;
+    }
+
+    .quote-service-grid select,
+    .quote-service-grid input {
+      min-height: 20px;
+    }
+
+    .customer-picker-toolbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 3px;
+      align-items: center;
+    }
+
+    .customer-picker-results {
+      display: grid;
+      gap: 2px;
+      max-height: 116px;
+      margin-top: 3px;
+      padding: 3px;
+      overflow-y: auto;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--paper);
+    }
+
+    .customer-picker-results[hidden],
+    .customer-create-inline[hidden] {
+      display: none;
+    }
+
+    .customer-picker-result {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 5px;
+      width: 100%;
+      text-align: left;
+    }
+
+    .customer-picker-result span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .customer-picker-result small,
+    .customer-picker-status {
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    .customer-picker-status {
+      min-height: 12px;
+      margin: 2px 1px;
+    }
+
+    .customer-create-inline {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 3px;
+      margin-top: 3px;
+    }
+
+    .option-basis {
+      color: var(--muted);
+      font-size: 9px;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .quote-extra-grid {
+      display: grid;
+      gap: 2px;
+      margin-top: 3px;
+    }
+
+    .quote-mini-meta {
+      display: grid;
+      grid-template-columns: 1fr 48px;
+      gap: 3px;
+      align-items: center;
+      margin-top: 3px;
+    }
+
+    .admin-service-grid {
+      display: grid;
+      gap: 4px;
+    }
+
+    .admin-service-header,
+    .admin-service-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 44px 64px 58px 96px;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .admin-service-header {
+      color: var(--muted);
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .admin-service-row input,
+    .admin-service-row select {
+      margin-top: 0;
+    }
+
+    .admin-service-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      min-height: 31px;
+      border: 1px solid rgba(123, 92, 75, 0.22);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.8);
+      color: var(--muted);
+      font-size: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .admin-service-toggle input {
+      width: 14px;
+      height: 14px;
+      margin: 0;
+      accent-color: var(--accent);
+    }
+
+    .admin-service-price,
+    .admin-service-markup {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .quote-totals {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 2px;
+    }
+
+    .quote-lines-box.empty {
+      display: none;
+    }
+
+    .quote-lines-box ul {
+      max-height: 58px;
+      overflow: auto;
+    }
+
+    .option-total {
+      display: grid;
+      justify-items: center;
+      align-items: center;
+      margin-top: 0;
+      font-size: 11px;
+    }
+
+    .option-total strong {
+      color: var(--muted);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .option-total span {
+      font-weight: 700;
+    }
+
+    .quote-button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px;
+      margin-top: 3px;
+    }
+
+    .toggle-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 0;
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .toggle-inline input {
+      width: auto;
+      margin: 0;
+    }
+
+    .search-meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.2;
+    }
+
+    .position-readout {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .position-readout div {
+      padding: 3px 4px;
+      border-radius: 7px;
+      background: var(--field-bg);
+      border: 1px solid var(--line);
+      text-align: center;
+    }
+
+    .position-readout span,
+    .position-readout strong {
+      display: block;
+    }
+
+    .position-readout span {
+      color: var(--muted);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .position-readout strong {
+      margin-top: 1px;
+      font-size: 10px;
+    }
+
+    .position-slider-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      margin-top: 3px;
+    }
+
+    .design-builder-card.single-opening .position-slider:nth-child(-n+2) {
+      display: none;
+    }
+
+    .position-slider {
+      padding: 2px 4px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--nav-soft);
+    }
+
+    .position-slider-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+
+    .position-slider-head strong {
+      font-size: 9px;
+    }
+
+    .position-slider-head span {
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    .position-slider small {
+      display: none;
+    }
+
+    #selectionOpeningDetail {
+      display: none;
+    }
+
+    .preview-wrap h3 {
+      display: none;
+    }
+
+    .preview-wrap p {
+      margin-bottom: 8px;
+      font-size: 10px;
+    }
+
+    .design-builder-card .detail-box {
+      padding: 3px 4px;
+      border-radius: 7px;
+      font-size: 10px;
+    }
+
+    .design-builder-card .detail-box dl {
+      row-gap: 4px;
+      column-gap: 8px;
+    }
+
+    .design-builder-card .detail-box dt,
+    .design-builder-card .detail-box dd {
+      font-size: 10px;
+      line-height: 1.2;
+    }
+
+    .design-builder-card h4 {
+      margin: 0 0 6px;
+      font-size: 12px;
+    }
+
+    .design-builder-card ul {
+      margin: 2px 0 0;
+      padding-left: 13px;
+    }
+
+    .design-builder-card li {
+      font-size: 10px;
+      line-height: 1.15;
+      margin-bottom: 1px;
+    }
+
+    .position-slider input[type="range"] {
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    .preview-wrap {
+      text-align: center;
+    }
+
+    .cropper-stage {
+      width: 100%;
+      max-width: 100%;
+      min-height: 520px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: var(--field-bg);
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+    }
+
+    #cropperImage {
+      display: none;
+      max-width: 100%;
+      max-height: 620px;
+    }
+
+    .cropper-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      align-self: end;
+    }
+
+    .cropper-actions button {
+      width: 100%;
+      min-width: 0;
+      margin-top: 0;
+      padding: 7px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      line-height: 1.1;
+    }
+
+    #mockupCanvas {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      aspect-ratio: 1440 / 1040;
+      max-height: calc(100vh - 205px);
+      object-fit: contain;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background:
+        radial-gradient(circle at top left, rgba(255,255,255,0.95), rgba(255,255,255,0) 30%),
+        linear-gradient(180deg, var(--mockup-bg-start) 0%, var(--mockup-bg-end) 100%);
+    }
+
+    body[data-theme="framershaven"] #mockupCanvas {
+      background: #ffffff;
+    }
+
+
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .summary .card {
+      padding: 14px 16px;
+    }
+
+    .summary strong {
+      display: block;
+      font-size: 22px;
+      margin-top: 8px;
+    }
+
+    .summary span {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .detail-box {
+      border: 1px dashed var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      background: var(--panel);
+    }
+
+    .detail-box h4 {
+      margin: 0 0 8px;
+      font-size: 15px;
+    }
+
+    .detail-box ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .art-preview {
+      width: 100%;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: var(--field-bg);
+      aspect-ratio: 4 / 3;
+      object-fit: contain;
+      display: block;
+    }
+
+    .detail-box dl {
+      margin: 0;
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 8px 10px;
+      font-size: 13px;
+    }
+
+    .detail-box dt {
+      color: var(--muted);
+    }
+
+    .detail-box dd {
+      margin: 0;
+    }
+
+    .status-chip {
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: var(--status-bg);
+      border: 1px solid var(--status-border);
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    pre {
+      margin: 0;
+      min-height: 280px;
+      max-height: 520px;
+      overflow: auto;
+      border-radius: 18px;
+      padding: 14px;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .design-home-panel {
+      margin-bottom: 8px;
+      padding: 16px;
+    }
+
+    .design-home-panel.compact {
+      padding: 4px 6px;
+    }
+
+    .design-home-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .design-home-head h3 {
+      margin: 3px 0 4px;
+      font-size: 18px;
+    }
+
+    .design-home-head p {
+      margin-bottom: 0;
+      max-width: 620px;
+      font-size: 12px;
+    }
+
+    .eyebrow {
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .design-home-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .design-home-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1.1fr 0.8fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .home-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      min-height: 110px;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px dashed #d5deec;
+      background: rgba(255,255,255,0.58);
+      text-align: left;
+      color: var(--ink);
+    }
+
+    .home-tile strong,
+    .home-tile span,
+    .home-tile small {
+      display: block;
+    }
+
+    .home-tile strong {
+      font-size: 14px;
+    }
+
+    .home-tile span {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .home-tile small {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .home-tile button,
+    .home-tile .secondary {
+      margin-top: 0;
+    }
+
+    .home-tile-accent {
+      background: rgba(220, 234, 230, 0.72);
+      border-style: solid;
+      border-color: #c9d9d5;
+    }
+
+    .preset-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .preset-head h4 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .preset-head small {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .preset-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .design-home-panel.compact .design-home-head {
+      align-items: center;
+      margin-bottom: 2px;
+    }
+
+    .design-home-panel.compact .eyebrow,
+    .design-home-panel.compact .design-home-head p,
+    .design-home-panel.compact .design-home-grid,
+    .design-home-panel.compact .preset-head small {
+      display: none;
+    }
+
+    .design-home-panel.compact .design-home-head h3 {
+      margin: 0;
+      font-size: 13px;
+    }
+
+    .design-home-panel.compact .preset-head {
+      margin-bottom: 3px;
+    }
+
+    .design-home-panel.compact .preset-head h4 {
+      font-size: 11px;
+    }
+
+    .design-home-panel.compact .preset-grid {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 5px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: thin;
+    }
+
+    .design-home-panel.compact .preset-card {
+      flex: 0 0 auto;
+    }
+
+    .preset-card {
+      width: auto;
+      flex: 0 0 auto;
+      border: 1px solid #cbd8e8;
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: rgba(255,255,255,0.72);
+      cursor: pointer;
+      text-align: center;
+      color: var(--ink);
+      min-height: 26px;
+      white-space: nowrap;
+    }
+
+    .preset-card.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      box-shadow: inset 0 0 0 1px rgba(32, 71, 79, 0.12);
+    }
+
+    .preset-card strong,
+    .preset-card span,
+    .preset-card small {
+      display: block;
+    }
+
+    .preset-card strong {
+      font-size: 11px;
+      line-height: 1;
+    }
+
+    .preset-card span {
+      display: none;
+    }
+
+    .preset-card small {
+      display: none;
+    }
+
+    .preset-thumb {
+      display: none;
+    }
+
+    .preset-thumb::before,
+    .preset-thumb::after {
+      content: "";
+      position: absolute;
+      inset: 14% 14%;
+      border: 8px solid #30261e;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.08);
+    }
+
+    .preset-thumb::after {
+      inset: 26% 26%;
+      border-width: 16px;
+      border-color: #f3eee4;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
+    }
+
+    .preset-thumb.double::after {
+      inset: 24% 24%;
+      border-width: 11px;
+      border-color: #f4efe6;
+      box-shadow:
+        inset 0 0 0 6px rgba(247, 242, 233, 0.92),
+        inset 0 0 0 7px rgba(0,0,0,0.06);
+    }
+
+    .preset-thumb.frame-only::after {
+      inset: 24% 24%;
+      border-width: 0;
+      background: linear-gradient(180deg, #e7edf5, #f6f8fb);
+    }
+
+    .preset-thumb.multi::before {
+      inset: 12% 12%;
+    }
+
+    .preset-thumb.multi::after {
+      inset: 24% 24%;
+      border-width: 12px;
+    }
+
+    .preset-thumb.multi .multi-divider {
+      position: absolute;
+      top: 30%;
+      bottom: 30%;
+      left: calc(50% - 5px);
+      width: 10px;
+      background: #f4efe6;
+      border-left: 1px solid rgba(0,0,0,0.08);
+      border-right: 1px solid rgba(0,0,0,0.08);
+      z-index: 2;
+    }
+
+    .design-workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(360px, 400px);
+      gap: 10px;
+      align-items: start;
+    }
+
+    .builder-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+
+    .builder-toolbar strong {
+      font-size: 12px;
+    }
+
+    .builder-toolbar span {
+      display: none;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.2;
+    }
+
+    .builder-toolbar-actions {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .drawer-summary {
+      display: none;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.15;
+    }
+
+    .drawer-summary br {
+      display: none;
+    }
+
+    .drawer-summary strong {
+      color: var(--ink);
+      font-size: 11px;
+    }
+
+    .mini-chip-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .mini-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--field-bg);
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .table-head {
+      display: grid;
+      gap: 8px;
+      margin: 8px 0 6px;
+      padding: 0 4px;
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .table-head.orders {
+      grid-template-columns: 88px minmax(0, 1fr) 90px 84px;
+    }
+
+    .table-head.customers {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 90px;
+    }
+
+    .record-grid {
+      display: grid;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .record-grid.orders {
+      grid-template-columns: 88px minmax(0, 1fr) 90px 84px;
+    }
+
+    .record-grid.customers {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 90px;
+    }
+
+    .record-grid.orders strong,
+    .record-grid.customers strong,
+    .record-grid span,
+    .record-grid small {
+      margin: 0;
+    }
+
+    .record-grid .record-pill {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      padding: 3px 7px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--field-bg);
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .record-grid .record-total {
+      text-align: right;
+      font-size: 11px;
+    }
+
+    .admin-jump-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .admin-jump-row button {
+      width: auto;
+      margin-top: 0;
+    }
+
+    .ops-workspace {
+      --ops-gap: 10px;
+    }
+
+    .ops-workspace .card {
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+    }
+
+    .ops-workspace .card h3 {
+      margin-bottom: 3px;
+      font-size: 15px;
+      line-height: 1.15;
+    }
+
+    .ops-workspace .card p {
+      margin-bottom: 8px;
+      font-size: 11px;
+      line-height: 1.32;
+    }
+
+    .ops-workspace label {
+      margin-top: 6px;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+    }
+
+    .ops-workspace input,
+    .ops-workspace select,
+    .ops-workspace button,
+    .ops-workspace textarea {
+      margin-top: 3px;
+      min-height: 30px;
+      padding: 6px 8px;
+      border-radius: 9px;
+      font-size: 13px;
+      line-height: 1.2;
+    }
+
+    .ops-workspace textarea {
+      min-height: 68px;
+    }
+
+    .ops-workspace .section-head {
+      margin-bottom: 6px;
+      align-items: center;
+    }
+
+    .ops-workspace .inline-actions,
+    .ops-action-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+
+    .ops-workspace .inline-actions button,
+    .ops-action-row button {
+      flex: 0 0 auto;
+      width: auto;
+      min-width: 104px;
+      margin-top: 0;
+      padding: 6px 10px;
+      border-radius: 9px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .ops-grid {
+      display: grid;
+      gap: var(--ops-gap);
+      align-items: start;
+    }
+
+    .ops-grid > *,
+    .ops-detail-stack {
+      min-width: 0;
+    }
+
+    .orders-workbench {
+      grid-template-columns: minmax(680px, 1.08fr) minmax(420px, 0.92fr);
+      align-items: stretch;
+    }
+
+    .orders-list-card,
+    .job-detail-panel {
+      min-height: calc(100vh - 250px);
+    }
+
+    .jobs-table-head,
+    .job-row {
+      display: grid;
+      grid-template-columns: 54px minmax(82px, 1fr) minmax(82px, 0.75fr) 58px 58px 62px 72px 74px;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .jobs-table-head {
+      padding: 5px 8px;
+      color: var(--muted);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .job-row {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 42px;
+      margin-bottom: 5px;
+      padding: 7px 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--ink);
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .orders-list-card .job-list-item {
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    .job-row:hover,
+    .job-row.selected,
+    .item.selected .job-row {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .job-row strong,
+    .job-row span {
+      color: currentColor;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 11px;
+      line-height: 1.2;
+    }
+
+    .job-status-pill,
+    .job-action-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 24px;
+      padding: 3px 7px;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      background: var(--ghost-bg);
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    .job-action-pill {
+      border-color: var(--accent);
+      color: var(--accent-strong);
+      background: var(--accent-soft);
+    }
+
+    .job-detail-panel {
+      display: grid;
+      gap: 10px;
+      align-content: start;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+    }
+
+    .job-detail-topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .job-detail-topbar h3 {
+      margin: 0;
+    }
+
+    .job-status-stack {
+      display: grid;
+      gap: 8px;
+      justify-items: end;
+      min-width: 126px;
+    }
+
+    .job-status-stack button {
+      width: auto;
+      min-width: 124px;
+      margin-top: 0;
+      white-space: nowrap;
+    }
+
+    .job-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .job-panel-section {
+      min-width: 0;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+    }
+
+    .job-panel-section h4 {
+      margin: 0 0 8px;
+      font-size: 13px;
+    }
+
+    .job-panel-section h5 {
+      margin: 0 0 6px;
+      font-size: 12px;
+    }
+
+    .job-meta-line,
+    .job-money-grid,
+    .job-components-grid {
+      display: grid;
+      gap: 4px 8px;
+      font-size: 12px;
+    }
+
+    .job-meta-line {
+      margin-top: 8px;
+      color: var(--muted);
+    }
+
+    .job-money-grid,
+    .job-components-grid {
+      grid-template-columns: 82px minmax(0, 1fr);
+    }
+
+    .job-money-grid dt,
+    .job-components-grid dt {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .job-money-grid dd,
+    .job-components-grid dd {
+      min-width: 0;
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .job-line-items {
+      margin: 0;
+      padding-left: 16px;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .quote-edit-notice {
+      margin-top: 6px;
+      padding: 7px 9px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .customers-workbench {
+      grid-template-columns: minmax(300px, 420px) minmax(0, 1fr);
+    }
+
+    .admin-workbench {
+      grid-template-columns: minmax(340px, 460px) minmax(0, 1fr);
+    }
+
+    .ops-summary {
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .ops-summary .card {
+      padding: 8px 12px;
+    }
+
+    .ops-summary strong {
+      margin-top: 3px;
+      font-size: 18px;
+    }
+
+    .ops-summary span {
+      font-size: 10px;
+    }
+
+    .ops-toolbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 132px auto;
+      gap: 8px;
+      align-items: end;
+      margin: 6px 0 8px;
+    }
+
+    .ops-toolbar button {
+      width: auto;
+      margin-top: 0;
+    }
+
+    .ops-form-grid {
+      display: grid;
+      gap: 6px 8px;
+      align-items: end;
+    }
+
+    .ops-form-grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .ops-form-grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .ops-form-grid .span-all {
+      grid-column: 1 / -1;
+    }
+
+    .ops-workspace .list {
+      min-height: 80px;
+      max-height: 380px;
+      padding: 6px;
+      border-radius: 12px;
+    }
+
+    .ops-workspace .list.compact {
+      max-height: 170px;
+    }
+
+    .orders-list-card .list {
+      max-height: calc(100vh - 365px);
+      overflow-y: auto;
+      scrollbar-gutter: stable;
+    }
+
+    .ops-workspace .item {
+      margin-bottom: 5px;
+      padding: 7px 9px;
+      border-radius: 10px;
+    }
+
+    .ops-workspace .item small,
+    .ops-workspace .item span {
+      margin-top: 2px;
+      font-size: 11px;
+      line-height: 1.25;
+    }
+
+    .ops-workspace .detail-box {
+      padding: 9px;
+      border-radius: 10px;
+    }
+
+    .ops-workspace .detail-box h4 {
+      margin-bottom: 5px;
+      font-size: 13px;
+    }
+
+    .ops-workspace .detail-box dl {
+      grid-template-columns: 88px minmax(0, 1fr);
+      gap: 4px 8px;
+      font-size: 12px;
+    }
+
+    .ops-workspace .detail-box ul {
+      padding-left: 16px;
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .ops-workspace .table-head {
+      margin: 5px 0 4px;
+      gap: 6px;
+      font-size: 9px;
+    }
+
+    .ops-workspace .record-grid {
+      gap: 6px;
+    }
+
+    .ops-workspace .record-grid .record-pill {
+      padding: 2px 6px;
+      font-size: 9px;
+    }
+
+    .ops-workspace .record-grid .record-total {
+      font-size: 11px;
+    }
+
+    .ops-detail-stack {
+      display: grid;
+      gap: 8px;
+    }
+
+    .order-detail-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 8px;
+    }
+
+    .order-status-actions {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: 8px;
+      align-items: end;
+    }
+
+    .order-export-row {
+      justify-content: flex-start;
+      margin-top: 0;
+    }
+
+    .admin-jump-row {
+      gap: 5px;
+      margin-bottom: 0;
+    }
+
+    .ops-workspace .admin-jump-row button {
+      padding: 5px 8px;
+      font-size: 11px;
+    }
+
+    .catalog-import-actions,
+    .admin-backup-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 7px;
+    }
+
+    .catalog-import-actions button,
+    .admin-backup-actions button {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .catalog-editor-grid {
+      grid-template-columns: 0.65fr 0.9fr 1fr;
+    }
+
+    .catalog-editor-grid .name-field {
+      grid-column: span 2;
+    }
+
+    .pricing-rule-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .ops-workspace .texture-crop {
+      gap: 6px;
+      padding: 7px;
+      border-radius: 10px;
+    }
+
+    .ops-workspace .texture-crop canvas {
+      max-height: 88px;
+      object-fit: contain;
+    }
+
+    .ops-workspace .admin-service-grid {
+      gap: 3px;
+    }
+
+    .ops-workspace .admin-service-header,
+    .ops-workspace .admin-service-row {
+      grid-template-columns: minmax(120px, 1fr) 40px 58px 54px 82px;
+      gap: 3px;
+    }
+
+    .ops-workspace .admin-service-toggle {
+      min-height: 28px;
+      border-radius: 8px;
+      font-size: 9px;
+    }
+
+    .ops-workspace .admin-service-toggle input {
+      width: 12px;
+      height: 12px;
+    }
+
+    .ops-workspace pre {
+      min-height: 180px;
+      max-height: 300px;
+      padding: 9px;
+      border-radius: 12px;
+      font-size: 11px;
+    }
+
+    .admin-snapshot-card .materials {
+      gap: 8px;
+    }
+
+    .admin-snapshot-card .materials > * {
+      min-width: 0;
+    }
+
+    .admin-snapshot-card .materials .list {
+      max-height: 230px;
+    }
+
+    .admin-command-center {
+      display: grid;
+      grid-template-columns: 176px minmax(0, 1fr);
+      gap: 10px;
+      min-height: calc(100vh - 190px);
+      align-items: stretch;
+    }
+
+    .admin-utility-rail {
+      position: sticky;
+      top: 10px;
+      align-self: start;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .admin-utility-rail h3 {
+      margin: 0 0 4px;
+      font-size: 14px;
+    }
+
+    .admin-utility-rail p {
+      margin: 0 0 9px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.3;
+    }
+
+    .admin-view-button {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 34px;
+      margin-top: 4px;
+      padding: 7px 9px;
+      border-color: transparent;
+      background: transparent;
+      color: var(--ink);
+      box-shadow: none;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .admin-view-button::after {
+      content: '›';
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .admin-view-button.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+    }
+
+    .admin-main-stage {
+      min-width: 0;
+    }
+
+    .admin-command-center .admin-workbench {
+      grid-template-columns: 1fr;
+    }
+
+    .admin-command-center .admin-workbench > .ops-detail-stack {
+      display: contents;
+    }
+
+    .admin-catalog-card {
+      min-height: calc(100vh - 190px);
+    }
+
+    .admin-catalog-heading {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .admin-catalog-heading h3 {
+      margin: 0;
+    }
+
+    .admin-catalog-heading p {
+      margin: 3px 0 0;
+    }
+
+    .admin-catalog-heading button {
+      width: auto;
+      min-width: 92px;
+      margin-top: 0;
+    }
+
+    .admin-catalog-toolbar {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) auto;
+      gap: 8px;
+      align-items: end;
+      margin-bottom: 7px;
+    }
+
+    .admin-catalog-toolbar input {
+      margin-top: 3px;
+    }
+
+    .admin-category-filters {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .admin-category-filters button {
+      width: auto;
+      min-width: 70px;
+      margin-top: 0;
+      background: var(--field-bg);
+      color: var(--ink);
+      border-color: var(--line);
+      box-shadow: none;
+    }
+
+    .admin-category-filters button.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      font-weight: 700;
+    }
+
+    .admin-catalog-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin: 5px 0;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .admin-catalog-meta button {
+      display: inline-flex;
+      width: auto;
+      min-height: 24px;
+      margin: 0 0 0 6px;
+      padding: 3px 7px;
+      font-size: 10px;
+    }
+
+    .admin-catalog-table-wrap {
+      max-height: calc(100vh - 330px);
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      scrollbar-gutter: stable;
+      overscroll-behavior: contain;
+    }
+
+    .admin-catalog-table-head,
+    .admin-catalog-row {
+      display: grid;
+      grid-template-columns: 42px minmax(86px, 0.85fr) minmax(150px, 1.7fr) 82px minmax(100px, 1fr) 72px 78px 62px;
+      gap: 6px;
+      align-items: center;
+      min-width: 850px;
+    }
+
+    .admin-catalog-table-head {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      padding: 4px 7px;
+      border-bottom: 1px solid var(--line);
+      background: var(--field-bg);
+    }
+
+    .admin-sort-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      width: auto;
+      min-height: 24px;
+      margin: 0;
+      padding: 3px 2px;
+      border: 0;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--muted);
+      box-shadow: none;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-align: left;
+      text-transform: uppercase;
+    }
+
+    .admin-sort-button.active {
+      color: var(--accent-strong);
+    }
+
+    .admin-catalog-row {
+      width: 100%;
+      min-height: 46px;
+      margin: 0;
+      padding: 5px 7px;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      border-radius: 0;
+      background: var(--panel);
+      color: var(--ink);
+      box-shadow: none;
+      text-align: left;
+    }
+
+    .admin-catalog-row:last-child {
+      border-bottom: 0;
+    }
+
+    .admin-catalog-row:hover,
+    .admin-catalog-row:focus-visible,
+    .admin-catalog-row.selected {
+      background: var(--accent-soft);
+      box-shadow: inset 3px 0 0 var(--accent);
+      transform: none;
+    }
+
+    .admin-catalog-row span,
+    .admin-catalog-row strong {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 11px;
+    }
+
+    .admin-catalog-thumb {
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--nav-soft);
+      object-fit: cover;
+    }
+
+    .admin-category-pill,
+    .admin-active-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      padding: 3px 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--field-bg);
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: capitalize;
+    }
+
+    .admin-active-pill.inactive {
+      border-color: #b45309;
+      color: #92400e;
+      background: #fffbeb;
+    }
+
+    .admin-utility-panel {
+      display: none;
+      min-height: calc(100vh - 190px);
+    }
+
+    .admin-utility-panel.active {
+      display: block;
+    }
+
+    .admin-legacy-tools,
+    .admin-legacy-snapshot {
+      display: none !important;
+    }
+
+    .admin-editor-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 70;
+      display: none;
+      border: 0;
+      border-radius: 0;
+      margin: 0;
+      background: rgba(15, 23, 42, 0.42);
+      backdrop-filter: blur(3px);
+    }
+
+    .admin-editor-backdrop.open {
+      display: block;
+    }
+
+    .admin-editor-drawer {
+      position: fixed;
+      inset-block: 0;
+      inset-inline-end: 0;
+      z-index: 71;
+      display: block;
+      width: min(580px, 100%);
+      max-height: 100dvh;
+      overflow-y: auto;
+      padding: 16px;
+      border: 0;
+      border-inline-start: 1px solid var(--line);
+      border-radius: 0;
+      background: var(--paper);
+      box-shadow: -18px 0 48px rgba(15, 23, 42, 0.2);
+      transform: translateX(105%);
+      transition: transform 160ms ease;
+      visibility: hidden;
+    }
+
+    .admin-editor-drawer.open {
+      transform: translateX(0);
+      visibility: visible;
+    }
+
+    .admin-editor-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 10px;
+    }
+
+    .admin-editor-head button {
+      width: auto;
+      min-width: 84px;
+      margin-top: 0;
+    }
+
+    .admin-editor-drawer .texture-crop canvas {
+      max-height: 150px;
+    }
+
+    .admin-empty-state {
+      padding: 30px 16px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 12px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .admin-editor-drawer {
+        transition: none;
+      }
+    }
+
+    @media (max-width: 1180px) {
+      .shell, .grid-2, .grid-3, .gallery-workstation, .gallery-editor-header, .gallery-editor-grid, .gallery-detail-strip, .design-layout, .materials, .summary, .row-2, .builder-grid-2, .design-builder-header, .mat-stack-grid, .position-readout, .position-slider-grid, .design-home-grid, .preset-grid, .design-workspace, .design-workspace.drawer-open, .table-head.orders, .table-head.customers, .record-grid.orders, .record-grid.customers, .ops-grid, .ops-toolbar, .ops-form-grid.two, .ops-form-grid.three, .order-detail-grid, .order-status-actions, .pricing-rule-grid, .catalog-editor-grid, .job-detail-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .jobs-table-head {
+        display: none;
+      }
+
+      .job-row {
+        grid-template-columns: minmax(76px, 0.45fr) minmax(0, 1fr) auto;
+      }
+
+      .job-row .hide-mobile {
+        display: none;
+      }
+
+      .job-detail-topbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .job-status-stack {
+        justify-items: stretch;
+      }
+
+      .job-status-stack button {
+        width: 100%;
+      }
+
+      .gallery-rail {
+        position: static;
+        max-height: none;
+      }
+
+      .gallery-list {
+        min-height: 240px;
+        max-height: 360px;
+      }
+
+      .gallery-editor-actions {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .gallery-editor-actions button {
+        flex: 1 1 180px;
+      }
+
+      .ops-workspace .admin-service-header,
+      .ops-workspace .admin-service-row {
+        grid-template-columns: minmax(88px, 1fr) 34px 48px 44px 66px;
+      }
+
+      .ops-workspace .admin-service-header {
+        font-size: 8px;
+      }
+
+      .design-home-head {
+        flex-direction: column;
+      }
+
+      .admin-command-center {
+        grid-template-columns: 1fr;
+      }
+
+      .admin-utility-rail {
+        position: static;
+        display: flex;
+        gap: 5px;
+        overflow-x: auto;
+      }
+
+      .admin-utility-rail h3,
+      .admin-utility-rail p {
+        display: none;
+      }
+
+      .admin-view-button {
+        flex: 0 0 auto;
+        width: auto;
+        margin-top: 0;
+      }
+
+      .admin-view-button::after {
+        display: none;
+      }
+
+      .admin-catalog-toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .admin-category-filters {
+        justify-content: flex-start;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar-nav,
+      .actions {
+        justify-content: flex-start;
+      }
+
+      .sidebar {
+        padding-bottom: 12px;
+      }
+
+      .shell,
+      .sidebar,
+      .content,
+      .workspace,
+      .topbar,
+      .catalog-drawer {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+      }
+
+      .sidebar,
+      .content {
+        overflow-x: hidden;
+      }
+    }
+
+    .orders-list-card {
+      min-height: calc(100vh - 215px);
+      padding: 12px 14px;
+    }
+
+    .orders-page-head,
+    .order-stage-filters {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .orders-page-head {
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .orders-page-head h3,
+    .orders-page-head p {
+      margin: 0;
+    }
+
+    .order-stage-filters {
+      flex-wrap: wrap;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .order-stage-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      width: auto;
+      min-height: 32px;
+      margin: 0;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--field-bg);
+      color: var(--ink);
+      box-shadow: none;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .order-stage-button span {
+      display: inline-flex;
+      min-width: 20px;
+      min-height: 20px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: var(--ghost-bg);
+      font-size: 10px;
+    }
+
+    .order-stage-button.active {
+      border-color: var(--ink);
+      background: var(--ink);
+      color: var(--paper);
+    }
+
+    body[data-theme="gallery"] .order-stage-button,
+    body[data-theme="gallery"] .jobs-table-head button {
+      background: var(--field-bg);
+      color: var(--ink);
+      border: 1px solid var(--line);
+      box-shadow: none;
+    }
+
+    body[data-theme="gallery"] .order-stage-button.active {
+      background: var(--ink);
+      color: white;
+      border-color: var(--ink);
+    }
+
+    .orders-search-wrap {
+      flex: 1 1 260px;
+      margin-left: auto;
+    }
+
+    .orders-search-wrap input {
+      margin: 0;
+      min-height: 34px;
+    }
+
+    .orders-table-shell {
+      margin-top: 10px;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel);
+    }
+
+    .orders-table {
+      min-width: 940px;
+    }
+
+    .jobs-table-head,
+    .job-row {
+      grid-template-columns: 78px minmax(150px, 1.45fr) minmax(118px, 1fr) 82px 82px 86px 104px 108px;
+      gap: 0;
+    }
+
+    .jobs-table-head {
+      display: grid;
+      padding: 0;
+      border-bottom: 1px solid var(--line);
+      background: var(--nav-soft);
+    }
+
+    .jobs-table-head button {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 38px;
+      margin: 0;
+      padding: 7px 9px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      border-radius: 0;
+      background: transparent;
+      color: var(--muted);
+      box-shadow: none;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .jobs-table-head button:last-child {
+      border-right: 0;
+    }
+
+    .jobs-table-head button[aria-sort="ascending"],
+    .jobs-table-head button[aria-sort="descending"] {
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+    }
+
+    .job-row {
+      display: grid;
+      min-height: 46px;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      border-radius: 0;
+      background: var(--panel);
+    }
+
+    .job-row:last-child {
+      border-bottom: 0;
+    }
+
+    .job-row > * {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      margin: 0;
+      padding: 8px 9px;
+      overflow: hidden;
+      border-right: 1px solid var(--line);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .job-row > *:last-child {
+      border-right: 0;
+    }
+
+    .job-row:hover,
+    .job-row.selected {
+      background: var(--accent-soft);
+      box-shadow: inset 4px 0 0 var(--accent);
+    }
+
+    .orders-result-summary {
+      margin: 8px 2px 0;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .order-inspector-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      background: rgba(15, 23, 42, 0.34);
+      backdrop-filter: blur(2px);
+    }
+
+    .order-inspector {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 90;
+      display: block;
+      width: min(620px, 92vw);
+      min-height: 100vh;
+      padding: 16px;
+      overflow-y: auto;
+      border: 0;
+      border-left: 1px solid var(--line);
+      border-radius: 0;
+      background: var(--paper);
+      box-shadow: -16px 0 45px rgba(15, 23, 42, 0.18);
+      transform: translateX(102%);
+      transition: transform 160ms ease;
+    }
+
+    .order-inspector.open {
+      transform: translateX(0);
+    }
+
+    body.order-inspector-open {
+      overflow: hidden;
+    }
+
+    .inspector-close {
+      min-width: 0;
+    }
+
+    .order-inspector-tabs {
+      display: flex;
+      gap: 4px;
+      margin: 12px 0;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--line);
+    }
+
+    body .order-inspector-tabs button,
+    body[data-theme="gallery"] .order-inspector-tabs button,
+    body[data-theme="framershaven"] .order-inspector-tabs button {
+      width: auto;
+      min-width: 0;
+      margin: 0;
+      padding: 7px 9px;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+      background: transparent;
+      color: var(--muted);
+      box-shadow: none;
+    }
+
+    body .order-inspector-tabs button.active,
+    body[data-theme="gallery"] .order-inspector-tabs button.active,
+    body[data-theme="framershaven"] .order-inspector-tabs button.active {
+      border-bottom-color: var(--accent) !important;
+      color: var(--ink) !important;
+      font-weight: 800;
+    }
+
+    .order-inspector-pane {
+      display: none;
+    }
+
+    .order-inspector-pane.active {
+      display: block;
+    }
+
+    .job-detail-grid.single {
+      grid-template-columns: 1fr;
+    }
+
+    .handoff-editor textarea {
+      min-height: 110px;
+      resize: vertical;
+      white-space: pre-wrap;
+    }
+
+    .handoff-editor #handoffSmsBody {
+      min-height: 90px;
+    }
+
+    .handoff-actions {
+      justify-content: flex-start;
+    }
+
+    .handoff-actions button:disabled {
+      opacity: 0.42;
+    }
+
+    .document-preview {
+      margin-top: 12px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--field-bg);
+    }
+
+    .document-preview [hidden] {
+      display: none !important;
+    }
+
+    .document-preview-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+      background: var(--nav-soft);
+    }
+
+    .document-preview-head h5 {
+      margin: 2px 0 0;
+      font-size: 13px;
+    }
+
+    .document-preview-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .button-link {
+      display: inline-flex;
+      min-height: 30px;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px;
+      border: 1px solid var(--accent);
+      border-radius: 9px;
+      background: var(--accent);
+      color: white;
+      font-size: 12px;
+      text-decoration: none;
+    }
+
+    .button-link.secondary {
+      background: transparent;
+      color: var(--accent-strong);
+    }
+
+    .document-preview-actions button {
+      width: auto;
+      min-width: 72px;
+      margin: 0;
+    }
+
+    .document-preview-message {
+      display: grid;
+      min-height: 320px;
+      place-items: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .document-pdf-preview,
+    .document-image-preview {
+      display: block;
+      width: 100%;
+      min-height: 520px;
+      border: 0;
+      background: #eef1f4;
+    }
+
+    .document-image-preview {
+      height: auto;
+      min-height: 0;
+      max-height: 620px;
+      object-fit: contain;
+      padding: 12px;
+    }
+
+    .handoff-attachment-note {
+      margin: 0 0 10px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--accent-soft);
+      color: var(--ink);
+      font-size: 11px;
+    }
+
+    @media (max-width: 1180px) {
+      .jobs-table-head {
+        display: grid;
+      }
+
+      .job-row {
+        grid-template-columns: 78px minmax(150px, 1.45fr) minmax(118px, 1fr) 82px 82px 86px 104px 108px;
+      }
+
+      .job-row .hide-mobile {
+        display: flex;
+      }
+    }
+
+    @media (max-width: 820px) {
+      .order-inspector {
+        width: 100vw;
+      }
+
+      .orders-page-head {
+        align-items: flex-start;
+      }
+
+      .orders-search-wrap {
+        flex-basis: 100%;
+        margin-left: 0;
+      }
+
+      .document-preview-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .document-preview-actions {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+<body data-theme="gallery" data-workspace="design">
+  <div class="shell">
+    <aside class="sidebar drawer-active">
+      <div class="brand">
+        <img id="studioBrandLogo" class="brand-logo" src="{{ brand.logo_url or '' }}" alt="{{ brand.business_name }} logo"{% if not brand.logo_url %} hidden{% endif %} />
+        <h1 id="studioBrandName">{{ brand.business_name }}</h1>
+        <p id="studioBrandContact">{{ brand.owner }}</p>
+        <p id="studioBrandChannels">{{ brand.phone }} · {{ brand.email }}</p>
+        <p id="studioBrandAddress">{{ brand.address }}</p>
+      </div>
+
+      <aside id="catalogDrawer" class="catalog-drawer visible" aria-hidden="false">
+        <div class="catalog-drawer-head">
+          <div>
+            <h3 id="catalogDrawerTitle">Catalog</h3>
+            <div id="catalogDrawerSlot" class="drawer-active-chip">No active slot</div>
+          </div>
+          <div class="inline-actions" style="margin-top: 0;">
+            <button type="button" class="ghost mini-button" onclick="openCatalogDrawer('mat', activeMatSlot)">Mats</button>
+            <button type="button" class="ghost mini-button" onclick="openOpeningDrawer()">Openings</button>
+          </div>
+        </div>
+        <div class="catalog-drawer-body">
+          <div class="catalog-drawer-search">
+            <input id="catalogDrawerSearch" placeholder="Keyword" oninput="renderCatalogDrawer()" />
+            <button type="button" class="ghost mini-button" onclick="resetCatalogDrawerSearch()">Reset</button>
+          </div>
+          <div id="catalogDrawerCount" class="catalog-drawer-count"></div>
+          <div id="catalogDrawerResults" class="catalog-result-list"></div>
+        </div>
+      </aside>
+
+      <aside id="openingDrawer" class="catalog-drawer opening-drawer" aria-hidden="true">
+        <div class="catalog-drawer-head">
+          <div>
+            <h3>Opening Adjustments</h3>
+            <div class="drawer-active-chip">Live mockup controls</div>
+          </div>
+          <button type="button" class="ghost mini-button" onclick="openCatalogDrawer('mat', activeMatSlot)">Mats</button>
+        </div>
+        <div class="catalog-drawer-body">
+          <div class="position-slider-grid">
+            <div class="position-slider diptych-only">
+              <div class="position-slider-head">
+                <strong>Opening spacing</strong>
+                <span id="openingSpacingValue">1.50 in</span>
+              </div>
+              <input id="openingSpacing" type="range" value="1.5" step="0.25" min="0" max="12" title="Gap between the two openings in diptych mode. You can also drag the divider in the preview." />
+            </div>
+            <div class="position-slider diptych-only">
+              <div class="position-slider-head">
+                <strong>Opening balance</strong>
+                <span id="openingBalanceValue">50%</span>
+              </div>
+              <input id="openingBalance" type="range" value="50" step="5" min="20" max="80" title="Control how much of the total opening width goes to the left opening versus the right opening." />
+            </div>
+            <div class="position-slider">
+              <div class="position-slider-head">
+                <strong>Opening pos. X</strong>
+                <span id="openingOffsetXValue">0.00 in</span>
+              </div>
+              <input id="openingOffsetX" type="range" value="0" step="0.25" min="-2" max="2" title="Shift the opening group left or right inside the mat. Positive values move the opening to the right." />
+            </div>
+            <div class="position-slider">
+              <div class="position-slider-head">
+                <strong>Opening pos. Y</strong>
+                <span id="openingOffsetYValue">0.00 in</span>
+              </div>
+              <input id="openingOffsetY" type="range" value="0" step="0.25" min="-2" max="2" title="Shift the opening inside the mat vertically. Positive values create more visual weight at the bottom." />
+            </div>
+          </div>
+          <div class="inline-actions">
+            <button class="secondary mini-button" onclick="resetOpeningPosition()" title="Reset opening position back to centered.">Center Opening</button>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-footer">
+        <p class="menu-label">Status</p>
+        <div class="status-chip">
+          <strong id="sidebarSelection">No order selected</strong>
+          <small id="sidebarStatus">Choose an order to export or advance status.</small>
+        </div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="topbar">
+        <div>
+          <h2 id="pageTitle">Design Desk</h2>
+          <p id="pageSubtitle">Quote, materials, and preview.</p>
+        </div>
+        <div class="topbar-nav" aria-label="Workspace navigation">
+          <button type="button" class="topbar-nav-button active" data-tab="design" onclick="switchTab('design', this)" title="Design: Quote, materials, and preview.">Design</button>
+          <button type="button" class="topbar-nav-button" data-tab="gallery" onclick="switchTab('gallery', this)" title="Gallery: Intake, crop, and saved artwork.">Gallery</button>
+          <button type="button" class="topbar-nav-button" data-tab="orders" onclick="switchTab('orders', this)" title="Orders / Quotes: Timeline, status flow, and exports.">Orders / Quotes</button>
+          <button type="button" class="topbar-nav-button" data-tab="customers" onclick="switchTab('customers', this)" title="Customers: Contacts and repeat jobs.">Customers</button>
+          <button type="button" class="topbar-nav-button" data-tab="admin" onclick="switchTab('admin', this)" title="Admin: Catalog import and pricing controls.">Admin</button>
+        </div>
+        <div class="actions">
+          <a class="topbar-nav-button topbar-help-link" href="/help/" target="_blank" rel="noopener" title="Open the FramersHaven operator guide.">Help</a>
+          <div class="theme-picker">
+            <label for="themeSelect">Theme</label>
+            <select id="themeSelect" onchange="onThemeChange(this.value)" title="Switch the workstation theme.">
+              <option value="classic">Classic</option>
+              <option value="framershaven">FramersHaven</option>
+              <option value="gallery">Gallery Neon (Light)</option>
+            </select>
+            <small id="themeStatus">Warm neutral default</small>
+          </div>
+        </div>
+      </div>
+      <div id="notice" class="notice"></div>
+
+      <div class="workspace">
+        <section id="tab-design" class="tab-panel active">
+          <div id="designHomePanel" class="card design-home-panel compact">
+            <div class="design-home-head">
+              <div>
+                <div class="eyebrow">Design Home</div>
+                <h3>Start a New Design</h3>
+                <p>Use the gallery for intake, then launch a preset into the framing workspace.</p>
+              </div>
+              <div class="design-home-actions">
+                <button id="designLauncherToggle" type="button" class="ghost mini-button" onclick="toggleDesignLauncher()">Expand Launcher</button>
+                <button type="button" class="ghost mini-button" onclick="switchTab('gallery')">Open Gallery</button>
+                <button type="button" class="secondary mini-button" onclick="scrollDesignBuilderIntoView()">Resume Builder</button>
+              </div>
+            </div>
+            <div class="design-home-grid">
+              <button type="button" class="home-tile home-tile-accent" onclick="switchTab('gallery')">
+                <strong>Select &amp; Upload</strong>
+                <span>Bring in new artwork, set physical size, crop it, then carry it into Design.</span>
+                <small>Gallery intake</small>
+              </button>
+              <button type="button" class="home-tile" onclick="switchTab('gallery')">
+                <strong>Gallery Images</strong>
+                <span>Browse saved shop images and recent uploads without bloating the worksheet itself.</span>
+                <small>Reuse staged artwork</small>
+              </button>
+              <div class="home-tile">
+                <strong id="designHomeStatusTitle">Current Builder</strong>
+                <span id="designHomeStatusBody">No preset launched yet. Start from a preset, then use the builder below.</span>
+                <small id="designHomeStatusMeta">Design home</small>
+              </div>
+            </div>
+            <div class="preset-head">
+              <h4>Design Presets</h4>
+              <small>Launch a practical starting layout, then finish the quote in the builder.</small>
+            </div>
+            <div id="designPresetGrid" class="preset-grid">
+              <button type="button" class="preset-card active" data-preset="single_mat" title="Standard single-opening frame with one visible mat. Preset 1000001." onclick="openDesignPreset('single_mat')">
+                <div class="preset-thumb"></div>
+                <strong>Moulding &amp; Single Mat</strong>
+                <span>Standard single-opening frame with one visible mat.</span>
+                <small>Preset 1000001</small>
+              </button>
+              <button type="button" class="preset-card" data-preset="double_mat" title="Two mat layers with reveal control for the lower layer. Preset 1000002." onclick="openDesignPreset('double_mat')">
+                <div class="preset-thumb double"></div>
+                <strong>Moulding &amp; Double Mat</strong>
+                <span>Two mat layers with reveal control for the lower layer.</span>
+                <small>Preset 1000002</small>
+              </button>
+              <button type="button" class="preset-card" data-preset="fillet" title="Use the current builder as a stand-in: double mat now, fillet later. Provisional." onclick="openDesignPreset('fillet')">
+                <div class="preset-thumb double"></div>
+                <strong>Moulding, Mat &amp; Fillet</strong>
+                <span>Use the current builder as a stand-in: double mat now, fillet later.</span>
+                <small>Provisional</small>
+              </button>
+              <button type="button" class="preset-card" data-preset="liner" title="Launch the builder with a frame-first setup for liner-style work. Provisional." onclick="openDesignPreset('liner')">
+                <div class="preset-thumb double"></div>
+                <strong>Moulding &amp; Liner</strong>
+                <span>Launch the builder with a frame-first setup for liner-style work.</span>
+                <small>Provisional</small>
+              </button>
+              <button type="button" class="preset-card" data-preset="frame_only" title="Skip mats and start from a plain framed artwork layout. Preset 1000005." onclick="openDesignPreset('frame_only')">
+                <div class="preset-thumb frame-only"></div>
+                <strong>Frame Only</strong>
+                <span>Skip mats and start from a plain framed artwork layout.</span>
+                <small>Preset 1000005</small>
+              </button>
+              <button type="button" class="preset-card" data-preset="mat_only" title="Use mats and opening controls without an exterior frame. Preset 1000006." onclick="openDesignPreset('mat_only')">
+                <div class="preset-thumb double"></div>
+                <strong>Mat Only</strong>
+                <span>Use mats and opening controls without an exterior frame.</span>
+                <small>Preset 1000006</small>
+              </button>
+              <button type="button" class="preset-card" data-preset="stretched_canvas" title="Frame-led starting point for wrapped or mirrored edge art. Provisional." onclick="openDesignPreset('stretched_canvas')">
+                <div class="preset-thumb frame-only"></div>
+                <strong>Stretched Canvas</strong>
+                <span>Frame-led starting point for wrapped or mirrored edge art.</span>
+                <small>Provisional</small>
+              </button>
+              <button type="button" class="preset-card" data-preset="two_openings" title="Launch straight into the current two-opening workflow. Preset 1000009." onclick="openDesignPreset('two_openings')">
+                <div class="preset-thumb multi"><div class="multi-divider"></div></div>
+                <strong>Frame &amp; Mat - 2 Openings</strong>
+                <span>Launch straight into the current two-opening workflow.</span>
+                <small>Preset 1000009</small>
+              </button>
+            </div>
+          </div>
+
+          <div id="designWorkspace" class="design-workspace">
+            <div class="card preview-wrap">
+              <div class="builder-toolbar">
+                <div>
+                  <strong>Preview Workspace</strong>
+                  <span>Large center preview board with direct opening movement and live material changes.</span>
+                </div>
+                <div class="builder-toolbar-actions">
+                  <button type="button" class="ghost mini-button" onclick="switchTab('gallery')">Images</button>
+                  <button type="button" class="secondary mini-button" onclick="openCatalogDrawer('mat', activeMatSlot)">Show Mats</button>
+                </div>
+              </div>
+              <h3>Preview Board</h3>
+              <canvas id="mockupCanvas" width="1440" height="1040"></canvas>
+            </div>
+
+            <div class="card design-builder-card">
+              <div class="builder-toolbar">
+                <div>
+                  <strong id="activePresetLabel">Moulding &amp; Single Mat</strong>
+                  <span id="activePresetNote">Dense worksheet tuned for fast quoting.</span>
+                </div>
+                <div class="builder-toolbar-actions">
+                  <button type="button" class="ghost mini-button" onclick="browseActiveMatSlot()">Browse Mats</button>
+                  <button type="button" class="ghost mini-button" onclick="openOpeningDrawer()">Openings</button>
+                  <button type="button" class="secondary mini-button" onclick="openCatalogDrawer('moulding')">Browse Frame</button>
+                </div>
+              </div>
+                <div class="design-builder-header">
+                  <div>
+                    <label>Item Name</label>
+                    <input id="designItemName" value="Moulding & Single Mat" readonly />
+                  </div>
+                  <div class="design-builder-size">
+                    <span>Total Size</span>
+                    <strong id="selectionOverallSize">-</strong>
+                  </div>
+                </div>
+
+                <div class="builder-section">
+                  <div class="section-head">
+                    <div>
+                      <h3>Subject</h3>
+                    </div>
+                    <button class="secondary subject-action" onclick="switchTab('gallery')" title="Open Gallery to select or update the subject image.">Choose Image</button>
+                  </div>
+                  <div class="subject-inline-meta">
+                    <span id="selectionImage">None</span>
+                    <span aria-hidden="true">·</span>
+                    <span id="selectionFrameSize">8 x 10 in art</span>
+                  </div>
+                  <div class="dimension-row">
+                    <div class="dimension-field">
+                      <label>Width (in)</label>
+                      <input id="qw" type="number" value="8" step="0.01" min="0.01" max="999" />
+                    </div>
+                    <div class="dimension-field">
+                      <label>Height (in)</label>
+                      <input id="qh" type="number" value="10" step="0.01" min="0.01" max="999" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="builder-section">
+                  <div class="section-head">
+                    <div>
+                      <h3>Mats</h3>
+                    </div>
+                    <button type="button" class="secondary mini-button" onclick="browseActiveMatSlot()" title="Open the drawer using the active mat slot.">Browse drawer</button>
+                  </div>
+                  <div class="drawer-summary"><strong id="designSearchStatus">Drawer browse ready</strong></div>
+                  <div class="material-slot-grid">
+                    <div id="topMatSlot" class="material-slot active" data-slot="topMat">
+                      <div class="material-slot-head">
+                        <button type="button" class="secondary mini-button" onclick="openCatalogDrawer('mat', 'topMat')" title="Open the mat drawer for the top visible layer.">Select top</button>
+                      </div>
+                      <div class="material-slot-title">Top mat</div>
+                      <input id="selectionTopMat" value="None" readonly />
+                    </div>
+                    <div id="secondMatCard" class="material-slot hidden" data-slot="secondMat">
+                      <div class="material-slot-head">
+                        <button type="button" class="secondary mini-button" onclick="openCatalogDrawer('mat', 'secondMat')" title="Open the mat drawer for the second layer.">Select 2nd</button>
+                      </div>
+                      <div class="material-slot-title">2nd mat</div>
+                      <input id="selectionSecondMat" value="None" readonly />
+                      <input id="secondMatReveal" type="number" value="0.25" step="0.125" min="0" title="Visible reveal of the second mat under the top mat." />
+                    </div>
+                    <div id="thirdMatCard" class="material-slot hidden" data-slot="thirdMat">
+                      <div class="material-slot-head">
+                        <button type="button" class="secondary mini-button" onclick="openCatalogDrawer('mat', 'thirdMat')" title="Open the mat drawer for the third layer.">Select 3rd</button>
+                      </div>
+                      <div class="material-slot-title">3rd mat</div>
+                      <input id="selectionThirdMat" value="None" readonly />
+                      <input id="thirdMatReveal" type="number" value="0.25" step="0.125" min="0" title="Visible reveal of the third mat under the second mat." />
+                    </div>
+                  </div>
+                  <div class="row-2" style="margin-top: 5px;">
+                    <div>
+                      <label class="toggle-inline"><input id="useSecondMat" type="checkbox" onchange="toggleMatLayer('second')" /> 2nd Mat</label>
+                    </div>
+                    <div>
+                      <label class="toggle-inline"><input id="useThirdMat" type="checkbox" onchange="toggleMatLayer('third')" /> 3rd Mat</label>
+                    </div>
+                  </div>
+                  <div class="builder-grid-2" style="margin-top: 5px;">
+                    <div>
+                      <div class="row-2">
+                        <div>
+                          <label>Mat Border (in)</label>
+                          <input id="matBorder" type="number" value="2" step="0.25" title="Set the visible mat width around the artwork opening." />
+                        </div>
+                        <div>
+                          <label>Opening Layout</label>
+                          <select id="openingLayout" title="Switch between a standard single opening and a simple two-opening mat layout.">
+                            <option value="single">single opening</option>
+                            <option value="diptych">2 openings</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="inline-actions">
+                        <button type="button" class="secondary mini-button" onclick="openOpeningDrawer()" title="Open the drawer for opening spacing and position controls.">Adjust Opening</button>
+                        <button class="secondary mini-button" onclick="resetOpeningPosition()" title="Reset opening position back to centered.">Center Opening</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="builder-section pricing-panel">
+                  <div class="section-head">
+                    <div>
+                      <h3>Mouldings</h3>
+                    </div>
+                    <button type="button" class="secondary mini-button" onclick="openCatalogDrawer('moulding')" title="Open the moulding drawer for the exterior frame.">Browse mouldings</button>
+                  </div>
+                  <div class="frame-parts-grid">
+                    <div class="material-slot" data-slot="moulding">
+                      <div class="material-slot-head">
+                        <button type="button" class="secondary mini-button" onclick="openCatalogDrawer('moulding')" title="Open the moulding drawer for the exterior frame.">Select ext.</button>
+                        <div class="material-slot-title">Exterior</div>
+                      </div>
+                      <input id="selectionMoulding" value="None" readonly />
+                    </div>
+                    <div class="material-slot">
+                      <div class="material-slot-head">
+                        <button type="button" class="secondary mini-button" disabled title="Additional moulding layer is not wired yet.">2nd / liner</button>
+                        <div class="material-slot-title">Deferred</div>
+                      </div>
+                      <input value="" readonly />
+                    </div>
+                    <div class="material-slot">
+                      <div class="material-slot-head">
+                        <button type="button" class="secondary mini-button" disabled title="Fillet selection is not wired yet.">3rd / fillet</button>
+                        <div class="material-slot-title">Deferred</div>
+                      </div>
+                      <input value="" readonly />
+                    </div>
+                  </div>
+
+                  <div class="quote-service-panel">
+                    <div class="customer-picker">
+                      <div class="customer-picker-toolbar">
+                        <input id="designCustomerSearch" type="search" placeholder="Find customer by name, phone, or email" autocomplete="off" oninput="renderDesignCustomerMatches()" />
+                        <button type="button" class="secondary mini-button" onclick="beginInlineCustomer()">New customer</button>
+                      </div>
+                      <div id="designCustomerResults" class="customer-picker-results" role="listbox" aria-label="Customer matches" hidden></div>
+                      <div id="designCustomerStatus" class="customer-picker-status">No saved customer selected.</div>
+                    </div>
+                    <div class="quote-compact-row cols-2">
+                      <input id="customerName" placeholder="Customer name required" />
+                      <input id="customerContact" type="tel" placeholder="Phone required" />
+                    </div>
+                    <div id="inlineCustomerCreate" class="customer-create-inline" hidden>
+                      <input id="inlineCustomerEmail" type="email" placeholder="Email optional" />
+                      <button type="button" onclick="saveInlineCustomer()">Save &amp; select</button>
+                      <button type="button" class="secondary" onclick="cancelInlineCustomer()">Cancel</button>
+                    </div>
+                    <div class="quote-mini-meta">
+                      <input id="labor" type="number" value="20" step="0.01" title="Flat labor amount added to the quote before tax." placeholder="Labor $" />
+                      <input id="quoteTaxRate" value="6.00%" readonly placeholder="Tax" />
+                    </div>
+                    <div class="option-header">
+                      <span>Option</span>
+                      <span>Count</span>
+                      <span>Price</span>
+                    </div>
+                    <div class="quote-service-grid">
+                      <div class="option-row">
+                        <select id="glazingType" title="Choose glazing type for this frame."><option value="">No glazing</option></select>
+                        <span class="option-basis">area</span>
+                        <div id="priceGlazing" class="option-price">-</div>
+                        <input id="selectionGlazing" type="hidden" value="None" />
+                      </div>
+                      <div class="option-row">
+                        <select id="optionBacking"><option value="">— Backing —</option></select>
+                        <input id="countBacking" type="number" min="0" step="1" value="1" title="Count for backing. Area-priced rows use the frame area." />
+                        <div id="priceBacking" class="option-price">-</div>
+                      </div>
+                      <div class="option-row">
+                        <select id="optionMounting"><option value="">— Mounting —</option></select>
+                        <input id="countMounting" type="number" min="0" step="1" value="1" title="Count for subject mounting." />
+                        <div id="priceMounting" class="option-price">-</div>
+                      </div>
+                      <div class="option-row">
+                        <select id="optionFrameMounting"><option value="">— Frame Mount —</option></select>
+                        <input id="countFrameMounting" type="number" min="0" step="1" value="1" title="Count for frame mounting." />
+                        <div id="priceFrameMounting" class="option-price">-</div>
+                      </div>
+                      <div class="option-row">
+                        <select id="optionPrinting"><option value="">— Printing —</option></select>
+                        <input id="countPrinting" type="number" min="0" step="1" value="1" title="Count for printing." />
+                        <div id="pricePrinting" class="option-price">-</div>
+                      </div>
+                      <div class="option-row">
+                        <select id="optionVarious"><option value="">— Various —</option></select>
+                        <input id="countVarious" type="number" min="0" step="1" value="1" title="Count for various." />
+                        <div id="priceVarious" class="option-price">-</div>
+                      </div>
+                      <div class="option-row">
+                        <select id="optionAssembly"><option value="">— Assembly —</option></select>
+                        <input id="countAssembly" type="number" min="0" step="1" value="1" title="Count for assembly." />
+                        <div id="priceAssembly" class="option-price">-</div>
+                      </div>
+                      <div class="option-row">
+                        <select id="optionRoyalties"><option value="">— Royalties —</option></select>
+                        <input id="countRoyalties" type="number" min="0" step="1" value="1" title="Count for royalties." />
+                        <div id="priceRoyalties" class="option-price">-</div>
+                      </div>
+                      <div class="option-row">
+                        <select id="optionCustom1"><option value="">— Custom 1 —</option></select>
+                        <input id="countCustom1" type="number" min="0" step="1" value="1" title="Count for the first custom service." />
+                        <div id="priceCustom1" class="option-price">-</div>
+                      </div>
+                      <div class="option-row">
+                        <select id="optionCustom2"><option value="">— Custom 2 —</option></select>
+                        <input id="countCustom2" type="number" min="0" step="1" value="1" title="Count for the second custom service." />
+                        <div id="priceCustom2" class="option-price">-</div>
+                      </div>
+                    </div>
+                    <div class="quote-extra-grid">
+                      <div class="option-row">
+                        <input id="otherLineLabel" placeholder="Other 1" />
+                        <input id="otherLineDiscount" type="number" min="0" max="100" step="1" value="0" title="Percent discount for the first custom line." />
+                        <input id="otherLineAmount" type="number" min="0" step="0.01" value="0" placeholder="0.00" />
+                      </div>
+                      <div class="option-row">
+                        <input id="otherLine2Label" placeholder="Other 2" />
+                        <input id="otherLine2Discount" type="number" min="0" max="100" step="1" value="0" title="Percent discount for the second custom line." />
+                        <input id="otherLine2Amount" type="number" min="0" step="0.01" value="0" placeholder="0.00" />
+                      </div>
+                      <div class="option-row">
+                        <div></div>
+                        <input id="globalDiscount" type="number" min="0" max="100" step="1" value="0" title="Global quote discount applied after row discounts." />
+                        <div class="option-price">Global %</div>
+                      </div>
+                    </div>
+                    <div class="detail-box quote-totals" style="margin-top: 5px;">
+                      <div class="option-total"><strong>Subtotal</strong><span id="quoteSubtotal">$0.00</span></div>
+                      <div class="option-total"><strong>Tax</strong><span id="quoteTax">$0.00</span></div>
+                      <div class="option-total"><strong>Total</strong><span id="quoteTotal">$0.00</span></div>
+                    </div>
+                    <div id="quoteLineItemsBox" class="detail-box quote-lines-box empty" style="margin-top: 5px;">
+                      <ul id="quoteLineItems">
+                        <li>No quote calculated yet.</li>
+                      </ul>
+                    </div>
+                    <div id="quoteEditNotice" class="quote-edit-notice" hidden></div>
+                    <div class="quote-button-row">
+                      <button onclick="calcQuote()" title="Run pricing using the current materials, artwork size, and pricing rules.">Calculate Quote</button>
+                      <button id="quoteSaveButton" class="secondary" onclick="createOrder()" title="Save the current quote into the Orders / Quotes workspace.">Save Quote</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="tab-gallery" class="tab-panel">
+          <div class="gallery-workstation">
+            <div class="card gallery-rail">
+              <div class="section-head">
+                <div>
+                  <h3>Artwork Gallery</h3>
+                  <p>Select, edit, and send saved artwork into Design.</p>
+                </div>
+                <div class="gallery-rail-actions">
+                  <button class="secondary" onclick="newGalleryArtworkMode()" title="Clear the editor for a new artwork upload.">New</button>
+                  <button class="secondary" onclick="listImages()" title="Reload saved artwork from local storage.">Refresh</button>
+                </div>
+              </div>
+              <div id="imageList" class="gallery-list list"></div>
+            </div>
+
+            <div class="card gallery-editor-card">
+              <div class="gallery-editor-header">
+                <div>
+                  <h3>Artwork Editor</h3>
+                  <p id="galleryEditorStatus">New artwork mode. Choose a file or select saved artwork from the list.</p>
+                </div>
+                <div class="gallery-editor-actions">
+                  <button id="gallerySaveButton" onclick="saveGalleryArtwork()" title="Save new artwork or update the selected artwork metadata.">Save New Artwork</button>
+                  <button id="galleryUseDesignButton" class="secondary" onclick="useSelectedImageInDesign()" disabled title="Carry the selected gallery image back into the design workspace.">Use in Design</button>
+                </div>
+              </div>
+              <div class="gallery-detail-strip">
+                <img id="galleryPreviewImage" class="gallery-editor-thumb" alt="Selected artwork preview" />
+                <div>
+                  <span>ID</span>
+                  <strong id="galleryDetailId">None</strong>
+                </div>
+                <div>
+                  <span>Filename</span>
+                  <strong id="galleryDetailFilename">No image selected</strong>
+                </div>
+                <div>
+                  <span>Size</span>
+                  <strong id="galleryDetailSize">-</strong>
+                </div>
+                <div>
+                  <span>Ratio</span>
+                  <strong id="galleryDetailRatio">-</strong>
+                </div>
+              </div>
+              <div class="gallery-editor-grid">
+                <div class="intake-file">
+                  <label>Artwork File</label>
+                  <input type="file" id="imageFile" accept="image/png,image/jpeg" />
+                </div>
+                <div>
+                  <label>Width (in)</label>
+                  <input id="imgW" type="number" value="8" step="0.01" />
+                </div>
+                <div>
+                  <label>Height (in)</label>
+                  <input id="imgH" type="number" value="10" step="0.01" />
+                </div>
+                <div>
+                  <label>Ratio Preset</label>
+                  <select id="ratioPreset" onchange="setRatio()" title="Lock the crop preview to a common artwork ratio or leave it freeform.">
+                    <option value="free">Free</option>
+                    <option value="1:1">1:1</option>
+                    <option value="4:5">4:5</option>
+                    <option value="5:7">5:7</option>
+                    <option value="8:10">8:10</option>
+                    <option value="11:14">11:14</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Custom Ratio</label>
+                  <div class="ratio-pair">
+                    <input id="ratioW" type="number" value="4" placeholder="Width" />
+                    <input id="ratioH" type="number" value="5" placeholder="Height" />
+                  </div>
+                </div>
+                <div>
+                  <label>Rotate (deg)</label>
+                  <input id="rotateDeg" type="number" value="0" step="90" title="Rotation applies to new uploads only; saved artwork edits update metadata and crop settings." />
+                </div>
+                <div class="cropper-actions">
+                  <button type="button" class="secondary" onclick="zoomArtworkCropper(0.1)" title="Zoom into the crop preview.">Zoom +</button>
+                  <button type="button" class="secondary" onclick="zoomArtworkCropper(-0.1)" title="Zoom out of the crop preview.">Zoom -</button>
+                  <button type="button" class="secondary" onclick="resetArtworkCropper()" title="Reset the crop box to the artwork bounds.">Reset Crop</button>
+                  <button type="button" class="secondary" onclick="fitArtworkCropper()" title="Fit the full artwork inside the crop box.">Fit</button>
+                </div>
+              </div>
+              <div class="cropper-stage">
+                <img id="cropperImage" alt="Artwork crop preview" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="tab-orders" class="tab-panel ops-workspace">
+          <div class="card orders-list-card">
+            <div class="orders-page-head">
+              <div>
+                <h3>Jobs</h3>
+                <p>Filter by stage, sort any column, then open a job for details and actions.</p>
+              </div>
+              <button class="secondary mini-button" onclick="listOrders(true)" title="Reload orders from the local database.">Refresh</button>
+            </div>
+            <div class="order-stage-filters" aria-label="Filter jobs by stage">
+              <button type="button" class="order-stage-button active" data-order-stage="" onclick="setOrderStage('')">All Jobs <span id="summaryAllCount">0</span></button>
+              <button type="button" class="order-stage-button" data-order-stage="quote" onclick="setOrderStage('quote')">Needs Approval <span id="summaryQuoteCount">0</span></button>
+              <button type="button" class="order-stage-button" data-order-stage="work_order" onclick="setOrderStage('work_order')">Work Orders <span id="summaryWorkOrderCount">0</span></button>
+              <button type="button" class="order-stage-button" data-order-stage="invoice" onclick="setOrderStage('invoice')">Invoices <span id="summaryInvoiceCount">0</span></button>
+              <div class="orders-search-wrap">
+                <label class="sr-only" for="orderSearch">Search orders</label>
+                <input id="orderSearch" type="search" placeholder="Search quote, customer, or phone" oninput="debouncedOrderSearch()" />
+              </div>
+            </div>
+            <div class="orders-table-shell">
+              <div class="orders-table" role="table" aria-label="Orders and quotes">
+                <div class="jobs-table-head" role="row">
+                  <button role="columnheader" data-order-sort="quote_number" onclick="setOrderSort('quote_number')">Quote <span aria-hidden="true">↕</span></button>
+                  <button role="columnheader" data-order-sort="customer_name" onclick="setOrderSort('customer_name')">Customer <span aria-hidden="true">↕</span></button>
+                  <button role="columnheader" data-order-sort="customer_contact" onclick="setOrderSort('customer_contact')">Phone <span aria-hidden="true">↕</span></button>
+                  <button role="columnheader" data-order-sort="total" onclick="setOrderSort('total')">Total <span aria-hidden="true">↕</span></button>
+                  <button role="columnheader" data-order-sort="balance" onclick="setOrderSort('balance')">Balance <span aria-hidden="true">↕</span></button>
+                  <button role="columnheader" data-order-sort="created_at" onclick="setOrderSort('created_at')">Created <span aria-hidden="true">▼</span></button>
+                  <button role="columnheader" data-order-sort="status" onclick="setOrderSort('status')">Status <span aria-hidden="true">↕</span></button>
+                  <button role="columnheader" data-order-sort="next_action" onclick="setOrderSort('next_action')">Next Step <span aria-hidden="true">↕</span></button>
+                </div>
+                <div id="ordersList" role="rowgroup"></div>
+              </div>
+            </div>
+            <p id="ordersResultSummary" class="orders-result-summary" role="status"></p>
+          </div>
+
+          <div id="orderInspectorBackdrop" class="order-inspector-backdrop" onclick="closeOrderInspector()" hidden></div>
+          <aside id="orderInspector" class="job-detail-panel order-inspector" role="dialog" aria-modal="true" aria-labelledby="orderDetailTitle" aria-hidden="true" tabindex="-1">
+              <div class="job-detail-topbar">
+                <div>
+                  <p class="eyebrow">Selected job</p>
+                  <h3 id="orderDetailTitle">No order selected</h3>
+                  <p id="orderLifecycleHint" class="menu-note">Select an order to see the next required action.</p>
+                </div>
+                <div class="job-status-stack">
+                  <span id="orderStatusLabel" class="job-status-pill">-</span>
+                  <button id="orderPrimaryAction" onclick="runPrimaryOrderAction()" disabled title="Run the next required job action.">Choose Job</button>
+                  <button type="button" class="secondary inspector-close" onclick="closeOrderInspector()" aria-label="Close selected job">Close</button>
+                </div>
+              </div>
+
+              <div class="order-inspector-tabs" role="tablist" aria-label="Selected job sections">
+                <button type="button" class="active" data-inspector-tab="overview" onclick="showOrderInspectorTab('overview')">Overview</button>
+                <button type="button" data-inspector-tab="build" onclick="showOrderInspectorTab('build')">Build</button>
+                <button type="button" data-inspector-tab="history" onclick="showOrderInspectorTab('history')">History</button>
+                <button type="button" data-inspector-tab="files" onclick="showOrderInspectorTab('files')">Files</button>
+                <button type="button" data-inspector-tab="handoff" onclick="showOrderInspectorTab('handoff')">Handoff</button>
+              </div>
+
+              <div class="order-inspector-pane active" data-inspector-pane="overview">
+              <div class="job-detail-grid">
+                <section class="job-panel-section">
+                  <h4>Customer</h4>
+                  <div class="ops-form-grid three">
+                    <div>
+                      <label>Name</label>
+                      <input id="orderEditCustomerName" autocomplete="name" placeholder="Customer name required" />
+                    </div>
+                    <div>
+                      <label>Phone</label>
+                      <input id="orderEditCustomerContact" type="tel" autocomplete="tel" placeholder="Phone required" />
+                    </div>
+                    <div>
+                      <label>Email</label>
+                      <input id="orderEditCustomerEmail" type="email" autocomplete="email" placeholder="Optional email" />
+                    </div>
+                  </div>
+                  <div class="job-meta-line">
+                    <span id="orderCustomer">-</span>
+                    <span id="orderContact">-</span>
+                  </div>
+                  <div class="inline-actions">
+                    <button class="secondary" onclick="saveOrderEdits()" title="Update the selected order's customer name or phone.">Save Details</button>
+                  </div>
+                </section>
+
+                <section class="job-panel-section">
+                  <h4>Money</h4>
+                  <dl class="job-money-grid">
+                    <dt>Total</dt>
+                    <dd id="orderTotal">-</dd>
+                    <dt>Created</dt>
+                    <dd id="orderCreated">-</dd>
+                  </dl>
+                </section>
+              </div>
+              </div>
+
+              <div class="order-inspector-pane" data-inspector-pane="build">
+              <div class="job-detail-grid single">
+                <section class="job-panel-section">
+                  <h4>Build</h4>
+                  <dl class="job-components-grid">
+                    <dt>Image</dt>
+                    <dd id="orderSelectedImage">-</dd>
+                    <dt>Layout</dt>
+                    <dd id="orderSelectedLayout">-</dd>
+                    <dt>Position</dt>
+                    <dd id="orderSelectedOffsetX">-</dd>
+                    <dt>Moulding</dt>
+                    <dd id="orderSelectedMoulding">-</dd>
+                    <dt>Mats</dt>
+                    <dd id="orderSelectedMat">-</dd>
+                    <dt>Glazing</dt>
+                    <dd id="orderSelectedGlazing">-</dd>
+                  </dl>
+                </section>
+
+                <section class="job-panel-section">
+                  <h4>Line Items</h4>
+                  <ul id="orderLineItems" class="job-line-items">
+                    <li>Select an order to inspect pricing.</li>
+                  </ul>
+                </section>
+              </div>
+              </div>
+
+              <div class="order-inspector-pane" data-inspector-pane="history">
+              <div class="job-detail-grid single">
+                <section class="job-panel-section">
+                  <h4>Timeline</h4>
+                  <div id="orderHistory" class="list compact"></div>
+                  <select id="orderStatus" class="sr-only" aria-label="Next status">
+                    <option value="work_order">Approve quote to work order</option>
+                    <option value="invoice">Mark done to invoice</option>
+                  </select>
+                </section>
+              </div>
+              </div>
+
+              <div class="order-inspector-pane" data-inspector-pane="files">
+                <section class="job-panel-section">
+                  <h4>Documents and Editing</h4>
+                  <p class="menu-note">Choose a document to preview it here before saving or sending.</p>
+                  <div class="inline-actions order-export-row">
+                    <button onclick="editSelectedOrderQuote()" title="Load this saved quote back into Design for material, size, service, or price changes.">Edit Quote</button>
+                    <button class="secondary" onclick="previewOrderDocument('pdf', 'quote', 'Quote PDF')">Quote PDF</button>
+                    <button class="secondary" onclick="previewOrderDocument('pdf', 'work_order', 'Work Order PDF')">Work Order PDF</button>
+                    <button class="secondary" onclick="previewOrderDocument('pdf', 'invoice', 'Invoice PDF')">Invoice PDF</button>
+                    <button class="secondary" onclick="previewOrderDocument('jpg', '', 'Mockup JPG')">Mockup JPG</button>
+                  </div>
+                  <div id="orderDocumentPreview" class="document-preview" hidden>
+                    <div class="document-preview-head">
+                      <div>
+                        <span class="eyebrow">Preview</span>
+                        <h5 id="documentPreviewTitle">Choose a document</h5>
+                      </div>
+                      <div class="document-preview-actions">
+                        <a id="documentDownloadLink" class="button-link" href="#" download>Save File</a>
+                        <a id="documentOpenLink" class="button-link secondary" href="#" target="_blank" rel="noopener">Open New Tab</a>
+                        <button type="button" class="secondary" onclick="sendPreviewedDocument()">Send</button>
+                      </div>
+                    </div>
+                    <div id="documentPreviewLoading" class="document-preview-message">Preparing preview...</div>
+                    <iframe id="documentPdfPreview" class="document-pdf-preview" title="Generated PDF preview" hidden></iframe>
+                    <img id="documentImagePreview" class="document-image-preview" alt="Generated framing mockup preview" hidden />
+                  </div>
+                </section>
+              </div>
+
+              <div class="order-inspector-pane" data-inspector-pane="handoff">
+                <section class="job-panel-section">
+                  <h4>Customer Handoff</h4>
+                  <p class="menu-note">Review and edit the exact email and SMS text before using it. Files still need to be attached manually.</p>
+                  <p id="handoffAttachmentNote" class="handoff-attachment-note" hidden></p>
+                  <div id="handoffPreview" class="handoff-editor">
+                    <div class="ops-form-grid two">
+                      <div><label for="handoffEmail">Email recipient</label><input id="handoffEmail" type="email" placeholder="Enter customer email" oninput="syncHandoffDraftFromFields()" /></div>
+                      <div><label for="handoffPhone">SMS phone</label><input id="handoffPhone" type="tel" placeholder="Customer phone" oninput="syncHandoffDraftFromFields()" /></div>
+                    </div>
+                    <label for="handoffSubject">Email subject</label>
+                    <input id="handoffSubject" oninput="syncHandoffDraftFromFields()" />
+                    <label for="handoffEmailBody">Email preview</label>
+                    <textarea id="handoffEmailBody" rows="10" oninput="syncHandoffDraftFromFields()"></textarea>
+                    <label for="handoffSmsBody">SMS preview</label>
+                    <textarea id="handoffSmsBody" rows="5" oninput="syncHandoffDraftFromFields()"></textarea>
+                  </div>
+                  <div class="inline-actions handoff-actions">
+                    <button class="secondary" onclick="resetOrderHandoff()">Reset Draft</button>
+                    <button class="secondary" id="copyEmailButton" onclick="copyEmailText()">Copy Email</button>
+                    <button id="emailDraftButton" onclick="openEmailDraft()">Open Email Draft</button>
+                    <button class="secondary" id="copySmsButton" onclick="copySmsText()">Copy SMS</button>
+                  </div>
+                </section>
+              </div>
+          </aside>
+        </section>
+
+        <section id="tab-customers" class="tab-panel ops-workspace">
+          <div class="ops-grid customers-workbench">
+            <div class="ops-detail-stack">
+              <div class="card">
+                <h3>Customer Intake</h3>
+                <p>Track repeat contacts separately from one-off walk-ins.</p>
+                <div class="ops-form-grid two">
+                  <div>
+                    <label>Name</label>
+                    <input id="newCustomerName" placeholder="Customer name" />
+                  </div>
+                  <div>
+                    <label>Contact</label>
+                    <input id="newCustomerContact" type="tel" placeholder="Phone required" />
+                  </div>
+                  <div class="span-all">
+                    <label>Notes</label>
+                    <textarea id="newCustomerNotes" placeholder="Preferences, reminders, framing history"></textarea>
+                  </div>
+                </div>
+                <div class="inline-actions">
+                  <button onclick="createCustomer()" title="Create a new customer record for repeat jobs and contact lookup.">Save Customer</button>
+                </div>
+              </div>
+              <div class="card">
+                <div class="section-head">
+                  <div>
+                    <h3>Customer List</h3>
+                    <p>Search by name or contact, then load prior orders into the detail panel.</p>
+                  </div>
+                </div>
+                <div class="ops-toolbar">
+                  <div>
+                    <label>Search Customers</label>
+                    <input id="customerSearch" placeholder="Type a name or contact" oninput="debouncedCustomerSearch()" />
+                  </div>
+                  <div></div>
+                  <button class="secondary mini-button" onclick="listCustomers()" title="Reload customer records from local storage.">Refresh</button>
+                </div>
+                <div class="table-head customers">
+                  <span>Name</span>
+                  <span>Contact</span>
+                  <span>Updated</span>
+                </div>
+                <div id="customerList" class="list"></div>
+              </div>
+            </div>
+            <div class="ops-detail-stack">
+              <div class="card">
+                <h3>Customer Detail</h3>
+                <div class="order-detail-grid">
+                  <div class="detail-box">
+                    <h4 id="customerDetailTitle">No customer selected</h4>
+                    <dl>
+                      <dt>Contact</dt>
+                      <dd id="customerDetailContact">-</dd>
+                      <dt>Notes</dt>
+                      <dd id="customerDetailNotes">-</dd>
+                      <dt>Updated</dt>
+                      <dd id="customerDetailUpdated">-</dd>
+                    </dl>
+                  </div>
+                  <div class="ops-form-grid two">
+                    <div>
+                      <label>Name</label>
+                      <input id="editCustomerName" placeholder="Customer name" />
+                    </div>
+                    <div>
+                      <label>Contact</label>
+                      <input id="editCustomerContact" type="tel" placeholder="Phone required" />
+                    </div>
+                    <div class="span-all">
+                      <label>Notes</label>
+                      <textarea id="editCustomerNotes" placeholder="Customer notes"></textarea>
+                    </div>
+                  </div>
+                </div>
+                <div class="inline-actions">
+                  <button onclick="startQuoteForSelectedCustomer()" title="Load this customer into Design and start a new quote.">New Quote</button>
+                  <button class="secondary" onclick="saveCustomerEdits()" title="Save edits to the selected customer record.">Save Customer</button>
+                </div>
+              </div>
+              <div class="card">
+                <h3>Customer Orders</h3>
+                <div id="customerOrders" class="list compact"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="tab-admin" class="tab-panel ops-workspace">
+          <div class="admin-command-center">
+            <nav class="admin-utility-rail" aria-label="Admin tools">
+              <h3>Admin Tools</h3>
+              <p>Catalog first. Open a utility only when you need it.</p>
+              <button type="button" class="admin-view-button active" data-admin-view="catalog" aria-pressed="true" onclick="setAdminView('catalog', this)">Catalog</button>
+              <button type="button" class="admin-view-button" data-admin-view="import" aria-pressed="false" onclick="setAdminView('import', this)">Import</button>
+              <button type="button" class="admin-view-button" data-admin-view="pricing" aria-pressed="false" onclick="setAdminView('pricing', this)">Pricing</button>
+              <button type="button" class="admin-view-button" data-admin-view="services" aria-pressed="false" onclick="setAdminView('services', this)">Services</button>
+              <button type="button" class="admin-view-button" data-admin-view="studio" aria-pressed="false" onclick="setAdminView('studio', this)">Studio</button>
+              <button type="button" class="admin-view-button" data-admin-view="backups" aria-pressed="false" onclick="setAdminView('backups', this)">Backups</button>
+              <button type="button" class="admin-view-button" data-admin-view="diagnostics" aria-pressed="false" onclick="setAdminView('diagnostics', this)">Diagnostics</button>
+            </nav>
+            <div class="admin-main-stage">
+              <div id="adminCatalogView" class="card admin-catalog-card">
+                <div class="admin-catalog-heading">
+                  <div>
+                    <h3>All Catalog Items</h3>
+                    <p>Search, sort, and open a material to edit it without leaving the catalog.</p>
+                  </div>
+                  <button type="button" onclick="openCatalogEditor()">New Item</button>
+                </div>
+                <div class="admin-catalog-toolbar">
+                  <div>
+                    <label for="adminCatalogSearch">Catalog Search</label>
+                    <input id="adminCatalogSearch" type="search" placeholder="Search SKU, name, vendor, or category" oninput="resetAdminCatalogLimit(); renderAdminCatalogTable()" />
+                  </div>
+                  <div class="admin-category-filters" aria-label="Catalog category filters">
+                    <button type="button" class="active" data-admin-category="" aria-pressed="true" onclick="setAdminCatalogCategory('', this)">All</button>
+                    <button type="button" data-admin-category="moulding" aria-pressed="false" onclick="setAdminCatalogCategory('moulding', this)">Mouldings</button>
+                    <button type="button" data-admin-category="mat" aria-pressed="false" onclick="setAdminCatalogCategory('mat', this)">Mats</button>
+                    <button type="button" data-admin-category="glazing" aria-pressed="false" onclick="setAdminCatalogCategory('glazing', this)">Glazing</button>
+                  </div>
+                </div>
+                <div class="admin-catalog-meta">
+                  <span id="adminCatalogResultCount">Loading catalog...</span>
+                  <span><span id="adminCatalogCoverage"></span> <button id="adminCatalogLoadMore" type="button" class="secondary mini-button" onclick="loadMoreAdminCatalog()" hidden>Load More</button></span>
+                </div>
+                <div class="admin-catalog-table-wrap" role="region" aria-label="Catalog items" tabindex="0">
+                  <div class="admin-catalog-table-head" role="row">
+                    <span aria-hidden="true"></span>
+                    <button type="button" class="admin-sort-button active" data-admin-sort="sku" aria-sort="ascending" onclick="setAdminCatalogSort('sku')">SKU <span aria-hidden="true">↑</span></button>
+                    <button type="button" class="admin-sort-button" data-admin-sort="name" aria-sort="none" onclick="setAdminCatalogSort('name')">Name <span aria-hidden="true"></span></button>
+                    <button type="button" class="admin-sort-button" data-admin-sort="category" aria-sort="none" onclick="setAdminCatalogSort('category')">Category <span aria-hidden="true"></span></button>
+                    <button type="button" class="admin-sort-button" data-admin-sort="vendor" aria-sort="none" onclick="setAdminCatalogSort('vendor')">Vendor <span aria-hidden="true"></span></button>
+                    <button type="button" class="admin-sort-button" data-admin-sort="cost" aria-sort="none" onclick="setAdminCatalogSort('cost')">Cost <span aria-hidden="true"></span></button>
+                    <button type="button" class="admin-sort-button" data-admin-sort="width_in" aria-sort="none" onclick="setAdminCatalogSort('width_in')">Width <span aria-hidden="true"></span></button>
+                    <button type="button" class="admin-sort-button" data-admin-sort="active" aria-sort="none" onclick="setAdminCatalogSort('active')">Status <span aria-hidden="true"></span></button>
+                  </div>
+                  <div id="adminCatalogTable" role="rowgroup"></div>
+                </div>
+              </div>
+              <div class="ops-grid admin-workbench">
+            <div class="ops-detail-stack">
+              <div class="card admin-legacy-tools">
+                <h3>Admin Tools</h3>
+                <p>Import materials, set pricing rules, manage service rows, and create local backups.</p>
+                <div class="admin-jump-row">
+                  <button type="button" class="ghost mini-button" onclick="document.getElementById('catalogFile').scrollIntoView({behavior:'smooth', block:'center'})">Import</button>
+                  <button type="button" class="ghost mini-button" onclick="document.getElementById('settingTaxRate').scrollIntoView({behavior:'smooth', block:'center'})">Prices</button>
+                  <button type="button" class="ghost mini-button" onclick="document.getElementById('serviceBackingLabel').scrollIntoView({behavior:'smooth', block:'center'})">Services</button>
+                  <button type="button" class="ghost mini-button" onclick="document.getElementById('backupList').scrollIntoView({behavior:'smooth', block:'center'})">Backups</button>
+                </div>
+              </div>
+              <div class="card admin-utility-panel" data-admin-panel="import">
+                <h3>Catalog Import</h3>
+                <p>Vendor and house materials stay in local storage and can be reloaded from CSV.</p>
+                <div id="catalogStats" class="detail-box" style="margin-bottom:6px;font-size:11px;color:var(--muted);"></div>
+                <input type="file" id="catalogFile" accept=".csv" />
+                <div class="catalog-import-actions">
+                  <button onclick="importCatalog()" title="Import vendor catalog rows from a CSV file.">Import CSV</button>
+                  <button class="secondary" onclick="importLocalCatalogPackage('mats')" title="Import local mat CSV and preview zip files supplied by the operator.">Import Mat Package</button>
+                  <button class="secondary" onclick="importLocalCatalogPackage('mouldings')" title="Import local moulding CSV and preview zip files supplied by the operator.">Import Moulding Package</button>
+                  <button class="secondary" onclick="searchCatalog()" title="Reload current local catalog items into the admin snapshot.">Load Catalog</button>
+                </div>
+              </div>
+              <aside id="adminCatalogEditorDrawer" class="card admin-editor-drawer" role="dialog" aria-modal="true" aria-labelledby="adminEditorTitle">
+                <div class="admin-editor-head">
+                  <div>
+                    <h3 id="adminEditorTitle">Catalog Editor</h3>
+                    <p id="adminEditorSubtitle">Create a missing material or correct an imported one.</p>
+                  </div>
+                  <button type="button" class="secondary" onclick="closeCatalogEditor()">Close</button>
+                </div>
+                <div class="ops-form-grid three catalog-editor-grid">
+                  <div>
+                    <label>Item ID</label>
+                    <input id="catalogEditId" placeholder="Blank for new item" />
+                  </div>
+                  <div>
+                    <label>SKU</label>
+                    <input id="catalogEditSku" placeholder="Vendor SKU" />
+                  </div>
+                  <div class="name-field">
+                    <label>Name</label>
+                    <input id="catalogEditName" placeholder="Item name" />
+                  </div>
+                  <div>
+                    <label>Category</label>
+                    <input id="catalogEditCategory" placeholder="moulding or mat" />
+                  </div>
+                  <div>
+                    <label>Vendor</label>
+                    <input id="catalogEditVendor" placeholder="Vendor" />
+                  </div>
+                  <div>
+                    <label>Cost</label>
+                    <input id="catalogEditCost" type="number" step="0.01" min="0" />
+                  </div>
+                  <div>
+                    <label>Width</label>
+                    <input id="catalogEditWidth" type="number" step="0.01" min="0" />
+                  </div>
+                  <div>
+                    <label>Height</label>
+                    <input id="catalogEditHeight" type="number" step="0.01" min="0" />
+                  </div>
+                  <div>
+                    <label>Rabbet</label>
+                    <input id="catalogEditRabbet" type="number" step="0.01" min="0" />
+                  </div>
+                  <div>
+                    <label>Active</label>
+                    <select id="catalogEditActive">
+                      <option value="1">active</option>
+                      <option value="0">inactive</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="inline-actions">
+                  <button onclick="saveCatalogItem()" title="Create a new catalog item or update the selected one.">Save Item</button>
+                  <button class="secondary" onclick="resetCatalogEditor()" title="Clear the catalog editor form.">Clear Editor</button>
+                </div>
+                <label style="margin-top:10px">Texture Photo</label>
+                <p>Cropped strip of the moulding profile — tiled around the frame in the preview.</p>
+                <input type="file" id="catalogTextureFile" accept=".jpg,.jpeg,.png" onchange="loadCatalogTextureFile()" />
+                <div class="texture-crop">
+                  <canvas id="catalogTextureCanvas" width="420" height="120" aria-label="Texture crop preview"></canvas>
+                  <div class="row-2">
+                    <div>
+                      <label>Band Height</label>
+                      <input id="catalogTextureBand" type="range" min="15" max="80" value="35" oninput="updateCatalogTextureCrop()" />
+                    </div>
+                    <div>
+                      <label>Band Center</label>
+                      <input id="catalogTextureCenter" type="range" min="10" max="90" value="50" oninput="updateCatalogTextureCrop()" />
+                    </div>
+                  </div>
+                  <button class="secondary" onclick="uploadCatalogTexture()" title="Upload the cropped strip for the selected moulding.">Upload Cropped Texture</button>
+                </div>
+              </aside>
+              <div class="card admin-utility-panel" data-admin-panel="pricing">
+                <h3>Pricing Rules</h3>
+                <p>Update quote markups and tax centrally instead of keeping those rules hardcoded in the app.</p>
+                <div class="ops-form-grid pricing-rule-grid">
+                  <div>
+                    <label>Tax Rate</label>
+                    <input id="settingTaxRate" type="number" step="0.001" min="0" />
+                  </div>
+                  <div>
+                    <label>Moulding</label>
+                    <input id="settingMarkupMoulding" type="number" step="0.01" min="0" />
+                  </div>
+                  <div>
+                    <label>Mat</label>
+                    <input id="settingMarkupMat" type="number" step="0.01" min="0" />
+                  </div>
+                  <div>
+                    <label>Glazing</label>
+                    <input id="settingMarkupGlazing" type="number" step="0.01" min="0" />
+                  </div>
+                </div>
+                <div class="inline-actions">
+                  <button onclick="savePricingSettings()" title="Save tax and markup rules used by quote calculation.">Save Rules</button>
+                  <button class="secondary" onclick="loadPricingSettings()" title="Reload saved pricing settings from local storage.">Reload</button>
+                </div>
+              </div>
+              <div class="card admin-utility-panel" data-admin-panel="services">
+                <h3>Manual Pricing</h3>
+                <p>Set shop-maintained costs, markups, and pricing basis for glazing, foamboard, and service rows.</p>
+                <div class="admin-service-grid">
+                  <div class="admin-service-header">
+                    <span>Service</span>
+                    <span>Use</span>
+                    <span>Cost</span>
+                    <span>Markup</span>
+                    <span>Basis</span>
+                  </div>
+                  <div class="admin-service-row">
+                    <input id="serviceGlazingRegGlassLabel" />
+                    <label class="admin-service-toggle"><input id="serviceGlazingRegGlassActive" type="checkbox" /> On</label>
+                    <input id="serviceGlazingRegGlassCost" class="admin-service-price" inputmode="decimal" maxlength="8" placeholder="$0.00" />
+                    <input id="serviceGlazingRegGlassMarkup" class="admin-service-markup" inputmode="decimal" maxlength="6" placeholder="1.00" />
+                    <select id="serviceGlazingRegGlassBasis"><option value="square_inches">sq in</option><option value="united_inches">united in</option><option value="count">count</option></select>
+                  </div>
+                  <div class="admin-service-row">
+                    <input id="serviceGlazingAntiReflectionGlassLabel" />
+                    <label class="admin-service-toggle"><input id="serviceGlazingAntiReflectionGlassActive" type="checkbox" /> On</label>
+                    <input id="serviceGlazingAntiReflectionGlassCost" class="admin-service-price" inputmode="decimal" maxlength="8" placeholder="$0.00" />
+                    <input id="serviceGlazingAntiReflectionGlassMarkup" class="admin-service-markup" inputmode="decimal" maxlength="6" placeholder="1.00" />
+                    <select id="serviceGlazingAntiReflectionGlassBasis"><option value="square_inches">sq in</option><option value="united_inches">united in</option><option value="count">count</option></select>
+                  </div>
+                  <div class="admin-service-row">
+                    <input id="serviceGlazingAcrylicLabel" />
+                    <label class="admin-service-toggle"><input id="serviceGlazingAcrylicActive" type="checkbox" /> On</label>
+                    <input id="serviceGlazingAcrylicCost" class="admin-service-price" inputmode="decimal" maxlength="8" placeholder="$0.00" />
+                    <input id="serviceGlazingAcrylicMarkup" class="admin-service-markup" inputmode="decimal" maxlength="6" placeholder="1.00" />
+                    <select id="serviceGlazingAcrylicBasis"><option value="square_inches">sq in</option><option value="united_inches">united in</option><option value="count">count</option></select>
+                  </div>
+                  <div class="admin-service-row">
+                    <input id="serviceGlazingAntiReflectionAcrylicLabel" />
+                    <label class="admin-service-toggle"><input id="serviceGlazingAntiReflectionAcrylicActive" type="checkbox" /> On</label>
+                    <input id="serviceGlazingAntiReflectionAcrylicCost" class="admin-service-price" inputmode="decimal" maxlength="8" placeholder="$0.00" />
+                    <input id="serviceGlazingAntiReflectionAcrylicMarkup" class="admin-service-markup" inputmode="decimal" maxlength="6" placeholder="1.00" />
+                    <select id="serviceGlazingAntiReflectionAcrylicBasis"><option value="square_inches">sq in</option><option value="united_inches">united in</option><option value="count">count</option></select>
+                  </div>
+                  <div class="admin-service-row">
+                    <input id="serviceBackingLabel" />
+                    <label class="admin-service-toggle"><input id="serviceBackingActive" type="checkbox" /> On</label>
+                    <input id="serviceBackingCost" class="admin-service-price" inputmode="decimal" maxlength="8" placeholder="$0.00" />
+                    <input id="serviceBackingMarkup" class="admin-service-markup" inputmode="decimal" maxlength="6" placeholder="1.00" />
+                    <select id="serviceBackingBasis"><option value="square_inches">sq in</option><option value="united_inches">united in</option><option value="count">count</option></select>
+                  </div>
+                  <div class="admin-service-row">
+                    <input id="serviceMountingLabel" />
+                    <label class="admin-service-toggle"><input id="serviceMountingActive" type="checkbox" /> On</label>
+                    <input id="serviceMountingCost" class="admin-service-price" inputmode="decimal" maxlength="8" placeholder="$0.00" />
+                    <input id="serviceMountingMarkup" class="admin-service-markup" inputmode="decimal" maxlength="6" placeholder="1.00" />
+                    <select id="serviceMountingBasis"><option value="count">count</option><option value="square_inches">sq in</option><option value="united_inches">united in</option></select>
+                  </div>
+                  <div class="admin-service-row">
+                    <input id="serviceFrameMountingLabel" />
+                    <label class="admin-service-toggle"><input id="serviceFrameMountingActive" type="checkbox" /> On</label>
+                    <input id="serviceFrameMountingCost" class="admin-service-price" inputmode="decimal" maxlength="8" placeholder="$0.00" />
+                    <input id="serviceFrameMountingMarkup" class="admin-service-markup" inputmode="decimal" maxlength="6" placeholder="1.00" />
+                    <select id="serviceFrameMountingBasis"><option value="count">count</option><option value="square_inches">sq in</option><option value="united_inches">united in</option></select>
+                  </div>
+                  <div class="admin-service-row">
+                    <input id="servicePrintingLabel" />
+                    <label class="admin-service-toggle"><input id="servicePrintingActive" type="checkbox" /> On</label>
+                    <input id="servicePrintingCost" class="admin-service-price" inputmode="decimal" maxlength="8" placeholder="$0.00" />
+                    <input id="servicePrintingMarkup" class="admin-service-markup" inputmode="decimal" maxlength="6" placeholder="1.00" />
+                    <select id="servicePrintingBasis"><option value="count">count</option><option value="square_inches">sq in</option><option value="united_inches">united in</option></select>
+                  </div>
+                  <div class="admin-service-row">
+                    <input id="serviceVariousLabel" />
+                    <label class="admin-service-toggle"><input id="serviceVariousActive" type="checkbox" /> On</label>
+                    <input id="serviceVariousCost" class="admin-service-price" inputmode="decimal" maxlength="8" placeholder="$0.00" />
+                    <input id="serviceVariousMarkup" class="admin-service-markup" inputmode="decimal" maxlength="6" placeholder="1.00" />
+                    <select id="serviceVariousBasis"><option value="count">count</option><option value="square_inches">sq in</option><option value="united_inches">united in</option></select>
+                  </div>
+                  <div class="admin-service-row">
+                    <input id="serviceAssemblyLabel" />
+                    <label class="admin-service-toggle"><input id="serviceAssemblyActive" type="checkbox" /> On</label>
+                    <input id="serviceAssemblyCost" class="admin-service-price" inputmode="decimal" maxlength="8" placeholder="$0.00" />
+                    <input id="serviceAssemblyMarkup" class="admin-service-markup" inputmode="decimal" maxlength="6" placeholder="1.00" />
+                    <select id="serviceAssemblyBasis"><option value="count">count</option><option value="square_inches">sq in</option><option value="united_inches">united in</option></select>
+                  </div>
+                  <div class="admin-service-row">
+                    <input id="serviceRoyaltiesLabel" />
+                    <label class="admin-service-toggle"><input id="serviceRoyaltiesActive" type="checkbox" /> On</label>
+                    <input id="serviceRoyaltiesCost" class="admin-service-price" inputmode="decimal" maxlength="8" placeholder="$0.00" />
+                    <input id="serviceRoyaltiesMarkup" class="admin-service-markup" inputmode="decimal" maxlength="6" placeholder="1.00" />
+                    <select id="serviceRoyaltiesBasis"><option value="count">count</option><option value="square_inches">sq in</option><option value="united_inches">united in</option></select>
+                  </div>
+                  <div class="admin-service-row">
+                    <input id="serviceCustom1Label" />
+                    <label class="admin-service-toggle"><input id="serviceCustom1Active" type="checkbox" /> On</label>
+                    <input id="serviceCustom1Cost" class="admin-service-price" inputmode="decimal" maxlength="8" placeholder="$0.00" />
+                    <input id="serviceCustom1Markup" class="admin-service-markup" inputmode="decimal" maxlength="6" placeholder="1.00" />
+                    <select id="serviceCustom1Basis"><option value="count">count</option><option value="square_inches">sq in</option><option value="united_inches">united in</option></select>
+                  </div>
+                  <div class="admin-service-row">
+                    <input id="serviceCustom2Label" />
+                    <label class="admin-service-toggle"><input id="serviceCustom2Active" type="checkbox" /> On</label>
+                    <input id="serviceCustom2Cost" class="admin-service-price" inputmode="decimal" maxlength="8" placeholder="$0.00" />
+                    <input id="serviceCustom2Markup" class="admin-service-markup" inputmode="decimal" maxlength="6" placeholder="1.00" />
+                    <select id="serviceCustom2Basis"><option value="count">count</option><option value="square_inches">sq in</option><option value="united_inches">united in</option></select>
+                  </div>
+                </div>
+                <div class="inline-actions">
+                  <button onclick="saveServiceOptions()" title="Save manual pricing used by the quote service rows.">Save Manual Pricing</button>
+                  <button class="secondary" onclick="loadServiceOptions()" title="Reload the current service pricing values.">Reload</button>
+                </div>
+              </div>
+              <div class="card admin-utility-panel" data-admin-panel="studio">
+                <h3>Studio Profile</h3>
+                <p>This branding appears in the workspace, handoffs, and generated documents.</p>
+                <form id="studioProfileForm" onsubmit="saveStudioProfile(event)">
+                  <div class="ops-form-grid two">
+                    <div><label for="studioBusinessName">Business Name</label><input id="studioBusinessName" name="business_name" required maxlength="160" autocomplete="organization" /></div>
+                    <div><label for="studioContactName">Contact Name</label><input id="studioContactName" name="contact_name" required maxlength="160" autocomplete="name" /></div>
+                    <div><label for="studioPhone">Phone</label><input id="studioPhone" name="phone" required maxlength="160" autocomplete="tel" /></div>
+                    <div><label for="studioEmail">Email</label><input id="studioEmail" name="email" type="email" required maxlength="160" autocomplete="email" /></div>
+                    <div class="span-all"><label for="studioStreet">Street Address</label><input id="studioStreet" name="street" required maxlength="160" autocomplete="street-address" /></div>
+                    <div><label for="studioCity">City</label><input id="studioCity" name="city" required maxlength="160" autocomplete="address-level2" /></div>
+                    <div><label for="studioState">State</label><input id="studioState" name="state" required maxlength="160" autocomplete="address-level1" /></div>
+                    <div><label for="studioPostalCode">Postal Code</label><input id="studioPostalCode" name="postal_code" required maxlength="160" autocomplete="postal-code" /></div>
+                  </div>
+                  <div class="inline-actions"><button type="submit">Save Studio Profile</button><button type="button" class="secondary" onclick="loadStudioProfile()">Reload</button></div>
+                </form>
+                <hr />
+                <h3>Studio Logo</h3>
+                <p>PNG or WebP, 2 MB maximum, 300-1600 px wide, 100-800 px tall, with a 2:1 to 5:1 aspect ratio. Transparent background recommended.</p>
+                <img id="studioLogoPreview" class="brand-logo" alt="Current studio logo" hidden />
+                <input id="studioLogoFile" type="file" accept="image/png,image/webp" />
+                <div class="inline-actions"><button type="button" onclick="uploadStudioLogo()">Upload Logo</button><button type="button" class="secondary" onclick="removeStudioLogo()">Remove Logo</button></div>
+              </div>
+              <div class="card admin-utility-panel" data-admin-panel="backups">
+                <h3>Backups</h3>
+                <p>Create downloadable workstation backups that include the database, uploads, exports, and a catalog snapshot.</p>
+                <div class="admin-backup-actions">
+                  <button class="secondary" onclick="window.location='/api/orders/export.csv'" title="Download a CSV of all saved quotes, work orders, and invoices.">Export Orders CSV</button>
+                  <button onclick="createBackup()" title="Create a downloadable local backup zip including the database and working files.">Create Backup</button>
+                  <button class="secondary" onclick="listBackups()" title="Reload the backup list from local storage.">Refresh</button>
+                </div>
+                <div id="backupList" class="list compact"></div>
+              </div>
+            </div>
+            <div class="ops-detail-stack">
+              <div class="card admin-snapshot-card admin-legacy-snapshot">
+                <h3>Catalog Snapshot</h3>
+                <p>Review the current search results here while managing imports.</p>
+                <label>Catalog Search</label>
+                <input id="adminCatalogSearchLegacy" placeholder="Search SKU or name" />
+                <div class="materials">
+                  <div>
+                    <label>Moulding</label>
+                    <div id="adminMouldingList" class="list compact"></div>
+                  </div>
+                  <div>
+                    <label>Mat</label>
+                    <div id="adminMatList" class="list compact"></div>
+                  </div>
+                  <div>
+                    <label>Glazing</label>
+                    <div id="adminGlazingList" class="list compact"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="card admin-utility-panel" data-admin-panel="diagnostics">
+                <h3>System Log</h3>
+                <p>API responses and state output appear here for troubleshooting.</p>
+                <pre id="out"></pre>
+              </div>
+            </div>
+          </div>
+            </div>
+            <button id="adminEditorBackdrop" type="button" class="admin-editor-backdrop" aria-label="Close catalog editor" onclick="closeCatalogEditor()"></button>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <link rel="stylesheet" href="/static/vendor/cropperjs/cropper.min.css" />
+  <script src="/static/vendor/cropperjs/cropper.min.js"></script>
+  <script type="module" src="/static/orders-ui.js"></script>
+  <script type="module" src="/static/admin-ui.js"></script>
+  <script type="module" src="/static/workspace-ui.js"></script>
+  <script type="module" src="/static/customer-ui.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>
