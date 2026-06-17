@@ -27,6 +27,7 @@ exports/
 backups/
 catalog_previews/
 catalog_imports/
+dist/
 tmp/
 *.log
 
