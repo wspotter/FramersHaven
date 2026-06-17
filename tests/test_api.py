@@ -1,6 +1,7 @@
 import base64
 import io
 import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -31,6 +32,8 @@ class ApiTests(unittest.TestCase):
         main_module.UPLOAD_DIR = Path(self.tempdir.name) / "uploads"
         main_module.UPLOAD_DIR.mkdir(exist_ok=True)
         main_module._catalog_preview_basename_index.cache_clear()
+        self.original_edition = os.environ.get("FRAMERSHAVEN_EDITION")
+        os.environ["FRAMERSHAVEN_EDITION"] = "workstation"
         db.init_db()
         self.client = TestClient(app)
 
@@ -39,6 +42,10 @@ class ApiTests(unittest.TestCase):
         main_module.UPLOAD_DIR = self.original_upload_dir
         main_module._catalog_preview_basename_index.cache_clear()
         self.tempdir.cleanup()
+        if self.original_edition is None:
+            os.environ.pop("FRAMERSHAVEN_EDITION", None)
+        else:
+            os.environ["FRAMERSHAVEN_EDITION"] = self.original_edition
 
     def test_help_site_routes_pages_and_shared_assets(self):
         redirect = self.client.get("/help", follow_redirects=False)

@@ -1,9 +1,17 @@
 from __future__ import annotations
 
 import os
+from typing import Any
+
+from fastapi import HTTPException
 
 COMMUNITY = "community"
 WORKSTATION = "workstation"
+CATALOG_ITEM_LIMIT = 50
+COMMUNITY_CATALOG_LIMIT_DENIED_DETAIL = (
+    "Community edition includes up to 50 active catalog items. "
+    "This item was not added, and existing catalog data was not changed."
+)
 
 
 def get_edition() -> str:
@@ -57,3 +65,21 @@ def get_edition_info() -> dict[str, object]:
         },
         "unlimited": [],
     }
+
+
+def get_catalog_limit() -> int | None:
+    return None if get_edition() == WORKSTATION else CATALOG_ITEM_LIMIT
+
+
+def check_catalog_item_limit(conn: Any, new_active_count: int = 1) -> None:
+    if new_active_count <= 0:
+        return
+    limit = get_catalog_limit()
+    if limit is None:
+        return
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) as count FROM catalog_items WHERE active = 1")
+    row = cur.fetchone()
+    current = row["count"]
+    if current + new_active_count > limit:
+        raise HTTPException(status_code=403, detail=COMMUNITY_CATALOG_LIMIT_DENIED_DETAIL)

@@ -25,7 +25,7 @@ from reportlab.lib.utils import ImageReader
 from . import db as db_module
 from .db import get_connection, init_db
 from .db_admin import init_admin_tables
-from .edition import get_edition_info
+from .edition import check_catalog_item_limit, get_edition_info
 from .pricing import QuoteRequest, calculate_quote
 
 ROOT = Path(__file__).resolve().parent
@@ -1214,6 +1214,7 @@ def create_catalog_item(
     if cur.fetchone():
         conn.close()
         raise HTTPException(status_code=400, detail="Catalog item already exists for sku/category")
+    check_catalog_item_limit(conn, 1)
 
     cur.execute(
         """
@@ -1326,6 +1327,7 @@ async def import_catalog(file: UploadFile = File(...)) -> dict[str, int]:
 
     conn = get_connection()
     cur = conn.cursor()
+    valid_rows: list[dict[str, Any]] = []
     inserted = 0
     updated = 0
     skipped = 0
@@ -1338,31 +1340,53 @@ async def import_catalog(file: UploadFile = File(...)) -> dict[str, int]:
             if not name or not sku or not raw_category or cost < 0:
                 skipped += 1
                 continue
-            category = _normalize_catalog_category(raw_category)
-            
-            cur.execute("SELECT id FROM catalog_items WHERE sku = ? AND category = ?", (sku, category))
-            existing = cur.fetchone()
-            if existing:
-                cur.execute(
-                    """
-                    UPDATE catalog_items
-                    SET name = ?, category = ?, cost = ?, width_in = ?, active = 1
-                    WHERE sku = ? AND category = ?
-                    """,
-                    (name, category, cost, float(row.get("width_in") or 0), sku, category),
-                )
-                updated += 1
-            else:
-                cur.execute(
-                    """
-                    INSERT INTO catalog_items (sku, name, category, cost, width_in, active)
-                    VALUES (?, ?, ?, ?, ?, 1)
-                    """,
-                    (sku, name, category, cost, float(row.get("width_in") or 0)),
-                )
-                inserted += 1
-        except Exception:
+            try:
+                category = _normalize_catalog_category(raw_category)
+            except HTTPException:
+                skipped += 1
+                continue
+            width_in = float(row.get("width_in") or 0)
+            valid_rows.append(
+                {
+                    "sku": sku,
+                    "name": name,
+                    "category": category,
+                    "cost": cost,
+                    "width_in": width_in,
+                }
+            )
+        except (TypeError, ValueError):
             skipped += 1
+
+    new_catalog_keys: set[tuple[str, str]] = set()
+    for row in valid_rows:
+        cur.execute("SELECT id FROM catalog_items WHERE sku = ? AND category = ?", (row["sku"], row["category"]))
+        if cur.fetchone() is None:
+            new_catalog_keys.add((row["sku"], row["category"]))
+    check_catalog_item_limit(conn, len(new_catalog_keys))
+
+    for row in valid_rows:
+        cur.execute("SELECT id FROM catalog_items WHERE sku = ? AND category = ?", (row["sku"], row["category"]))
+        existing = cur.fetchone()
+        if existing:
+            cur.execute(
+                """
+                UPDATE catalog_items
+                SET name = ?, category = ?, cost = ?, width_in = ?, active = 1
+                WHERE sku = ? AND category = ?
+                """,
+                (row["name"], row["category"], row["cost"], row["width_in"], row["sku"], row["category"]),
+            )
+            updated += 1
+        else:
+            cur.execute(
+                """
+                INSERT INTO catalog_items (sku, name, category, cost, width_in, active)
+                VALUES (?, ?, ?, ?, ?, 1)
+                """,
+                (row["sku"], row["name"], row["category"], row["cost"], row["width_in"]),
+            )
+            inserted += 1
 
     conn.commit()
     conn.close()
