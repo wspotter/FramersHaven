@@ -15,6 +15,16 @@ Use this checklist before tagging or announcing a public FramersHaven build.
 - [ ] Private footprint scan returns no old names, private paths, copied support links, or customer data.
 - [ ] Runtime data remains ignored: `studio.db`, `uploads/`, `exports/`, `backups/`, `catalog_previews/`, `catalog_imports/`, `venv/`.
 
+## Commercialization Wording Review
+
+- [ ] README edition wording is factual, local-first, and not hard-selling.
+- [ ] User manual explains Community and Workstation without implying hosted service, accounting sync, or included vendor data.
+- [ ] Accounting CSV schema draft is reviewed before any generator code is added.
+- [ ] Help copy for accounting export explains local CSV generation only.
+- [ ] Sales page copy variants and pricing FAQ are reviewed by a human before publication.
+- [ ] Windows package copy includes a start-here note and excludes runtime/private data.
+- [ ] Private footprint scan checks for competitor names, catalog vendor names, private shop names, real customer data, and real catalog data.
+
 ## Manual Review
 
 - [ ] README renders correctly on GitHub.

@@ -6,6 +6,26 @@ FramersHaven is a local-first workstation app for intake, framing design, quotin
 
 The app is organized into separate workspaces so operators do not have to manage the whole workflow on one screen.
 
+## Planned Editions and Local Limits (Draft)
+
+FramersHaven is planned around two local editions:
+
+- **Community Edition** is for trying the app, inspecting the source, and running a small shop trial. It keeps the core local workflow: manual catalog entry, local quotes/orders/customers, PDF/JPG exports, and manual backups.
+- **Workstation Edition** is the planned paid Windows-ready ZIP/folder workflow for daily local use. It removes the planned Community scale limits and adds convenience features such as branded document templates, unlimited local catalog package imports, and local CSV export for accounting review.
+
+Planned Community limits are intentionally scale-based rather than feature-breaking:
+
+- 1 studio profile
+- Up to 50 active catalog items
+- Up to 25 saved orders/quotes
+- Up to 1 successful local catalog package import
+- No accounting CSV export
+- No paid Windows package entitlement
+
+The app is local-first. Operator-supplied catalog files, customer records, exports, backups, and previews stay on the workstation or trusted private LAN unless the operator moves them manually.
+
+This is a local-first app. It does not provide payment processing, email/SMS sending, or accounting API sync. Do not expose it directly to the public internet.
+
 ## Starting the App
 
 On Windows, double-click `run_windows.bat`.

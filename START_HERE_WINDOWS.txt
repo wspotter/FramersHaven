@@ -1,0 +1,49 @@
+FramersHaven - Start Here (Draft Early-Access Build)
+
+This is a draft Windows-ready ZIP/folder workflow for local-first custom framing shops.
+It does not include vendor catalogs, customer records, accounting credentials,
+or online billing.
+
+This is an early-access concept build. Features, pricing, and packaging may change.
+No payment processing, email/SMS sending, or accounting API sync is included.
+Do not expose this app directly to the public internet.
+
+Requirements
+- Windows 10 or Windows 11
+- Python 3.11 or newer (enable "Add python.exe to PATH" during install)
+
+Quick Start
+1. Unzip this package into a folder on the workstation.
+2. Double-click run_windows.bat.
+3. The launcher will:
+   - create a Python virtual environment if needed
+   - install dependencies
+   - create fictional demo data if studio.db does not exist
+   - start the local app
+   - open http://127.0.0.1:8000 in your browser
+4. Open http://127.0.0.1:8000/help/ for the operator guide.
+
+Stopping
+- Press Ctrl-C in the terminal running the app.
+
+Restarting
+- Run run_windows.bat again.
+- Existing studio.db is preserved and not overwritten.
+
+LAN Use
+- By default the app listens on the local machine only.
+- To let another computer on the same trusted private LAN connect:
+  set HOST=0.0.0.0
+  run_windows.bat
+- Then open http://WORKSTATION-IP:8000 from the other computer.
+- Do not expose FramersHaven directly to the public internet.
+
+Data Location
+- studio.db, uploads, exports, backups, catalog_previews, and catalog_imports
+  are created under this package folder.
+- Back up these files before moving the app to another workstation.
+
+Support
+- This is a draft early-access local-first build.
+- See docs/WINDOWS_INSTALL.md and docs/USER_MANUAL.md for details.
+- See docs/release/ for release notes, schema drafts, and checklists.

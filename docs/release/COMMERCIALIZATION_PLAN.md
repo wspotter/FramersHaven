@@ -525,8 +525,8 @@ Description: Pick a simple early-access price and support offer.
 Recommended starting offer:
 
 - [ ] Community: free/source-available.
-- [ ] Workstation Windows ZIP: `$149` one-time early access.
-- [ ] Setup call: `$299`.
+- [ ] Workstation Windows ZIP price decided outside the repo.
+- [ ] Setup call price decided outside the repo.
 - [ ] Updates through v1.0 included.
 
 Acceptance criteria:
