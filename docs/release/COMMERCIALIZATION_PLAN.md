@@ -9,7 +9,7 @@ Working assumption: Community remains useful and public. Paid Workstation earns 
 - [ ] Keep FramersHaven local-first.
 - [ ] Keep vendor catalog/image data user-supplied.
 - [ ] Avoid claiming POS replacement until the app proves it.
-- [ ] Avoid SimulArt, vendor, or competitor comparison language.
+- [ ] Avoid competitor, vendor, or comparison language.
 - [ ] Make the paid version feel like convenience and business value, not artificial breakage.
 
 ## Product Editions
@@ -31,7 +31,7 @@ Recommended Community limits:
 - [ ] Up to 50 active catalog items.
 - [ ] Up to 25 saved orders/quotes.
 - [ ] Up to 1 local catalog package import.
-- [ ] No QuickBooks export.
+- [ ] No accounting CSV export.
 - [ ] No paid Windows packaged release entitlement.
 
 ### Workstation Edition
@@ -42,7 +42,7 @@ Purpose: paid Windows-ready shop build for actual daily use.
 - [ ] Unlimited local catalog package imports.
 - [ ] Unlimited saved orders/quotes.
 - [ ] Branded document templates.
-- [ ] QuickBooks-compatible CSV exports.
+- [ ] Accounting CSV exports.
 - [ ] Polished Windows release ZIP.
 - [ ] Optional paid setup/support.
 
@@ -51,7 +51,7 @@ Purpose: paid Windows-ready shop build for actual daily use.
 - [ ] Use a local edition flag instead of online license enforcement for v1.
 - [ ] Prefer honest source-available packaging over DRM.
 - [ ] Store edition state in a small local config file or environment variable.
-- [ ] Treat QuickBooks as CSV export first, not API sync.
+- [ ] Treat accounting export as CSV files first, not API sync.
 - [ ] Keep all accounting export files generated locally under `exports/`.
 - [ ] Keep tests able to run in Community mode and Workstation mode.
 
@@ -311,17 +311,17 @@ Codex/local review required:
 - [ ] Browser smoke passes.
 - [ ] README and user manual match the UI.
 
-## Phase 4: QuickBooks CSV Export
+## Phase 4: Accounting CSV Export
 
-### Task 8: Define QuickBooks Export Schema
+### Task 8: Define Accounting Export Schema
 
 Description: Decide the first export format before writing code.
 
 Recommended v1 export files:
 
-- [ ] `quickbooks_customers.csv`
-- [ ] `quickbooks_invoices.csv`
-- [ ] `quickbooks_invoice_lines.csv`
+- [ ] `accounting_customers.csv`
+- [ ] `accounting_invoices.csv`
+- [ ] `accounting_invoice_lines.csv`
 
 Acceptance criteria:
 
@@ -336,11 +336,11 @@ Verification:
 
 Suggested files:
 
-- `docs/release/QUICKBOOKS_CSV_SCHEMA.md`
+- `docs/release/ACCOUNTING_CSV_SCHEMA.md`
 
 Safe for other LLM:
 
-- [ ] Research common QuickBooks CSV import columns.
+- [ ] Research common accounting CSV import columns.
 - [ ] Draft schema doc.
 
 Codex/local review required:
@@ -349,7 +349,7 @@ Codex/local review required:
 
 ### Task 9: Build Export Generator
 
-Description: Generate QuickBooks-compatible CSV files from local orders/customers.
+Description: Generate accounting CSV files from local orders/customers.
 
 Acceptance criteria:
 
@@ -410,11 +410,11 @@ Codex/local review required:
 
 - [ ] UI wiring and file download behavior.
 
-### Checkpoint: QuickBooks CSV
+### Checkpoint: Accounting CSV
 
 - [ ] Community mode blocks export cleanly.
 - [ ] Workstation mode generates valid CSVs.
-- [ ] No QuickBooks API claims appear in docs.
+- [ ] No accounting API sync claims appear in docs.
 - [ ] Browser smoke passes.
 
 ## Phase 5: Windows Paid Package
@@ -563,7 +563,7 @@ Final checklist before paid early access:
 - [ ] Browser smoke passes against demo data.
 - [ ] Windows launcher starts from `run_windows.bat` on Windows.
 - [ ] Windows package excludes runtime/private files.
-- [ ] QuickBooks CSV export creates fictional test files correctly.
+- [ ] Accounting CSV export creates fictional test files correctly.
 - [ ] Private footprint scan returns no old names, private paths, copied support links, or customer data.
 - [ ] Runtime data remains ignored.
 - [ ] README, user manual, and screenshots match current GUI.
@@ -575,7 +575,7 @@ Use another LLM for broad, reviewable drafts:
 
 - [ ] README edition wording.
 - [ ] User manual wording for Community/Workstation.
-- [ ] `docs/release/QUICKBOOKS_CSV_SCHEMA.md` first draft.
+- [ ] `docs/release/ACCOUNTING_CSV_SCHEMA.md` first draft.
 - [ ] Help copy for accounting export.
 - [ ] Sales page copy variants.
 - [ ] Pricing FAQ draft.
@@ -595,7 +595,7 @@ Rules for offloaded work:
 - [ ] Edition enforcement code.
 - [ ] Database migrations/settings.
 - [ ] API endpoint implementation.
-- [ ] QuickBooks CSV generator.
+- [ ] Accounting CSV generator.
 - [ ] Windows packaging script.
 - [ ] Security/private footprint scans.
 - [ ] Final CI and browser verification.
@@ -607,7 +607,7 @@ Rules for offloaded work:
 |------|--------|------------|
 | Free version feels crippled | Medium | Keep core quote/order workflow useful. Limit scale and exports, not basic operation. |
 | Vendor data implication | High | Use "operator-supplied local catalog files" everywhere. Ship no vendor catalogs/images. |
-| QuickBooks support burden | Medium | Start with CSV export only. Document limitations. |
+| Accounting import support burden | Medium | Start with CSV export only. Document limitations. |
 | Windows launcher fails on real machines | Medium | Add manual Windows test report before selling. |
 | Source-available license confusion | Medium | Keep license language explicit and avoid calling it open source unless license changes. |
 | Support workload grows faster than revenue | High | Sell setup separately and keep early-access scope narrow. |
@@ -617,5 +617,5 @@ Rules for offloaded work:
 - [ ] Should Workstation be one-time purchase, annual support, or both?
 - [ ] What exact Community limits feel fair?
 - [ ] Should the paid Windows build be distributed as ZIP first or installer first?
-- [ ] Which QuickBooks import target matters first: invoices, sales receipts, or customer list?
+- [ ] Which accounting import target matters first: invoices, sales receipts, or customer list?
 - [ ] What support promise is realistic for early access?
