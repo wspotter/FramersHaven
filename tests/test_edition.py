@@ -4,6 +4,7 @@ import json
 import os
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 from app import db
@@ -397,6 +398,135 @@ class EditionApiTests(unittest.TestCase):
         exported = self.client.get(f"/api/orders/{last_order_id}/export", params={"format": "pdf"})
         self.assertEqual(exported.status_code, 200)
         self.assertEqual(exported.headers["content-type"], "application/pdf")
+
+    def test_community_allows_one_local_catalog_package_import(self):
+        os.environ.pop("FRAMERSHAVEN_EDITION", None)
+        csv_path = self.tempdir.name + "/catalog_imports/mats.csv"
+        with open(csv_path, "w", encoding="utf-8") as f:
+            f.write("Code,Description,Width,Height,Price\n")
+            f.write("TEST001,Test Mat,32,40,15.50\n")
+
+        first = self.client.post("/api/catalog/import/package", data={"source": "mats"})
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.json()["inserted"], 1)
+
+        second = self.client.post("/api/catalog/import/package", data={"source": "mats"})
+        self.assertEqual(second.status_code, 403)
+        self.assertIn("one successful catalog package import", second.json()["detail"])
+
+    def test_workstation_has_unlimited_local_catalog_package_imports(self):
+        os.environ["FRAMERSHAVEN_EDITION"] = "workstation"
+        csv_path = self.tempdir.name + "/catalog_imports/mouldings.csv"
+        with open(csv_path, "w", encoding="utf-8") as f:
+            f.write("Code,Description,Width in.,Height in.,Rabbet in.,Price\n")
+            f.write("WTEST001,Test Moulding,2,1,0.5,8.00\n")
+            f.write("WTEST002,Test Moulding 2,2,1,0.5,8.50\n")
+
+        first = self.client.post("/api/catalog/import/package", data={"source": "mouldings"})
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.json()["inserted"], 2)
+
+        second = self.client.post("/api/catalog/import/package", data={"source": "mouldings"})
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(second.json()["updated"], 2)
+
+    def test_failed_imports_do_not_consume_allowance(self):
+        os.environ.pop("FRAMERSHAVEN_EDITION", None)
+        csv_path = self.tempdir.name + "/catalog_imports/mats.csv"
+        with open(csv_path, "w", encoding="utf-8") as f:
+            f.write("Code,Description,Width,Height,Price\n")
+            f.write(",No Code,32,40,15.50\n")
+
+        failed = self.client.post("/api/catalog/import/package", data={"source": "mats"})
+        self.assertEqual(failed.status_code, 200)
+        self.assertEqual(failed.json()["skipped"], 1)
+
+        with open(csv_path, "w", encoding="utf-8") as f:
+            f.write("Code,Description,Width,Height,Price\n")
+            f.write("GOOD001,Good Mat,32,40,15.50\n")
+
+        success = self.client.post("/api/catalog/import/package", data={"source": "mats"})
+        self.assertEqual(success.status_code, 200)
+        self.assertEqual(success.json()["inserted"], 1)
+
+        blocked = self.client.post("/api/catalog/import/package", data={"source": "mats"})
+        self.assertEqual(blocked.status_code, 403)
+
+    def test_import_count_persists_in_database(self):
+        os.environ.pop("FRAMERSHAVEN_EDITION", None)
+        csv_path = self.tempdir.name + "/catalog_imports/mats.csv"
+        with open(csv_path, "w", encoding="utf-8") as f:
+            f.write("Code,Description,Width,Height,Price\n")
+            f.write("PERSIST01,Persist Test,32,40,15.50\n")
+
+        first = self.client.post("/api/catalog/import/package", data={"source": "mats"})
+        self.assertEqual(first.status_code, 200)
+
+        conn = db.get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT value FROM settings WHERE key = 'local_catalog_package_imports_count'")
+        row = cur.fetchone()
+        self.assertIsNotNone(row)
+        self.assertEqual(int(row["value"]), 1)
+        conn.close()
+
+    def test_blocked_catalog_package_import_does_not_extract_previews(self):
+        os.environ.pop("FRAMERSHAVEN_EDITION", None)
+        csv_path = Path(self.tempdir.name) / "catalog_imports" / "mats.csv"
+        zip_path = Path(self.tempdir.name) / "catalog_imports" / "mats.zip"
+        csv_path.write_text(
+            "Code,Description,Width,Height,Price\nFIRST01,First Mat,32,40,15.50\n",
+            encoding="utf-8",
+        )
+        with zipfile.ZipFile(zip_path, "w") as archive:
+            archive.writestr("FIRST01.jpg", b"first-preview")
+
+        first = self.client.post("/api/catalog/import/package", data={"source": "mats"})
+        self.assertEqual(first.status_code, 200)
+
+        csv_path.write_text(
+            "Code,Description,Width,Height,Price\nSECOND01,Second Mat,32,40,16.50\n",
+            encoding="utf-8",
+        )
+        with zipfile.ZipFile(zip_path, "w") as archive:
+            archive.writestr("SECOND01.jpg", b"second-preview")
+
+        blocked = self.client.post("/api/catalog/import/package", data={"source": "mats"})
+        self.assertEqual(blocked.status_code, 403)
+        self.assertFalse((main_module.PREVIEW_DIR / "mats" / "SECOND01.jpg").exists())
+
+    def test_catalog_package_import_respects_community_active_item_limit(self):
+        os.environ.pop("FRAMERSHAVEN_EDITION", None)
+        conn = db.get_connection()
+        cur = conn.cursor()
+        cur.executemany(
+            """
+            INSERT INTO catalog_items (sku, name, category, cost, active)
+            VALUES (?, ?, 'moulding', 10, 1)
+            """,
+            [(f"LIMIT{index:03d}", f"Limit {index:03d}") for index in range(50)],
+        )
+        conn.commit()
+        conn.close()
+
+        csv_path = Path(self.tempdir.name) / "catalog_imports" / "mats.csv"
+        csv_path.write_text(
+            "Code,Description,Width,Height,Price\nOVER50,Over Fifty,32,40,15.50\n",
+            encoding="utf-8",
+        )
+
+        blocked = self.client.post("/api/catalog/import/package", data={"source": "mats"})
+        self.assertEqual(blocked.status_code, 403)
+        self.assertIn("50 active catalog items", blocked.json()["detail"])
+
+        conn = db.get_connection()
+        count = conn.execute(
+            "SELECT value FROM settings WHERE key = 'local_catalog_package_imports_count'"
+        ).fetchone()["value"]
+        inserted = conn.execute("SELECT id FROM catalog_items WHERE sku = 'OVER50'").fetchone()
+        conn.close()
+        self.assertEqual(int(count), 0)
+        self.assertIsNone(inserted)
 
 
 if __name__ == "__main__":

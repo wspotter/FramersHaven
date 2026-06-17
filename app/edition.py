@@ -107,3 +107,42 @@ def check_saved_orders_quotes_limit(conn: Any, new_count: int = 1) -> None:
     current = row["count"]
     if current + new_count > limit:
         raise HTTPException(status_code=403, detail=COMMUNITY_SAVED_ORDERS_QUOTES_LIMIT_DENIED_DETAIL)
+
+
+CATALOG_IMPORT_LIMIT = 1
+COMMUNITY_CATALOG_IMPORT_LIMIT_DENIED_DETAIL = (
+    "Community edition includes one successful catalog package import. "
+    "This import was not applied. Failed imports do not count toward the allowance."
+)
+
+
+def get_catalog_imports_count(conn: Any) -> int:
+    cur = conn.cursor()
+    cur.execute("SELECT value FROM settings WHERE key = 'local_catalog_package_imports_count'")
+    row = cur.fetchone()
+    if row is None:
+        return 0
+    try:
+        return int(row["value"])
+    except (TypeError, ValueError):
+        return 0
+
+
+def increment_catalog_imports_count(conn: Any) -> int:
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO settings (key, value, updated_at)
+        VALUES ('local_catalog_package_imports_count', '1', CURRENT_TIMESTAMP)
+        ON CONFLICT(key) DO UPDATE SET value = CAST(value AS INTEGER) + 1, updated_at = CURRENT_TIMESTAMP
+        """,
+    )
+    return get_catalog_imports_count(conn)
+
+
+def check_catalog_package_import_limit(conn: Any) -> None:
+    if get_edition() == WORKSTATION:
+        return
+    current = get_catalog_imports_count(conn)
+    if current >= CATALOG_IMPORT_LIMIT:
+        raise HTTPException(status_code=403, detail=COMMUNITY_CATALOG_IMPORT_LIMIT_DENIED_DETAIL)

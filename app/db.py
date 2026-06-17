@@ -128,6 +128,14 @@ def init_db() -> None:
     _add_column_if_missing(cur, "service_options", "markup", "markup REAL NOT NULL DEFAULT 1")
     _add_column_if_missing(cur, "service_options", "basis", "basis TEXT NOT NULL DEFAULT 'count'")
 
+    cur.execute(
+        """
+        INSERT INTO settings (key, value)
+        VALUES ('local_catalog_package_imports_count', '0')
+        ON CONFLICT(key) DO NOTHING
+        """
+    )
+
     defaults = {
         "tax_rate": "0.06",
         "markup_moulding": "2.4",

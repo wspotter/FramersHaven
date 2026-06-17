@@ -25,7 +25,13 @@ from reportlab.lib.utils import ImageReader
 from . import db as db_module
 from .db import get_connection, init_db
 from .db_admin import init_admin_tables
-from .edition import check_catalog_item_limit, check_saved_orders_quotes_limit, get_edition_info
+from .edition import (
+    check_catalog_item_limit,
+    check_catalog_package_import_limit,
+    check_saved_orders_quotes_limit,
+    get_edition_info,
+    increment_catalog_imports_count,
+)
 from .pricing import QuoteRequest, calculate_quote
 
 ROOT = Path(__file__).resolve().parent
@@ -545,6 +551,17 @@ def _extract_catalog_package_preview_assets(zip_path: Path, folder_name: str) ->
     return extracted
 
 
+def _catalog_package_preview_index(zip_path: Path, folder_name: str) -> set[str]:
+    if not zip_path.exists():
+        return set()
+    with zipfile.ZipFile(zip_path) as zf:
+        return {
+            f"{folder_name}/{Path(member).name}"
+            for member in zf.namelist()
+            if not member.endswith("/") and Path(member).name
+        }
+
+
 def _import_local_catalog_package(source: str) -> dict[str, Any]:
     source_key = source.strip().lower()
     if source_key not in {"mats", "mouldings"}:
@@ -555,143 +572,151 @@ def _import_local_catalog_package(source: str) -> dict[str, Any]:
     if not csv_path.exists():
         raise HTTPException(status_code=404, detail=f"{csv_path.name} not found in catalog_imports folder")
 
-    import_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-    preview_index = _extract_catalog_package_preview_assets(zip_path, source_key) if zip_path.exists() else set()
     conn = get_connection()
-    cur = conn.cursor()
-    inserted = 0
-    updated = 0
-    skipped = 0
-    duplicate_rows = 0
-    bad_rows: list[dict[str, Any]] = []
-    seen_keys: set[tuple[str, str]] = set()
+    try:
+        check_catalog_package_import_limit(conn)
+        import_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        preview_index = _catalog_package_preview_index(zip_path, source_key)
+        cur = conn.cursor()
+        inserted = 0
+        updated = 0
+        skipped = 0
+        duplicate_rows = 0
+        bad_rows: list[dict[str, Any]] = []
+        seen_keys: set[tuple[str, str]] = set()
 
-    with csv_path.open(newline="", encoding="utf-8-sig") as fh:
-        reader = csv.DictReader(fh)
-        for row_num, row in enumerate(reader, start=2):
-            sku = (row.get("Code") or "").strip()
-            description = (row.get("Description") or "").strip()
-            if not sku or not description:
-                skipped += 1
-                bad_rows.append({"row": row_num, "sku": sku, "reason": "missing code or description"})
-                continue
+        with csv_path.open(newline="", encoding="utf-8-sig") as fh:
+            reader = csv.DictReader(fh)
+            for row_num, row in enumerate(reader, start=2):
+                sku = (row.get("Code") or "").strip()
+                description = (row.get("Description") or "").strip()
+                if not sku or not description:
+                    skipped += 1
+                    bad_rows.append({"row": row_num, "sku": sku, "reason": "missing code or description"})
+                    continue
 
-            if source_key == "mats":
-                category = "mat"
-                width_in = _safe_float(row.get("Width"), -1)
-                height_in = _safe_float(row.get("Height"), -1)
-                rabbet_in = 0.0
-                metadata = {
-                    "source": "local_catalog_mats",
-                    "source_file": csv_path.name,
-                    "imported_at": import_at,
-                    "vendor_category": (row.get("Category") or "").strip(),
-                    "price_code": (row.get("Price Code") or "").strip(),
-                    "board_size": f"{format(width_in, 'g')}x{format(height_in, 'g')}" if width_in > 0 and height_in > 0 else "",
-                    "core": (row.get("Core") or "").strip(),
-                    "thickness": _safe_float(row.get("Thickness")),
-                    "available_to": (row.get("Available to") or "").strip(),
-                    "system": (row.get("System") or "").strip(),
-                }
-                malformed_fields = [name for name, value in (("Width", width_in), ("Height", height_in)) if value < 0]
-            else:
-                style = (row.get("Style") or "").strip().lower()
-                category = "fillet" if "fillet" in style else "moulding"
-                width_in = _safe_float(row.get("Width in."), -1)
-                height_in = _safe_float(row.get("Height in."), -1)
-                rabbet_in = _safe_float(row.get("Rabbet in."), -1)
-                metadata = {
-                    "source": "local_catalog_mouldings",
-                    "source_file": csv_path.name,
-                    "imported_at": import_at,
-                    "vendor_category": (row.get("Category") or "").strip(),
-                    "price_code": (row.get("Price Code") or "").strip(),
-                    "style": (row.get("Style") or "").strip(),
-                    "length_in": _safe_float(row.get("Length in.")),
-                    "available_to": (row.get("Available to") or "").strip(),
-                    "system": (row.get("System") or "").strip(),
-                }
-                malformed_fields = [name for name, value in (("Width in.", width_in), ("Height in.", height_in), ("Rabbet in.", rabbet_in)) if value < 0]
+                if source_key == "mats":
+                    category = "mat"
+                    width_in = _safe_float(row.get("Width"), -1)
+                    height_in = _safe_float(row.get("Height"), -1)
+                    rabbet_in = 0.0
+                    metadata = {
+                        "source": "local_catalog_mats",
+                        "source_file": csv_path.name,
+                        "imported_at": import_at,
+                        "vendor_category": (row.get("Category") or "").strip(),
+                        "price_code": (row.get("Price Code") or "").strip(),
+                        "board_size": f"{format(width_in, 'g')}x{format(height_in, 'g')}" if width_in > 0 and height_in > 0 else "",
+                        "core": (row.get("Core") or "").strip(),
+                        "thickness": _safe_float(row.get("Thickness")),
+                        "available_to": (row.get("Available to") or "").strip(),
+                        "system": (row.get("System") or "").strip(),
+                    }
+                    malformed_fields = [name for name, value in (("Width", width_in), ("Height", height_in)) if value < 0]
+                else:
+                    style = (row.get("Style") or "").strip().lower()
+                    category = "fillet" if "fillet" in style else "moulding"
+                    width_in = _safe_float(row.get("Width in."), -1)
+                    height_in = _safe_float(row.get("Height in."), -1)
+                    rabbet_in = _safe_float(row.get("Rabbet in."), -1)
+                    metadata = {
+                        "source": "local_catalog_mouldings",
+                        "source_file": csv_path.name,
+                        "imported_at": import_at,
+                        "vendor_category": (row.get("Category") or "").strip(),
+                        "price_code": (row.get("Price Code") or "").strip(),
+                        "style": (row.get("Style") or "").strip(),
+                        "length_in": _safe_float(row.get("Length in.")),
+                        "available_to": (row.get("Available to") or "").strip(),
+                        "system": (row.get("System") or "").strip(),
+                    }
+                    malformed_fields = [name for name, value in (("Width in.", width_in), ("Height in.", height_in), ("Rabbet in.", rabbet_in)) if value < 0]
 
-            if malformed_fields:
-                skipped += 1
-                bad_rows.append({"row": row_num, "sku": sku, "reason": f"invalid numeric field(s): {', '.join(malformed_fields)}"})
-                continue
+                if malformed_fields:
+                    skipped += 1
+                    bad_rows.append({"row": row_num, "sku": sku, "reason": f"invalid numeric field(s): {', '.join(malformed_fields)}"})
+                    continue
 
-            preview_filename = None
-            preview_key = f"{source_key}/{sku}.jpg"
-            if preview_key in preview_index:
-                preview_filename = preview_key
+                preview_filename = None
+                preview_key = f"{source_key}/{sku}.jpg"
+                if preview_key in preview_index:
+                    preview_filename = preview_key
 
-            vendor = (row.get("Vendor") or "").strip()
-            cost = _safe_float(row.get("Price"), -1)
-            if cost < 0:
-                skipped += 1
-                bad_rows.append({"row": row_num, "sku": sku, "reason": "invalid price"})
-                continue
+                vendor = (row.get("Vendor") or "").strip()
+                cost = _safe_float(row.get("Price"), -1)
+                if cost < 0:
+                    skipped += 1
+                    bad_rows.append({"row": row_num, "sku": sku, "reason": "invalid price"})
+                    continue
 
-            row_key = (vendor.lower(), sku.lower())
-            if row_key in seen_keys:
-                duplicate_rows += 1
-            else:
-                seen_keys.add(row_key)
+                row_key = (vendor.lower(), sku.lower())
+                if row_key in seen_keys:
+                    duplicate_rows += 1
+                else:
+                    seen_keys.add(row_key)
 
-            cur.execute("SELECT id FROM catalog_items WHERE sku = ? AND category = ?", (sku, category))
-            existing = cur.fetchone()
-            if existing:
-                cur.execute(
-                    """
-                    UPDATE catalog_items
-                    SET name = ?, cost = ?, vendor = ?, width_in = ?, height_in = ?, rabbet_in = ?,
-                        preview_filename = ?, metadata_json = ?, active = 1
-                    WHERE sku = ? AND category = ?
-                    """,
-                    (
-                        description,
-                        cost,
-                        vendor,
-                        width_in,
-                        height_in,
-                        rabbet_in,
-                        preview_filename,
-                        json.dumps(metadata),
-                        sku,
-                        category,
-                    ),
-                )
-                updated += 1
-            else:
-                cur.execute(
-                    """
-                    INSERT INTO catalog_items
-                    (sku, name, category, cost, vendor, width_in, height_in, rabbet_in, preview_filename, metadata_json, active)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-                    """,
-                    (
-                        sku,
-                        description,
-                        category,
-                        cost,
-                        vendor,
-                        width_in,
-                        height_in,
-                        rabbet_in,
-                        preview_filename,
-                        json.dumps(metadata),
-                    ),
-                )
-                inserted += 1
-    conn.commit()
-    conn.close()
-    preview_count = len(preview_index)
-    return {
-        "inserted": inserted,
-        "updated": updated,
-        "skipped": skipped,
-        "duplicate_rows": duplicate_rows,
-        "preview_count": preview_count,
-        "bad_rows": bad_rows,
-    }
+                cur.execute("SELECT id FROM catalog_items WHERE sku = ? AND category = ?", (sku, category))
+                existing = cur.fetchone()
+                if existing:
+                    cur.execute(
+                        """
+                        UPDATE catalog_items
+                        SET name = ?, cost = ?, vendor = ?, width_in = ?, height_in = ?, rabbet_in = ?,
+                            preview_filename = ?, metadata_json = ?, active = 1
+                        WHERE sku = ? AND category = ?
+                        """,
+                        (
+                            description,
+                            cost,
+                            vendor,
+                            width_in,
+                            height_in,
+                            rabbet_in,
+                            preview_filename,
+                            json.dumps(metadata),
+                            sku,
+                            category,
+                        ),
+                    )
+                    updated += 1
+                else:
+                    check_catalog_item_limit(conn, 1)
+                    cur.execute(
+                        """
+                        INSERT INTO catalog_items
+                        (sku, name, category, cost, vendor, width_in, height_in, rabbet_in, preview_filename, metadata_json, active)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                        """,
+                        (
+                            sku,
+                            description,
+                            category,
+                            cost,
+                            vendor,
+                            width_in,
+                            height_in,
+                            rabbet_in,
+                            preview_filename,
+                            json.dumps(metadata),
+                        ),
+                    )
+                    inserted += 1
+
+        if inserted > 0 or updated > 0:
+            if zip_path.exists():
+                _extract_catalog_package_preview_assets(zip_path, source_key)
+            increment_catalog_imports_count(conn)
+        conn.commit()
+        return {
+            "inserted": inserted,
+            "updated": updated,
+            "skipped": skipped,
+            "duplicate_rows": duplicate_rows,
+            "preview_count": len(preview_index),
+            "bad_rows": bad_rows,
+        }
+    finally:
+        conn.close()
 
 
 def _write_catalog_snapshot(target_dir: Path) -> None:
