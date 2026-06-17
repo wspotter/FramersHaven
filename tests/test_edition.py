@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import tempfile
 import unittest
@@ -303,6 +304,99 @@ class EditionApiTests(unittest.TestCase):
         skus = {item["sku"] for item in search.json()["items"]}
         self.assertNotIn("B999", skus)
         self.assertNotIn("B998", skus)
+
+    def test_community_allows_up_to_25_saved_orders_quotes(self):
+        os.environ.pop("FRAMERSHAVEN_EDITION", None)
+        for index in range(25):
+            created = self.client.post(
+                "/api/orders",
+                data={
+                    "customer_name": f"Quote Customer {index:03d}",
+                    "customer_contact": "555-010-0100",
+                    "payload_json": json.dumps({"subtotal": 10, "tax": 0.6, "total": 10.6}),
+                    "subtotal": "10",
+                    "tax": "0.6",
+                    "total": "10.6",
+                },
+            )
+            self.assertEqual(created.status_code, 200, f"Order {index} should be accepted: {created.text}")
+
+        blocked = self.client.post(
+            "/api/orders",
+            data={
+                "customer_name": "Over Limit Customer",
+                "customer_contact": "555-010-0100",
+                "payload_json": json.dumps({"subtotal": 10, "tax": 0.6, "total": 10.6}),
+                "subtotal": "10",
+                "tax": "0.6",
+                "total": "10.6",
+            },
+        )
+        self.assertEqual(blocked.status_code, 403)
+        self.assertIn("Community edition includes up to 25 saved quotes/orders", blocked.json()["detail"])
+
+        listed = self.client.get("/api/orders")
+        self.assertEqual(listed.status_code, 200)
+        orders = listed.json()["orders"]
+        self.assertEqual(len(orders), 25)
+
+    def test_workstation_has_no_saved_orders_quotes_limit(self):
+        os.environ["FRAMERSHAVEN_EDITION"] = "workstation"
+        for index in range(26):
+            created = self.client.post(
+                "/api/orders",
+                data={
+                    "customer_name": f"WS Customer {index:03d}",
+                    "customer_contact": "555-010-0100",
+                    "payload_json": json.dumps({"subtotal": 10, "tax": 0.6, "total": 10.6}),
+                    "subtotal": "10",
+                    "tax": "0.6",
+                    "total": "10.6",
+                },
+            )
+            self.assertEqual(created.status_code, 200, f"Workstation order {index} should be accepted: {created.text}")
+
+        listed = self.client.get("/api/orders")
+        self.assertEqual(listed.status_code, 200)
+        self.assertEqual(len(listed.json()["orders"]), 26)
+
+    def test_existing_orders_remain_readable_and_exportable_at_community_limit(self):
+        os.environ.pop("FRAMERSHAVEN_EDITION", None)
+        for index in range(25):
+            self.client.post(
+                "/api/orders",
+                data={
+                    "customer_name": f"Read Test {index:03d}",
+                    "customer_contact": "555-010-0100",
+                    "payload_json": json.dumps({
+                        "subtotal": 10,
+                        "tax": 0.6,
+                        "total": 10.6,
+                        "design_state": {"opening_layout": "single"},
+                        "selected": {},
+                        "line_items": {},
+                    }),
+                    "subtotal": "10",
+                    "tax": "0.6",
+                    "total": "10.6",
+                },
+            )
+
+        conn = db.get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM orders ORDER BY id ASC LIMIT 1")
+        first_order_id = cur.fetchone()["id"]
+        cur.execute("SELECT id FROM orders ORDER BY id DESC LIMIT 1")
+        last_order_id = cur.fetchone()["id"]
+        conn.close()
+
+        detail = self.client.get(f"/api/orders/{first_order_id}")
+        self.assertEqual(detail.status_code, 200)
+        self.assertEqual(detail.json()["order"]["customer_name"], "Read Test 000")
+
+        exported = self.client.get(f"/api/orders/{last_order_id}/export", params={"format": "pdf"})
+        self.assertEqual(exported.status_code, 200)
+        self.assertEqual(exported.headers["content-type"], "application/pdf")
 
 
 if __name__ == "__main__":

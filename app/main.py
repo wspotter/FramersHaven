@@ -25,7 +25,7 @@ from reportlab.lib.utils import ImageReader
 from . import db as db_module
 from .db import get_connection, init_db
 from .db_admin import init_admin_tables
-from .edition import check_catalog_item_limit, get_edition_info
+from .edition import check_catalog_item_limit, check_saved_orders_quotes_limit, get_edition_info
 from .pricing import QuoteRequest, calculate_quote
 
 ROOT = Path(__file__).resolve().parent
@@ -1209,24 +1209,25 @@ def create_catalog_item(
     _require_non_negative(rabbet_in, "rabbet_in")
 
     conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT id FROM catalog_items WHERE sku = ? AND category = ?", (clean_sku, clean_category))
-    if cur.fetchone():
-        conn.close()
-        raise HTTPException(status_code=400, detail="Catalog item already exists for sku/category")
-    check_catalog_item_limit(conn, 1)
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM catalog_items WHERE sku = ? AND category = ?", (clean_sku, clean_category))
+        if cur.fetchone():
+            raise HTTPException(status_code=400, detail="Catalog item already exists for sku/category")
+        check_catalog_item_limit(conn, 1)
 
-    cur.execute(
-        """
-        INSERT INTO catalog_items (sku, name, category, cost, vendor, width_in, height_in, rabbet_in, active)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-        """,
-        (clean_sku, clean_name, clean_category, cost, vendor.strip(), width_in, height_in, rabbet_in),
-    )
-    item_id = cur.lastrowid
-    conn.commit()
-    conn.close()
-    return {"item_id": item_id, "sku": clean_sku}
+        cur.execute(
+            """
+            INSERT INTO catalog_items (sku, name, category, cost, vendor, width_in, height_in, rabbet_in, active)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+            """,
+            (clean_sku, clean_name, clean_category, cost, vendor.strip(), width_in, height_in, rabbet_in),
+        )
+        item_id = cur.lastrowid
+        conn.commit()
+        return {"item_id": item_id, "sku": clean_sku}
+    finally:
+        conn.close()
 
 
 @app.post("/api/catalog/items/{item_id}")
@@ -1253,23 +1254,24 @@ def update_catalog_item(
     _require_non_negative(rabbet_in, "rabbet_in")
 
     conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT id FROM catalog_items WHERE id = ?", (item_id,))
-    if cur.fetchone() is None:
-        conn.close()
-        raise HTTPException(status_code=404, detail="Catalog item not found")
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM catalog_items WHERE id = ?", (item_id,))
+        if cur.fetchone() is None:
+            raise HTTPException(status_code=404, detail="Catalog item not found")
 
-    cur.execute(
-        """
-        UPDATE catalog_items
-        SET sku = ?, name = ?, category = ?, cost = ?, vendor = ?, width_in = ?, height_in = ?, rabbet_in = ?, active = ?
-        WHERE id = ?
-        """,
-        (clean_sku, clean_name, clean_category, cost, vendor.strip(), width_in, height_in, rabbet_in, 1 if active else 0, item_id),
-    )
-    conn.commit()
-    conn.close()
-    return {"item_id": item_id, "sku": clean_sku}
+        cur.execute(
+            """
+            UPDATE catalog_items
+            SET sku = ?, name = ?, category = ?, cost = ?, vendor = ?, width_in = ?, height_in = ?, rabbet_in = ?, active = ?
+            WHERE id = ?
+            """,
+            (clean_sku, clean_name, clean_category, cost, vendor.strip(), width_in, height_in, rabbet_in, 1 if active else 0, item_id),
+        )
+        conn.commit()
+        return {"item_id": item_id, "sku": clean_sku}
+    finally:
+        conn.close()
 
 
 @app.post("/api/catalog/items/{item_id}/texture")
@@ -1326,71 +1328,73 @@ async def import_catalog(file: UploadFile = File(...)) -> dict[str, int]:
         raise HTTPException(status_code=400, detail="Missing CSV headers")
 
     conn = get_connection()
-    cur = conn.cursor()
-    valid_rows: list[dict[str, Any]] = []
-    inserted = 0
-    updated = 0
-    skipped = 0
-    for row in reader:
-        try:
-            name = row.get("name", "").strip()
-            sku = row.get("sku", "").strip()
-            raw_category = row.get("category", "").strip()
-            cost = float(row.get("cost", -1))
-            if not name or not sku or not raw_category or cost < 0:
-                skipped += 1
-                continue
+    try:
+        cur = conn.cursor()
+        valid_rows: list[dict[str, Any]] = []
+        inserted = 0
+        updated = 0
+        skipped = 0
+        for row in reader:
             try:
-                category = _normalize_catalog_category(raw_category)
-            except HTTPException:
+                name = row.get("name", "").strip()
+                sku = row.get("sku", "").strip()
+                raw_category = row.get("category", "").strip()
+                cost = float(row.get("cost", -1))
+                if not name or not sku or not raw_category or cost < 0:
+                    skipped += 1
+                    continue
+                try:
+                    category = _normalize_catalog_category(raw_category)
+                except HTTPException:
+                    skipped += 1
+                    continue
+                width_in = float(row.get("width_in") or 0)
+                valid_rows.append(
+                    {
+                        "sku": sku,
+                        "name": name,
+                        "category": category,
+                        "cost": cost,
+                        "width_in": width_in,
+                    }
+                )
+            except (TypeError, ValueError):
                 skipped += 1
-                continue
-            width_in = float(row.get("width_in") or 0)
-            valid_rows.append(
-                {
-                    "sku": sku,
-                    "name": name,
-                    "category": category,
-                    "cost": cost,
-                    "width_in": width_in,
-                }
-            )
-        except (TypeError, ValueError):
-            skipped += 1
 
-    new_catalog_keys: set[tuple[str, str]] = set()
-    for row in valid_rows:
-        cur.execute("SELECT id FROM catalog_items WHERE sku = ? AND category = ?", (row["sku"], row["category"]))
-        if cur.fetchone() is None:
-            new_catalog_keys.add((row["sku"], row["category"]))
-    check_catalog_item_limit(conn, len(new_catalog_keys))
+        new_catalog_keys: set[tuple[str, str]] = set()
+        for row in valid_rows:
+            cur.execute("SELECT id FROM catalog_items WHERE sku = ? AND category = ?", (row["sku"], row["category"]))
+            if cur.fetchone() is None:
+                new_catalog_keys.add((row["sku"], row["category"]))
+        check_catalog_item_limit(conn, len(new_catalog_keys))
 
-    for row in valid_rows:
-        cur.execute("SELECT id FROM catalog_items WHERE sku = ? AND category = ?", (row["sku"], row["category"]))
-        existing = cur.fetchone()
-        if existing:
-            cur.execute(
-                """
-                UPDATE catalog_items
-                SET name = ?, category = ?, cost = ?, width_in = ?, active = 1
-                WHERE sku = ? AND category = ?
-                """,
-                (row["name"], row["category"], row["cost"], row["width_in"], row["sku"], row["category"]),
-            )
-            updated += 1
-        else:
-            cur.execute(
-                """
-                INSERT INTO catalog_items (sku, name, category, cost, width_in, active)
-                VALUES (?, ?, ?, ?, ?, 1)
-                """,
-                (row["sku"], row["name"], row["category"], row["cost"], row["width_in"]),
-            )
-            inserted += 1
+        for row in valid_rows:
+            cur.execute("SELECT id FROM catalog_items WHERE sku = ? AND category = ?", (row["sku"], row["category"]))
+            existing = cur.fetchone()
+            if existing:
+                cur.execute(
+                    """
+                    UPDATE catalog_items
+                    SET name = ?, category = ?, cost = ?, width_in = ?, active = 1
+                    WHERE sku = ? AND category = ?
+                    """,
+                    (row["name"], row["category"], row["cost"], row["width_in"], row["sku"], row["category"]),
+                )
+                updated += 1
+            else:
+                cur.execute(
+                    """
+                    INSERT INTO catalog_items (sku, name, category, cost, width_in, active)
+                    VALUES (?, ?, ?, ?, ?, 1)
+                    """,
+                    (row["sku"], row["name"], row["category"], row["cost"], row["width_in"]),
+                )
+                inserted += 1
 
-    conn.commit()
-    conn.close()
-    return {"inserted": inserted, "updated": updated, "skipped": skipped}
+        conn.commit()
+        return {"inserted": inserted, "updated": updated, "skipped": skipped}
+    finally:
+        conn.close()
 
 
 @app.post("/api/catalog/import/package")
@@ -1879,6 +1883,7 @@ def create_order(
     _parse_json_object(payload_json, "payload_json")
 
     conn = get_connection()
+    check_saved_orders_quotes_limit(conn, 1)
     cur = conn.cursor()
     cur.execute(
         """

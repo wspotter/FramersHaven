@@ -13,6 +13,12 @@ COMMUNITY_CATALOG_LIMIT_DENIED_DETAIL = (
     "This item was not added, and existing catalog data was not changed."
 )
 
+SAVED_ORDERS_QUOTES_LIMIT = 25
+COMMUNITY_SAVED_ORDERS_QUOTES_LIMIT_DENIED_DETAIL = (
+    "Community edition includes up to 25 saved quotes/orders. "
+    "This quote was not saved, and existing records remain available."
+)
+
 
 def get_edition() -> str:
     raw = os.environ.get("FRAMERSHAVEN_EDITION", "").strip().lower()
@@ -83,3 +89,21 @@ def check_catalog_item_limit(conn: Any, new_active_count: int = 1) -> None:
     current = row["count"]
     if current + new_active_count > limit:
         raise HTTPException(status_code=403, detail=COMMUNITY_CATALOG_LIMIT_DENIED_DETAIL)
+
+
+def get_saved_orders_quotes_limit() -> int | None:
+    return None if get_edition() == WORKSTATION else SAVED_ORDERS_QUOTES_LIMIT
+
+
+def check_saved_orders_quotes_limit(conn: Any, new_count: int = 1) -> None:
+    if new_count <= 0:
+        return
+    limit = get_saved_orders_quotes_limit()
+    if limit is None:
+        return
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) as count FROM orders")
+    row = cur.fetchone()
+    current = row["count"]
+    if current + new_count > limit:
+        raise HTTPException(status_code=403, detail=COMMUNITY_SAVED_ORDERS_QUOTES_LIMIT_DENIED_DETAIL)
