@@ -11,6 +11,7 @@ Use this checklist before tagging or announcing a public FramersHaven build.
 - [ ] `npm audit --audit-level=high` passes from `app/`.
 - [ ] Browser smoke test passes against a running demo app.
 - [ ] Windows launcher starts from `run_windows.bat` on a Windows workstation.
+- [ ] Windows preview ZIP is built and validated using `docs/release/WINDOWS_PACKAGE_BUILD_PLAN.md`.
 - [ ] Help screenshots regenerate from the current demo app.
 - [ ] Private footprint scan returns no old names, private paths, copied support links, or customer data.
 - [ ] Runtime data remains ignored: `studio.db`, `uploads/`, `exports/`, `backups/`, `catalog_previews/`, `catalog_imports/`, `venv/`.
