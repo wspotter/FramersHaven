@@ -25,6 +25,7 @@ from reportlab.lib.utils import ImageReader
 from . import db as db_module
 from .db import get_connection, init_db
 from .db_admin import init_admin_tables
+from .edition import get_edition_info
 from .pricing import QuoteRequest, calculate_quote
 
 ROOT = Path(__file__).resolve().parent
@@ -203,6 +204,11 @@ async def index(request: Request) -> HTMLResponse:
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/edition")
+def edition() -> dict[str, object]:
+    return get_edition_info()
 
 
 @app.get("/api/config")

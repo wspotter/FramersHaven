@@ -13,7 +13,9 @@ This file contains draft JSON examples for a future `GET /api/edition` endpoint.
     "studio_profiles": 1,
     "active_catalog_items": 50,
     "saved_orders_quotes": 25,
-    "local_catalog_package_imports": 1,
+    "local_catalog_package_imports": 1
+  },
+  "features": {
     "accounting_csv_export": false,
     "windows_paid_package": false
   },
@@ -32,7 +34,9 @@ This file contains draft JSON examples for a future `GET /api/edition` endpoint.
     "studio_profiles": "unlimited",
     "active_catalog_items": "unlimited",
     "saved_orders_quotes": "unlimited",
-    "local_catalog_package_imports": "unlimited",
+    "local_catalog_package_imports": "unlimited"
+  },
+  "features": {
     "accounting_csv_export": true,
     "windows_paid_package": true
   },
