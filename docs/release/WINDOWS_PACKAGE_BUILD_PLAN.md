@@ -12,16 +12,16 @@ This plan defines the next release step: create a repeatable Windows-ready ZIP/f
 
 ## Package Name
 
-Recommended first package name:
+Release-candidate package name:
 
 ```text
-FramersHaven-windows-preview.zip
+FramersHaven-windows-preview-v0.2.0-rc1.zip
 ```
 
-Future tagged packages can include the version:
+Tagged packages should include the version:
 
 ```text
-FramersHaven-windows-preview-v0.1.0.zip
+FramersHaven-windows-preview-v0.2.0-rc1.zip
 ```
 
 ## Include
@@ -87,10 +87,12 @@ Suggested command:
 python scripts/build_windows_package.py
 ```
 
+The script reads `VERSION` and includes it in the default ZIP filename.
+
 Optional flags:
 
 ```bash
-python scripts/build_windows_package.py --version v0.1.0
+python scripts/build_windows_package.py --version v0.2.0-rc1
 python scripts/build_windows_package.py --output dist
 ```
 

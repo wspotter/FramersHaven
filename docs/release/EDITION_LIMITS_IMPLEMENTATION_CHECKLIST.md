@@ -8,9 +8,11 @@
 
 ## 2. Current Reality
 
-- [ ] Edition limits are not currently enforced in code.
-- [ ] Current GitHub/public version has the full app workflow.
-- [ ] Existing docs are draft planning only.
+- [x] Community catalog, saved order/quote, and successful package-import limits are enforced.
+- [x] Workstation removes those scale limits and includes local accounting CSV export.
+- [x] The active edition and current usage are shown in Admin.
+- [x] Current GitHub `main` contains the implemented workflow and tests.
+- [ ] Paid Windows distribution, expanded branded templates, and support terms remain release decisions.
 
 ## 3. Proposed Community Limits
 
@@ -117,7 +119,7 @@
 > "Community edition includes one successful catalog package import. This import was not applied. Failed imports do not count toward the allowance."
 
 **accounting CSV export unavailable in Community:**
-> "Accounting CSV export is planned for Workstation edition. Community data remains unchanged."
+> "Accounting CSV export is available in Workstation Edition. Community data remains unchanged."
 
 **unknown edition fallback:**
 > "Edition could not be determined. Running in Community mode with default local limits."
