@@ -9,7 +9,7 @@ Use this checklist before tagging or announcing a public FramersHaven build.
 - [ ] JavaScript syntax and unit tests pass.
 - [ ] Python compile and pytest pass.
 - [ ] `npm audit --audit-level=high` passes from `app/`.
-- [ ] Browser smoke test passes against a running demo app.
+- [ ] Browser smoke test passes explicitly in Community and Workstation modes.
 - [ ] Windows launcher starts from `run_windows.bat` on a Windows workstation.
 - [ ] Windows preview ZIP is built and validated using `docs/release/WINDOWS_PACKAGE_BUILD_PLAN.md`.
 - [ ] Help screenshots regenerate from the current demo app.
@@ -20,7 +20,7 @@ Use this checklist before tagging or announcing a public FramersHaven build.
 
 - [ ] README edition wording is factual, local-first, and not hard-selling.
 - [ ] User manual explains Community and Workstation without implying hosted service, accounting sync, or included vendor data.
-- [ ] Accounting CSV schema draft is reviewed before any generator code is added.
+- [ ] Implemented accounting CSV schema and generated sample files are reviewed before release.
 - [ ] Help copy for accounting export explains local CSV generation only.
 - [ ] Sales page copy variants and pricing FAQ are reviewed by a human before publication.
 - [ ] Windows package copy includes a start-here note and excludes runtime/private data.

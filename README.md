@@ -12,6 +12,7 @@ The included demo uses the fictional **FramersHaven** identity and generated sam
 - Configurable pricing, services, tax, and studio branding
 - Quote, work-order, and invoice workflow
 - PDF/JPG preview before save or customer handoff
+- Workstation accounting CSV handoff bundle
 - Customer history and local backup archives
 - Multi-page operator help served by the app
 
@@ -26,11 +27,11 @@ FramersHaven operates in two editions:
   - Up to 1 successful local catalog package import
   - Manual quote, work order, and invoice workflow
 
-- **Workstation Edition** removes the currently enforced catalog, saved order/quote, and local package-import limits. Additional Workstation conveniences, including accounting CSV export and expanded document branding, remain planned.
+- **Workstation Edition** removes the currently enforced catalog, saved order/quote, and local package-import limits and includes local accounting CSV export. Expanded document branding remains planned.
 
 To use Workstation Edition, set the environment variable `FRAMERSHAVEN_EDITION=workstation` before starting the app.
 
-No vendor catalogs, customer records, accounting credentials, or online billing flow are included in the repository. This is a local-first app. It does not provide payment processing, email/SMS sending, accounting CSV export, or accounting API sync. Do not expose it directly to the public internet.
+No vendor catalogs, customer records, accounting credentials, or online billing flow are included in the repository. This is a local-first app. Accounting support is a local CSV handoff only; it does not provide accounting API sync. The app does not process payments or send email/SMS. Do not expose it directly to the public internet.
 
 ## Quick Start
 
@@ -77,9 +78,12 @@ node --test app/src/*.test.js
 With the app running against demo data:
 
 ```bash
-./venv/bin/python scripts/browser_smoke.py
+./venv/bin/python scripts/browser_smoke.py --expected-edition community
 ./venv/bin/python scripts/generate_screenshots.py
 ```
+
+Restart with `FRAMERSHAVEN_EDITION=workstation` and rerun the smoke test with
+`--expected-edition workstation` before releasing Workstation features.
 
 ## Data Safety
 

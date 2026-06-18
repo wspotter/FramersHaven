@@ -29,6 +29,7 @@ let adminCatalogRenderLimit = 300;
 let adminCatalogEditorReturnFocus = null;
 let pricingSettings = null;
 let serviceOptionsCache = [];
+let editionStatusCache = null;
 let customerSearchTimer = null;
 let orderSearchTimer = null;
 let designSearchTimer = null;
@@ -2577,7 +2578,7 @@ function closeCatalogEditor() {
 }
 
 function setAdminView(view, trigger = null) {
-  const allowed = new Set(['catalog', 'import', 'pricing', 'services', 'studio', 'backups', 'diagnostics']);
+  const allowed = new Set(['catalog', 'import', 'pricing', 'services', 'studio', 'accounting', 'backups', 'diagnostics']);
   if (!allowed.has(view)) return;
   document.querySelectorAll('.admin-view-button').forEach((button) => {
     const active = button.dataset.adminView === view;
@@ -2627,14 +2628,55 @@ async function loadEditionStatus() {
   const formatUsage = (used, limit) => `${used ?? 0} / ${limit === 'unlimited' ? 'unlimited' : limit}`;
   try {
     const data = await fetchJson('/api/edition/status');
+    editionStatusCache = data;
     if (name) name.textContent = data.label || data.edition;
     if (catalog) catalog.textContent = formatUsage(data.usage?.active_catalog_items, data.limits?.active_catalog_items);
     if (orders) orders.textContent = formatUsage(data.usage?.saved_orders_quotes, data.limits?.saved_orders_quotes);
     if (imports) imports.textContent = formatUsage(data.usage?.catalog_package_imports, data.limits?.local_catalog_package_imports);
+    renderAccountingExportState();
   } catch (error) {
+    editionStatusCache = null;
     if (name) name.textContent = 'Edition status unavailable';
     [catalog, orders, imports].forEach((node) => { if (node) node.textContent = '-'; });
+    renderAccountingExportState();
     setNotice(error.message, 'error');
+  }
+}
+
+function renderAccountingExportState() {
+  const message = document.getElementById('accountingExportMessage');
+  const button = document.getElementById('accountingExportButton');
+  const available = editionStatusCache?.features?.accounting_csv_export === true;
+  if (button) button.hidden = !available;
+  if (!message) return;
+  message.textContent = available
+    ? 'Generate a local ZIP containing customer, invoice, and invoice-line CSV files for accounting review.'
+    : 'Accounting CSV export is available in Workstation Edition. Community data remains unchanged.';
+}
+
+async function downloadAccountingExport() {
+  const button = document.getElementById('accountingExportButton');
+  if (button) button.disabled = true;
+  try {
+    const response = await fetch('/api/accounting/export.zip');
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.detail || response.statusText || 'Accounting export failed');
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'accounting_csv_export.zip';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setNotice('Accounting CSV bundle generated locally.', 'success');
+  } catch (error) {
+    setNotice(error.message, 'error');
+  } finally {
+    if (button) button.disabled = false;
   }
 }
 

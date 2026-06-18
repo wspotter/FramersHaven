@@ -6,14 +6,14 @@ FramersHaven is a local-first workstation app for intake, framing design, quotin
 
 The app is organized into separate workspaces so operators do not have to manage the whole workflow on one screen.
 
-## Planned Editions and Local Limits (Draft)
+## Editions and Local Limits
 
-FramersHaven is planned around two local editions:
+FramersHaven uses two local editions:
 
 - **Community Edition** is for trying the app, inspecting the source, and running a small shop trial. It keeps the core local workflow: manual catalog entry, local quotes/orders/customers, PDF/JPG exports, and manual backups.
-- **Workstation Edition** is the planned paid Windows-ready ZIP/folder workflow for daily local use. It removes the planned Community scale limits and adds convenience features such as branded document templates, unlimited local catalog package imports, and local CSV export for accounting review.
+- **Workstation Edition** is the daily-use mode with unlimited catalog, saved order/quote, and package-import limits plus local CSV export for accounting review. Paid Windows distribution and expanded document branding remain planned.
 
-Planned Community limits are intentionally scale-based rather than feature-breaking:
+Community limits are intentionally scale-based rather than feature-breaking:
 
 - 1 studio profile
 - Up to 50 active catalog items
@@ -103,6 +103,7 @@ On macOS or Linux:
 - Use the left utility rail for Import, Pricing, Services, Backups, and Diagnostics instead of scrolling through every tool at once.
 - Pricing settings affect future quote calculations.
 - Service pricing controls the retail quote rows for backing, mounting, frame mounting, printing, various, assembly, and royalties.
+- Accounting generates a local ZIP containing customer, invoice, and invoice-line CSV files in Workstation Edition. Review those files before using them in any accounting workflow.
 - `Import Mat Package` and `Import Moulding Package` read operator-supplied files from the local `catalog_imports/` folder and attach matching preview images when the zip is present.
 - Use the cropped texture uploader after selecting a moulding in the catalog editor when a good moulding strip needs to be attached manually.
 - Backups create a zip containing the database, uploads, exports, and catalog snapshot files.

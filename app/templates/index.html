@@ -4942,6 +4942,7 @@
               <button type="button" class="admin-view-button" data-admin-view="pricing" aria-pressed="false" onclick="setAdminView('pricing', this)">Pricing</button>
               <button type="button" class="admin-view-button" data-admin-view="services" aria-pressed="false" onclick="setAdminView('services', this)">Services</button>
               <button type="button" class="admin-view-button" data-admin-view="studio" aria-pressed="false" onclick="setAdminView('studio', this)">Studio</button>
+              <button type="button" class="admin-view-button" data-admin-view="accounting" aria-pressed="false" onclick="setAdminView('accounting', this)">Accounting</button>
               <button type="button" class="admin-view-button" data-admin-view="backups" aria-pressed="false" onclick="setAdminView('backups', this)">Backups</button>
               <button type="button" class="admin-view-button" data-admin-view="diagnostics" aria-pressed="false" onclick="setAdminView('diagnostics', this)">Diagnostics</button>
             </nav>
@@ -5239,6 +5240,17 @@
                 <img id="studioLogoPreview" class="brand-logo" alt="Current studio logo" hidden />
                 <input id="studioLogoFile" type="file" accept="image/png,image/webp" />
                 <div class="inline-actions"><button type="button" onclick="uploadStudioLogo()">Upload Logo</button><button type="button" class="secondary" onclick="removeStudioLogo()">Remove Logo</button></div>
+              </div>
+              <div class="card admin-utility-panel" data-admin-panel="accounting">
+                <h3>Accounting CSV Export</h3>
+                <p id="accountingExportMessage">Loading edition availability.</p>
+                <div class="detail-box">
+                  <strong>Local files only</strong>
+                  <p>The ZIP contains customer, invoice, and invoice-line CSV files. It does not connect to accounting software, transmit credentials, or confirm an import.</p>
+                </div>
+                <div class="inline-actions">
+                  <button id="accountingExportButton" type="button" onclick="downloadAccountingExport()" hidden>Download Accounting CSV ZIP</button>
+                </div>
               </div>
               <div class="card admin-utility-panel" data-admin-panel="backups">
                 <h3>Backups</h3>

@@ -18,6 +18,10 @@ COMMUNITY_SAVED_ORDERS_QUOTES_LIMIT_DENIED_DETAIL = (
     "Community edition includes up to 25 saved quotes/orders. "
     "This quote was not saved, and existing records remain available."
 )
+COMMUNITY_ACCOUNTING_EXPORT_DENIED_DETAIL = (
+    "Accounting CSV export is available in Workstation Edition. "
+    "Community data remains unchanged."
+)
 
 
 def get_edition() -> str:
@@ -33,7 +37,7 @@ def get_edition_info() -> dict[str, object]:
         return {
             "edition": WORKSTATION,
             "label": "Workstation Edition",
-            "description": "Planned paid Windows-ready ZIP/folder workflow for daily local use.",
+            "description": "Local daily-use edition with unlimited scale limits and accounting CSV export.",
             "limits": {
                 "studio_profiles": "unlimited",
                 "active_catalog_items": "unlimited",
@@ -42,8 +46,8 @@ def get_edition_info() -> dict[str, object]:
             },
             "features": {
                 "accounting_csv_export": True,
-                "windows_paid_package": True,
-                "branded_templates": True,
+                "windows_paid_package": False,
+                "branded_templates": False,
             },
             "unlimited": [
                 "studio_profiles",
@@ -51,7 +55,6 @@ def get_edition_info() -> dict[str, object]:
                 "saved_orders_quotes",
                 "local_catalog_package_imports",
                 "accounting_csv_export",
-                "windows_paid_package",
             ],
         }
     return {
@@ -71,6 +74,11 @@ def get_edition_info() -> dict[str, object]:
         },
         "unlimited": [],
     }
+
+
+def require_accounting_csv_export() -> None:
+    if get_edition() != WORKSTATION:
+        raise HTTPException(status_code=403, detail=COMMUNITY_ACCOUNTING_EXPORT_DENIED_DETAIL)
 
 
 def get_catalog_limit() -> int | None:

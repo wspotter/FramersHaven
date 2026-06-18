@@ -1,6 +1,6 @@
-# Edition API Response Examples (Draft)
+# Edition API Response Examples
 
-This file contains draft JSON examples for a future `GET /api/edition` endpoint. It does not implement the endpoint.
+These examples document the implemented `GET /api/edition` response.
 
 ## Community Edition
 
@@ -29,7 +29,7 @@ This file contains draft JSON examples for a future `GET /api/edition` endpoint.
 {
   "edition": "workstation",
   "label": "Workstation Edition",
-  "description": "Planned paid Windows-ready ZIP/folder workflow for daily local use.",
+  "description": "Local daily-use edition with unlimited scale limits and accounting CSV export.",
   "limits": {
     "studio_profiles": "unlimited",
     "active_catalog_items": "unlimited",
@@ -38,15 +38,15 @@ This file contains draft JSON examples for a future `GET /api/edition` endpoint.
   },
   "features": {
     "accounting_csv_export": true,
-    "windows_paid_package": true
+    "windows_paid_package": false,
+    "branded_templates": false
   },
   "unlimited": [
     "studio_profiles",
     "active_catalog_items",
     "saved_orders_quotes",
     "local_catalog_package_imports",
-    "accounting_csv_export",
-    "windows_paid_package"
+    "accounting_csv_export"
   ]
 }
 ```

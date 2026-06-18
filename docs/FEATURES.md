@@ -109,6 +109,7 @@ This file is the source of truth for implemented behavior so sprint work does no
 
 ### Export
 - Orders CSV export endpoint for quotes/work orders/invoices.
+- Workstation Edition accounting handoff ZIP containing customer, invoice, and invoice-line CSV files.
 - Separate PDF form export for quotes, work orders, and invoices.
 - Mockup JPG export.
 - PDF/JPG exports show the stored tax-rate label from the quote payload.
@@ -135,7 +136,7 @@ This file is the source of truth for implemented behavior so sprint work does no
 - POS integration.
 - Native SMS provider integration.
 - Fully freeform multi-opening mat designer with arbitrary openings, V-grooves, and advanced templates.
-- Payments/accounting (handled outside this app).
+- Payment processing, accounting synchronization, and reconciliation.
 
 ## Sprint Rule
 When features are added/changed/removed, update this file and `docs/API.md` in the same PR.

@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from PIL import Image, ImageDraw, ImageOps, UnidentifiedImageError
@@ -23,6 +23,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 
 from . import db as db_module
+from .accounting_export import generate_accounting_export
 from .db import get_connection, init_db
 from .db_admin import init_admin_tables
 from .edition import (
@@ -32,6 +33,7 @@ from .edition import (
     get_catalog_imports_count,
     get_edition_info,
     increment_catalog_imports_count,
+    require_accounting_csv_export,
 )
 from .pricing import QuoteRequest, calculate_quote
 
@@ -242,6 +244,27 @@ def edition_status() -> dict[str, object]:
             "catalog_package_imports": imports_used,
         },
     }
+
+
+@app.get("/api/accounting/export.zip")
+def export_accounting_csv_bundle() -> Response:
+    require_accounting_csv_export()
+    conn = get_connection()
+    try:
+        result = generate_accounting_export(conn, EXPORT_DIR)
+    finally:
+        conn.close()
+    return Response(
+        content=result.bundle_bytes,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{result.bundle_path.name}"',
+            "X-FramersHaven-Customers": str(result.customer_count),
+            "X-FramersHaven-Invoices": str(result.invoice_count),
+            "X-FramersHaven-Lines": str(result.line_count),
+            "X-FramersHaven-Fallback-Lines": str(result.fallback_line_count),
+        },
+    )
 
 
 @app.get("/api/config")
