@@ -143,6 +143,11 @@ def main() -> int:
     parser.add_argument("--url", default="http://127.0.0.1:8000", help="Running app URL")
     parser.add_argument("--headed", action="store_true", help="Run with a visible browser window")
     parser.add_argument("--save", action="store_true", help="Also save a test quote into the local database")
+    parser.add_argument(
+        "--expected-edition",
+        choices=("community", "workstation"),
+        help="Fail unless the running app uses this edition",
+    )
     args = parser.parse_args()
 
     try:
@@ -167,9 +172,24 @@ def main() -> int:
             step = "verify Admin edition status"
             page.locator("[data-tab='admin']").first.click()
             page.wait_for_selector("#adminEditionStatus", timeout=5000)
+            page.wait_for_function(
+                """() => {
+                    const text = document.querySelector('#editionName')?.textContent || '';
+                    return text.includes('Community Edition') || text.includes('Workstation Edition');
+                }""",
+                timeout=5000,
+            )
             edition_text = page.locator("#editionName").inner_text()
-            if "Edition" not in edition_text:
+            if "Workstation Edition" in edition_text:
+                active_edition = "workstation"
+            elif "Community Edition" in edition_text:
+                active_edition = "community"
+            else:
                 raise AssertionError(f"Edition status did not load properly: {edition_text}")
+            if args.expected_edition and active_edition != args.expected_edition:
+                raise AssertionError(
+                    f"Expected {args.expected_edition} edition, but the app reported {active_edition}"
+                )
             catalog_usage = page.locator("#editionCatalogUsage").inner_text()
             orders_usage = page.locator("#editionOrdersUsage").inner_text()
             imports_usage = page.locator("#editionImportsUsage").inner_text()
@@ -180,6 +200,28 @@ def main() -> int:
             ):
                 if "/" not in usage:
                     raise AssertionError(f"{label} usage not displayed: {usage}")
+            page.locator("[data-admin-view='accounting']").click()
+            accounting_message = page.locator("#accountingExportMessage")
+            accounting_button = page.locator("#accountingExportButton")
+            if "Workstation Edition" in edition_text:
+                if accounting_button.is_hidden():
+                    raise AssertionError("Workstation accounting export button is hidden")
+                with page.expect_download(timeout=10_000) as download_info:
+                    accounting_button.click()
+                if download_info.value.suggested_filename != "accounting_csv_export.zip":
+                    raise AssertionError(
+                        f"Unexpected accounting download name: {download_info.value.suggested_filename}"
+                    )
+            else:
+                if accounting_button.is_visible():
+                    raise AssertionError("Community accounting export button is visible")
+                if "Workstation Edition" not in accounting_message.inner_text():
+                    raise AssertionError("Community accounting export message is missing")
+                blocked_status = page.request.get(f"{args.url.rstrip('/')}/api/accounting/export.zip").status
+                if blocked_status != 403:
+                    raise AssertionError(
+                        f"Community accounting export returned HTTP {blocked_status}, expected 403"
+                    )
             page.locator("[data-tab='design']").first.click()
             page.wait_for_selector("#tab-design.active", timeout=5000)
             if page.locator("#customerSelect").count():

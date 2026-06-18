@@ -319,16 +319,16 @@ Description: Decide the first export format before writing code.
 
 Recommended v1 export files:
 
-- [ ] `accounting_customers.csv`
-- [ ] `accounting_invoices.csv`
-- [ ] `accounting_invoice_lines.csv`
+- [x] `accounting_customers.csv`
+- [x] `accounting_invoices.csv`
+- [x] `accounting_invoice_lines.csv`
 
 Acceptance criteria:
 
-- [ ] Fields are documented.
-- [ ] Export is CSV only, no API sync.
-- [ ] Tax, subtotal, total, customer name, date, quote/order number, and line-item labels are included.
-- [ ] Unsupported accounting fields are documented as intentionally omitted.
+- [x] Fields are documented.
+- [x] Export is CSV only, no API sync.
+- [x] Tax, subtotal, total, customer name, date, quote/order number, and line-item labels are included.
+- [x] Unsupported accounting fields are documented as intentionally omitted.
 
 Verification:
 
@@ -345,7 +345,7 @@ Safe for other LLM:
 
 Codex/local review required:
 
-- [ ] Final schema decisions.
+- [x] Final schema decisions.
 
 ### Task 9: Build Export Generator
 
@@ -353,16 +353,16 @@ Description: Generate accounting CSV files from local orders/customers.
 
 Acceptance criteria:
 
-- [ ] Workstation edition can export CSVs.
-- [ ] Community edition receives a structured "Workstation feature" error.
-- [ ] Export files are written under `exports/accounting/`.
-- [ ] CSV output escapes commas, quotes, and newlines correctly.
+- [x] Workstation edition can export CSVs.
+- [x] Community edition receives a structured "Workstation feature" error.
+- [x] Export files are written under `exports/accounting/`.
+- [x] CSV output escapes commas, quotes, and newlines correctly.
 
 Verification:
 
-- [ ] Unit tests for CSV formatting.
-- [ ] API tests for edition gating.
-- [ ] Manual open of generated CSV files.
+- [x] Unit tests for CSV formatting.
+- [x] API tests for edition gating.
+- [x] Manual open of generated CSV files.
 
 Suggested files:
 
@@ -377,7 +377,7 @@ Safe for other LLM:
 
 Codex/local review required:
 
-- [ ] Export implementation and tests.
+- [x] Export implementation and tests.
 
 ### Task 10: Add Export UI
 
@@ -385,15 +385,15 @@ Description: Add a Workstation-only accounting export control in Admin.
 
 Acceptance criteria:
 
-- [ ] Admin shows Accounting Export section.
-- [ ] Community explains the feature is Workstation-only.
-- [ ] Workstation can generate/download CSV bundle.
-- [ ] Export never sends data to a third-party service.
+- [x] Admin shows Accounting Export section.
+- [x] Community explains the feature is Workstation-only.
+- [x] Workstation can generate/download CSV bundle.
+- [x] Export never sends data to a third-party service.
 
 Verification:
 
-- [ ] Browser smoke or Playwright check for Admin export.
-- [ ] Generated files exist under `exports/accounting/`.
+- [x] Browser smoke or Playwright check for Admin export.
+- [x] Generated files exist under `exports/accounting/`.
 
 Suggested files:
 
@@ -408,14 +408,14 @@ Safe for other LLM:
 
 Codex/local review required:
 
-- [ ] UI wiring and file download behavior.
+- [x] UI wiring and file download behavior.
 
 ### Checkpoint: Accounting CSV
 
-- [ ] Community mode blocks export cleanly.
-- [ ] Workstation mode generates valid CSVs.
-- [ ] No accounting API sync claims appear in docs.
-- [ ] Browser smoke passes.
+- [x] Community mode blocks export cleanly.
+- [x] Workstation mode generates valid CSVs.
+- [x] No accounting API sync claims appear in docs.
+- [x] Browser smoke passes.
 
 ## Phase 5: Windows Paid Package
 

@@ -1,6 +1,6 @@
-# Accounting CSV Export Schema (Draft)
+# Accounting CSV Export Schema
 
-This is a schema draft for a future Workstation-only local CSV export. It does not implement an export generator, API endpoint, or accounting sync.
+This schema documents the Workstation-only local CSV export implemented by FramersHaven. It is a file handoff, not accounting sync.
 
 The file names and column headers below reference common accounting CSV import patterns. QuickBooks-compatible naming is used as a compatibility reference only; this is not a QuickBooks integration, certified export, or accounting API feature.
 
@@ -11,7 +11,7 @@ The file names and column headers below reference common accounting CSV import p
 - No accounting credentials, API tokens, hosted service calls, or automatic reconciliation are included.
 - Operators must review generated CSV files before using them in any accounting workflow.
 - Demo and test examples must use fictional data only.
-- This is a draft schema. Target import fields and format may change after human review.
+- This is the implemented v1 handoff schema. Target-specific mappings may change after operator review.
 
 ## Common Import Concepts
 
@@ -139,7 +139,7 @@ INV-000001,Q000001,1,Example Customer A,Frame package,"Custom framing mockup, ma
 
 ## Validation Checklist
 
-Before implementation, confirm:
+Before release or operational use, confirm:
 
 - [ ] The target accounting import accepts or can map these columns.
 - [ ] Date format matches the operator's accounting locale.

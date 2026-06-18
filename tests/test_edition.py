@@ -64,8 +64,10 @@ class EditionModuleTests(unittest.TestCase):
         self.assertEqual(info["limits"]["saved_orders_quotes"], "unlimited")
         self.assertEqual(info["limits"]["local_catalog_package_imports"], "unlimited")
         self.assertTrue(info["features"]["accounting_csv_export"])
-        self.assertTrue(info["features"]["windows_paid_package"])
+        self.assertFalse(info["features"]["windows_paid_package"])
+        self.assertFalse(info["features"]["branded_templates"])
         self.assertIn("active_catalog_items", info["unlimited"])
+        self.assertNotIn("windows_paid_package", info["unlimited"])
 
 
 class EditionApiTests(unittest.TestCase):

@@ -232,6 +232,11 @@
   - response includes `approved_at`, `completed_at`, and `invoiced_at`
 
 ## Export
+- `GET /api/accounting/export.zip`
+  - Workstation Edition only; Community returns HTTP `403` without generating files
+  - returns a ZIP containing `accounting_customers.csv`, `accounting_invoices.csv`, and `accounting_invoice_lines.csv`
+  - writes the same local handoff files under `exports/accounting/`
+  - does not connect to an accounting service or expose local filesystem paths
 - `GET /api/orders/export.csv`
 - `GET /api/orders/{order_id}/export?format=pdf|jpg&document=quote|work_order|invoice`
   - optional `disposition=inline|attachment`; defaults to `attachment`
