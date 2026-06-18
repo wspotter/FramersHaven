@@ -38,6 +38,20 @@
         </header>
 
         <section class="doc-section">
+          <h2>Edition limits</h2>
+          <p>The edition status panel in the Admin rail shows current usage against the active local limits.</p>
+          <ul>
+            <li><strong>Community Edition</strong>: 50 active catalog items, 25 saved quotes/orders, and 1 successful local catalog package import.</li>
+            <li><strong>Workstation Edition</strong>: the catalog, saved quote/order, and package-import counters are unlimited.</li>
+          </ul>
+          <p>Set <code>FRAMERSHAVEN_EDITION=workstation</code> before starting the app to run in Workstation mode.</p>
+          <div class="callout">
+            <strong>Existing data remains accessible.</strong>
+            <p>Community limits prevent new records at the boundary. Existing catalog items, orders, previews, and exports remain available.</p>
+          </div>
+        </section>
+
+        <section class="doc-section">
           <h2>Materials and services stay separate</h2>
           <div class="two-column">
             <div class="info-card">

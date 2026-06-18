@@ -15,16 +15,22 @@ The included demo uses the fictional **FramersHaven** identity and generated sam
 - Customer history and local backup archives
 - Multi-page operator help served by the app
 
-## Planned Editions (Draft)
+## Editions
 
-FramersHaven is planned as a local-first workstation with two editions:
+FramersHaven operates in two editions:
 
-- **Community Edition** is the free, source-available snapshot for trying the app, inspecting the source, and running a small local shop workflow.
-- **Workstation Edition** is the planned paid Windows-ready ZIP/folder workflow for daily local use, with higher local scale, branded document templates, local catalog package management, and local CSV export for accounting review.
+- **Community Edition** is the default local-first workstation. It includes:
+  - 1 studio profile
+  - Up to 50 active catalog items
+  - Up to 25 saved quotes/orders
+  - Up to 1 successful local catalog package import
+  - Manual quote, work order, and invoice workflow
 
-No vendor catalogs, customer records, accounting credentials, or online billing flow are included in the repository. Accounting support is planned as local CSV export only, not hosted accounting sync. Edition limits and Workstation entitlements are still draft product copy until the local code review is complete.
+- **Workstation Edition** removes the currently enforced catalog, saved order/quote, and local package-import limits. Additional Workstation conveniences, including accounting CSV export and expanded document branding, remain planned.
 
-This is a local-first app. It does not provide payment processing, email/SMS sending, or accounting API sync. Do not expose it directly to the public internet.
+To use Workstation Edition, set the environment variable `FRAMERSHAVEN_EDITION=workstation` before starting the app.
+
+No vendor catalogs, customer records, accounting credentials, or online billing flow are included in the repository. This is a local-first app. It does not provide payment processing, email/SMS sending, accounting CSV export, or accounting API sync. Do not expose it directly to the public internet.
 
 ## Quick Start
 

@@ -164,6 +164,24 @@ def main() -> int:
             page.goto(args.url, wait_until="networkidle")
             page.wait_for_selector("#mockupCanvas", timeout=10_000)
             assert_moulding_orientation(page)
+            step = "verify Admin edition status"
+            page.locator("[data-tab='admin']").first.click()
+            page.wait_for_selector("#adminEditionStatus", timeout=5000)
+            edition_text = page.locator("#editionName").inner_text()
+            if "Edition" not in edition_text:
+                raise AssertionError(f"Edition status did not load properly: {edition_text}")
+            catalog_usage = page.locator("#editionCatalogUsage").inner_text()
+            orders_usage = page.locator("#editionOrdersUsage").inner_text()
+            imports_usage = page.locator("#editionImportsUsage").inner_text()
+            for label, usage in (
+                ("Catalog", catalog_usage),
+                ("Orders/quotes", orders_usage),
+                ("Package imports", imports_usage),
+            ):
+                if "/" not in usage:
+                    raise AssertionError(f"{label} usage not displayed: {usage}")
+            page.locator("[data-tab='design']").first.click()
+            page.wait_for_selector("#tab-design.active", timeout=5000)
             if page.locator("#customerSelect").count():
                 raise AssertionError("Legacy customer dropdown is still present in Design")
             first_customer = page.evaluate(

@@ -255,6 +255,7 @@ function switchTab(tab, button) {
 
   document.getElementById('pageTitle').textContent = tabMeta[tab].title;
   document.getElementById('pageSubtitle').textContent = tabMeta[tab].subtitle;
+  if (tab === 'admin') loadEditionStatus();
 }
 
 function formatCurrency(value) {
@@ -2616,6 +2617,25 @@ function applyStudioProfile(profile) {
 async function loadStudioProfile() {
   try { applyStudioProfile((await fetchJson('/api/studio-profile')).profile); }
   catch (error) { setNotice(error.message, 'error'); }
+}
+
+async function loadEditionStatus() {
+  const name = document.getElementById('editionName');
+  const catalog = document.getElementById('editionCatalogUsage');
+  const orders = document.getElementById('editionOrdersUsage');
+  const imports = document.getElementById('editionImportsUsage');
+  const formatUsage = (used, limit) => `${used ?? 0} / ${limit === 'unlimited' ? 'unlimited' : limit}`;
+  try {
+    const data = await fetchJson('/api/edition/status');
+    if (name) name.textContent = data.label || data.edition;
+    if (catalog) catalog.textContent = formatUsage(data.usage?.active_catalog_items, data.limits?.active_catalog_items);
+    if (orders) orders.textContent = formatUsage(data.usage?.saved_orders_quotes, data.limits?.saved_orders_quotes);
+    if (imports) imports.textContent = formatUsage(data.usage?.catalog_package_imports, data.limits?.local_catalog_package_imports);
+  } catch (error) {
+    if (name) name.textContent = 'Edition status unavailable';
+    [catalog, orders, imports].forEach((node) => { if (node) node.textContent = '-'; });
+    setNotice(error.message, 'error');
+  }
 }
 
 async function saveStudioProfile(event) {

@@ -29,6 +29,7 @@ from .edition import (
     check_catalog_item_limit,
     check_catalog_package_import_limit,
     check_saved_orders_quotes_limit,
+    get_catalog_imports_count,
     get_edition_info,
     increment_catalog_imports_count,
 )
@@ -215,6 +216,32 @@ def health() -> dict[str, str]:
 @app.get("/api/edition")
 def edition() -> dict[str, object]:
     return get_edition_info()
+
+
+@app.get("/api/edition/status")
+def edition_status() -> dict[str, object]:
+    info = get_edition_info()
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) as count FROM catalog_items WHERE active = 1")
+        active_catalog = cur.fetchone()["count"]
+        cur.execute("SELECT COUNT(*) as count FROM orders")
+        saved_orders_quotes = cur.fetchone()["count"]
+        imports_used = get_catalog_imports_count(conn)
+    finally:
+        conn.close()
+    return {
+        "edition": info["edition"],
+        "label": info["label"],
+        "limits": info["limits"],
+        "features": info["features"],
+        "usage": {
+            "active_catalog_items": active_catalog,
+            "saved_orders_quotes": saved_orders_quotes,
+            "catalog_package_imports": imports_used,
+        },
+    }
 
 
 @app.get("/api/config")

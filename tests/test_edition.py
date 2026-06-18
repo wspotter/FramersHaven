@@ -495,6 +495,53 @@ class EditionApiTests(unittest.TestCase):
         self.assertEqual(blocked.status_code, 403)
         self.assertFalse((main_module.PREVIEW_DIR / "mats" / "SECOND01.jpg").exists())
 
+    def test_edition_status_endpoint_returns_usage_and_limits(self):
+        os.environ.pop("FRAMERSHAVEN_EDITION", None)
+        for index in range(3):
+            self.client.post(
+                "/api/catalog/items",
+                data={
+                    "sku": f"S{index:03d}",
+                    "name": f"Status Test {index}",
+                    "category": "moulding",
+                    "cost": "10",
+                    "width_in": "1.5",
+                },
+            )
+        for index in range(2):
+            created = self.client.post(
+                "/api/orders",
+                data={
+                    "customer_name": f"Status Quote {index:03d}",
+                    "customer_contact": "555-010-0100",
+                    "payload_json": json.dumps({"subtotal": 10, "tax": 0.6, "total": 10.6}),
+                    "subtotal": "10",
+                    "tax": "0.6",
+                    "total": "10.6",
+                },
+            )
+            self.assertEqual(created.status_code, 200)
+            if index == 1:
+                moved = self.client.post(
+                    f"/api/orders/{created.json()['order_id']}/status",
+                    data={"status": "work_order", "note": "approved", "customer_approved": "1"},
+                )
+                self.assertEqual(moved.status_code, 200)
+
+        response = self.client.get("/api/edition/status")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["edition"], "community")
+        self.assertEqual(data["label"], "Community Edition")
+        self.assertIn("limits", data)
+        self.assertIn("usage", data)
+        self.assertEqual(data["usage"]["active_catalog_items"], 3)
+        self.assertEqual(data["usage"]["saved_orders_quotes"], 2)
+        self.assertEqual(data["usage"]["catalog_package_imports"], 0)
+        self.assertEqual(data["limits"]["active_catalog_items"], 50)
+        self.assertEqual(data["limits"]["saved_orders_quotes"], 25)
+        self.assertEqual(data["limits"]["local_catalog_package_imports"], 1)
+
     def test_catalog_package_import_respects_community_active_item_limit(self):
         os.environ.pop("FRAMERSHAVEN_EDITION", None)
         conn = db.get_connection()

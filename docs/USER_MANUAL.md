@@ -99,6 +99,7 @@ On macOS or Linux:
 ### Admin
 - Admin opens on a catalog-first table. Search across SKU, name, vendor, or category, use the material quick filters, and click a column heading to switch ascending/descending sort.
 - Select a material row to open its editor drawer; use `New Item` for a missing material. Close the drawer with `Close`, the backdrop, or `Escape`.
+- The edition status in the Admin rail shows current catalog, saved order/quote, and package-import usage against the active edition limits.
 - Use the left utility rail for Import, Pricing, Services, Backups, and Diagnostics instead of scrolling through every tool at once.
 - Pricing settings affect future quote calculations.
 - Service pricing controls the retail quote rows for backing, mounting, frame mounting, printing, various, assembly, and royalties.
