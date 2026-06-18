@@ -1,8 +1,8 @@
 # Windows Test Report Template
 
-Use this template when validating the Windows launcher on a real workstation. Fill in every section before treating the draft build as Windows-ready.
+Use this template when validating the Windows launcher on a real workstation. Fill in every section before treating the release candidate as Windows-ready.
 
-This is a draft test template for an early-access Windows-ready ZIP/folder workflow.
+This report is required for the Windows ZIP/folder release candidate.
 
 ## Test Environment
 

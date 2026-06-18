@@ -2,6 +2,8 @@
 
 Use this checklist before tagging or announcing a public FramersHaven build.
 
+Current release-candidate evidence is recorded in `V0.2.0_RC1_VALIDATION_REPORT.md`.
+
 ## Required Before Tagging
 
 - [ ] Fresh clone installs from `requirements-dev.txt`.

@@ -14,6 +14,7 @@ DEFAULT_OUTPUT_DIR = ROOT / "dist"
 
 INCLUDE_DIRS = ["app", "docs", "scripts", "tests"]
 INCLUDE_FILES = [
+    "VERSION",
     "README.md",
     "START_HERE_WINDOWS.txt",
     "ARCHITECTURE.md",
@@ -59,10 +60,18 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def read_version() -> str:
+    version_path = ROOT / "VERSION"
+    version = version_path.read_text(encoding="utf-8").strip()
+    if not version:
+        raise RuntimeError(f"Version file is empty: {version_path}")
+    return version
+
+
 def get_zip_name(version: str | None) -> str:
     base = "FramersHaven-windows-preview"
-    if version:
-        base = f"{base}-{version}"
+    package_version = version or f"v{read_version()}"
+    base = f"{base}-{package_version}"
     return f"{base}.zip"
 
 

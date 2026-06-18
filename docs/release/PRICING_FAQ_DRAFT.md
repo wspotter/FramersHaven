@@ -8,7 +8,7 @@ Pricing should be published on the public FramersHaven website or sales page aft
 
 Current repo-safe assumptions:
 
-- Community Edition is planned as free and source-available.
+- Community Edition is source-available; final public offer wording still requires review.
 - Workstation Windows ZIP/folder packaging is planned as a paid offer.
 - Setup/support calls may be offered separately.
 - Update terms must be written plainly before any sale.
@@ -21,7 +21,7 @@ The current draft assumption is a paid early-access Workstation Windows ZIP/fold
 
 ## What does the setup call include?
 
-The setup call is intended to help an operator get the Windows workstation running, review the local-first workflow, and confirm that catalog imports, document templates, and accounting CSV export are working as expected. It does not include custom development, data migration from other POS systems, or ongoing bookkeeping support.
+The proposed setup call would help an operator get the Windows workstation running, review the local-first workflow, and confirm that catalog imports and accounting CSV export are working as expected. It would not include custom development, data migration from other POS systems, or ongoing bookkeeping support.
 
 ## Can I try FramersHaven before paying?
 

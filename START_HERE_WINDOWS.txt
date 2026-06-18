@@ -1,10 +1,10 @@
-FramersHaven - Start Here (Draft Early-Access Build)
+FramersHaven v0.2.0-rc1 - Start Here
 
-This is a draft Windows-ready ZIP/folder workflow for local-first custom framing shops.
+This is a release-candidate Windows ZIP/folder workflow for local-first custom framing shops.
 It does not include vendor catalogs, customer records, accounting credentials,
 or online billing.
 
-This is an early-access concept build. Features, pricing, and packaging may change.
+Release-candidate features and packaging may still change after Windows validation.
 No payment processing, email/SMS sending, or accounting API sync is included.
 Do not expose this app directly to the public internet.
 
@@ -44,6 +44,6 @@ Data Location
 - Back up these files before moving the app to another workstation.
 
 Support
-- This is a draft early-access local-first build.
+- This is a local-first release candidate.
 - See docs/WINDOWS_INSTALL.md and docs/USER_MANUAL.md for details.
-- See docs/release/ for release notes, schema drafts, and checklists.
+- See CHANGELOG.md for release notes and docs/release/ for validation records.

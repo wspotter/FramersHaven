@@ -2,15 +2,15 @@
 
 These are draft copy variants for a future public sales surface. They are not final product claims and must be reviewed by a human before publication. No competitor names, vendor names, private shop names, real catalog data, or real customer data may appear in the final copy.
 
-All references to Workstation features, pricing, and Windows packaging are draft planning concepts, not implemented or guaranteed offerings.
+The Workstation mode and accounting CSV handoff are implemented. Pricing, support, expanded branding, and paid Windows distribution remain draft planning concepts.
 
 ## Draft A: Short Pitch
 
 FramersHaven is a local-first workstation for custom framing shops. It combines artwork intake, visual design, material selection, quoting, production tracking, customer records, document previews, and backups in one browser-based app.
 
-Community Edition is free and source-available for trying the app or running a small local workflow. Workstation Edition is a planned paid Windows-ready ZIP/folder workflow for daily shop use, with higher local scale, branded document templates, unlimited local catalog package imports, and local CSV export for accounting review.
+Community Edition is source-available for trying the app or running a small local workflow. Workstation Edition removes the local scale limits and includes local CSV export for accounting review. Paid Windows distribution and expanded branded templates remain planned.
 
-FramersHaven does not include vendor catalogs, customer records, or accounting sync. Accounting support is planned as local CSV export only. The app is intended for a trusted workstation or private LAN. It does not provide payment processing, email/SMS sending, or accounting API sync.
+FramersHaven does not include vendor catalogs, customer records, or accounting sync. Accounting support is a local CSV handoff only. The app is intended for a trusted workstation or private LAN. It does not provide payment processing, email/SMS sending, or accounting API sync.
 
 ## Draft B: Who It Is For
 
@@ -20,20 +20,20 @@ It is not a POS replacement, an accounting platform, or a vendor catalog service
 
 ## Community vs Workstation Comparison (Draft)
 
-| Area | Community Edition | Workstation Edition (Planned) |
+| Area | Community Edition | Workstation Edition |
 |------|-------------------|-------------------------------|
 | Cost | Free, source-available | Paid, early access (draft concept) |
 | Purpose | Try the app, inspect the source, small local workflow | Daily Windows shop use |
-| Studio profiles | 1 | Unlimited (planned) |
-| Active catalog items | Up to 50 | Unlimited (planned) |
-| Saved orders/quotes | Up to 25 | Unlimited (planned) |
-| Local catalog package imports | 1 successful import | Unlimited (planned) |
+| Studio profiles | 1 | Unlimited |
+| Active catalog items | Up to 50 | Unlimited |
+| Saved orders/quotes | Up to 25 | Unlimited |
+| Local catalog package imports | 1 successful import | Unlimited |
 | Branded document templates | No | Yes (planned) |
-| Accounting CSV export | No | Yes (planned) |
+| Accounting CSV export | No | Yes |
 | Paid Windows package | No | Yes (planned) |
 | Setup/support option | No | Optional (planned) |
 
-## Planned Workstation-Only Features
+## Workstation Features and Planned Additions
 
 - Unlimited local catalog management
 - Unlimited saved orders and quotes
@@ -60,4 +60,4 @@ The app does not include vendor catalogs, customer records, accounting credentia
 
 ## Draft C: One-Paragraph Summary
 
-FramersHaven is a local-first browser app that helps a framing shop manage artwork intake, design, quoting, production tracking, and customer paperwork from one workstation. Community Edition is free for trying the workflow, while Workstation Edition is a planned paid Windows-ready ZIP/folder workflow with unlimited local scale, branded templates, and local CSV export for accounting review. No vendor catalogs, customer records, or hosted-service features are included.
+FramersHaven is a local-first browser app that helps a framing shop manage artwork intake, design, quoting, production tracking, and customer paperwork from one workstation. Community Edition is for trying the workflow, while Workstation Edition removes local scale limits and includes local CSV export for accounting review. Paid Windows distribution and expanded branded templates remain planned. No vendor catalogs, customer records, or hosted-service features are included.
