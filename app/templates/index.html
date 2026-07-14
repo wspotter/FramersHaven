@@ -1640,14 +1640,22 @@
     .option-header,
     .option-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 34px 42px 58px;
-      gap: 4px;
+      grid-template-columns: minmax(0, 1fr) 30px 36px minmax(46px, 52px);
+      gap: 3px;
       align-items: center;
     }
 
     .option-row input,
     .option-row select {
       margin-top: 0;
+      min-width: 0;
+    }
+
+    .option-row > span:first-child {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .option-price {
@@ -1660,8 +1668,9 @@
     .option-header {
       margin-top: 2px;
       color: var(--muted);
-      font-size: 9px;
+      font-size: 7.5px;
       letter-spacing: 0.08em;
+      line-height: 1.05;
       text-transform: uppercase;
     }
 
@@ -1723,6 +1732,7 @@
       border: 1px solid #d9e2ee;
       border-radius: 7px;
       background: rgba(255,255,255,0.66);
+      min-width: 0;
     }
 
     .quote-service-grid {
@@ -1732,7 +1742,7 @@
     }
 
     .quote-service-grid .option-row {
-      grid-template-columns: minmax(0, 1fr) 34px 42px 58px;
+      grid-template-columns: minmax(0, 1fr) 30px 36px minmax(46px, 52px);
     }
 
     .quote-service-grid .option-price {
@@ -1814,7 +1824,7 @@
     }
 
     .quote-extra-grid .option-row {
-      grid-template-columns: minmax(0, 1fr) 42px 58px;
+      grid-template-columns: minmax(0, 1fr) 36px minmax(46px, 52px);
     }
 
     .quote-mini-meta {
@@ -4407,7 +4417,7 @@
                     <div class="option-header">
                       <span>Item</span>
                       <span>Qty</span>
-                      <span>Discount %</span>
+                      <span>Disc. %</span>
                       <span>Price</span>
                     </div>
                     <div class="quote-service-grid">
