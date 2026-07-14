@@ -4,6 +4,7 @@ import base64
 import csv
 import io
 import json
+import math
 import re
 import zipfile
 from contextlib import asynccontextmanager
@@ -12,10 +13,9 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Mapping
 
-from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from PIL import Image, ImageDraw, ImageOps, UnidentifiedImageError
 from reportlab.lib.pagesizes import LETTER
 from reportlab.lib import colors
@@ -23,8 +23,12 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 
 from . import db as db_module
+from .auth import StudioAuthMiddleware
 from .db import get_connection, init_db
 from .db_admin import init_admin_tables
+from .routes_admin import admin_router
+from .routes_quote import quote_router
+from .template_compat import Jinja2Templates
 from .pricing import QuoteRequest, calculate_quote
 
 ROOT = Path(__file__).resolve().parent
@@ -32,7 +36,7 @@ UPLOAD_DIR = ROOT.parent / "uploads"
 EXPORT_DIR = ROOT.parent / "exports"
 BACKUP_DIR = ROOT.parent / "backups"
 PREVIEW_DIR = ROOT.parent / "catalog_previews"
-CATALOG_IMPORT_DIR = ROOT.parent / "catalog_imports"
+PFD_DIR = ROOT.parent / "pfd"
 HELP_DIR = ROOT / "static" / "help"
 UPLOAD_DIR.mkdir(exist_ok=True)
 EXPORT_DIR.mkdir(exist_ok=True)
@@ -44,16 +48,40 @@ PREVIEW_DIR.mkdir(exist_ok=True)
 async def lifespan(_: FastAPI):
     init_db()
     init_admin_tables()
+    _seed_printing_options_from_legacy_service()
     _backfill_catalog_preview_links()
     yield
 
 
-app = FastAPI(title="FramersHaven", lifespan=lifespan)
+app = FastAPI(title="Printery Framing Studio", lifespan=lifespan)
+
+
+@app.middleware("http")
+async def prevent_stale_local_assets(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
 
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
 app.mount("/help", StaticFiles(directory=HELP_DIR, html=True), name="help")
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 app.mount("/catalog-previews", StaticFiles(directory=PREVIEW_DIR), name="catalog-previews")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return FileResponse(ROOT / "static" / "logo.ico")
+
+
+# Session middleware for admin auth (fixed secret key for session persistence)
+from starlette.middleware.sessions import SessionMiddleware
+app.add_middleware(StudioAuthMiddleware)
+app.add_middleware(SessionMiddleware, secret_key="printery-framing-studio-session-key-2026-secure")
+
+# Admin and quote routers
+app.include_router(admin_router)
+app.include_router(quote_router)
 templates = Jinja2Templates(directory=str(ROOT / "templates"))
 
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png"}
@@ -114,15 +142,15 @@ CATALOG_CATEGORY_ALIASES = {
 }
 
 BRAND = {
-    "business_name": "FramersHaven",
-    "owner": "Demo Operator",
-    "phone": "555-010-2026",
-    "email": "hello@example.test",
-    "street": "100 Gallery Lane",
-    "city": "Cedar Falls",
+    "business_name": "The Printery Framing Studio",
+    "owner": "Katherine Potter",
+    "phone": "1.606.229.0767",
+    "email": "sales@theprintery.biz",
+    "street": "216 W Court St",
+    "city": "Prestonsburg",
     "state": "Kentucky",
     "postal_code": "41653",
-    "address": "100 Gallery Lane, Cedar Falls, KY 40000",
+    "address": "216 W Court St, Prestonsburg, Kentucky 41653",
 }
 
 STUDIO_PROFILE_SETTING_KEYS = {
@@ -173,7 +201,11 @@ def _get_studio_profile() -> dict[str, Any]:
         address_parts.append(locality)
     profile["address"] = ", ".join(part for part in address_parts if part)
     logo_path = UPLOAD_DIR / profile["logo_filename"] if profile["logo_filename"] else None
-    profile["logo_url"] = f"/api/studio-profile/logo/file?v={logo_path.stat().st_mtime_ns}" if logo_path and logo_path.is_file() else "/static/logo.png"
+    profile["logo_url"] = (
+        f"/api/studio-profile/logo/file?v={logo_path.stat().st_mtime_ns}"
+        if logo_path and logo_path.is_file()
+        else None
+    )
     profile["owner"] = profile["contact_name"]
     return profile
 
@@ -197,7 +229,11 @@ def _save_studio_profile_values(values: Mapping[str, str]) -> dict[str, Any]:
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(request, "index.html", {"brand": _get_studio_profile()})
+    app_js_version = (ROOT / "static" / "app.js").stat().st_mtime_ns
+    return templates.TemplateResponse(
+        "index.html",
+        {"request": request, "brand": _get_studio_profile(), "app_js_version": app_js_version},
+    )
 
 
 @app.get("/api/health")
@@ -297,18 +333,24 @@ def delete_studio_logo() -> dict[str, Any]:
 
 
 def _require_positive(value: float, field_name: str) -> float:
+    if not math.isfinite(value):
+        raise HTTPException(status_code=400, detail=f"{field_name} must be a finite number")
     if value <= 0:
         raise HTTPException(status_code=400, detail=f"{field_name} must be positive")
     return value
 
 
 def _require_non_negative(value: float, field_name: str) -> float:
+    if not math.isfinite(value):
+        raise HTTPException(status_code=400, detail=f"{field_name} must be a finite number")
     if value < 0:
         raise HTTPException(status_code=400, detail=f"{field_name} must be non-negative")
     return value
 
 
 def _require_service_price(value: float, field_name: str) -> float:
+    if not math.isfinite(value):
+        raise HTTPException(status_code=400, detail=f"{field_name} must be a finite number")
     _require_non_negative(value, field_name)
     if value > 999.99:
         raise HTTPException(status_code=400, detail=f"{field_name} must be 999.99 or less")
@@ -385,7 +427,7 @@ def _get_settings() -> dict[str, float]:
 
 def _list_backups() -> list[dict[str, Any]]:
     backups = []
-    for path in sorted(BACKUP_DIR.glob("framershaven_backup_*.zip"), reverse=True):
+    for path in sorted(BACKUP_DIR.glob("printery_backup_*.zip"), reverse=True):
         stat = path.stat()
         backups.append(
             {
@@ -402,7 +444,7 @@ def _list_service_options() -> list[dict[str, Any]]:
     cur = conn.cursor()
     cur.execute(
         """
-        SELECT key, label, price, cost, markup, basis, active, sort_order, updated_at
+        SELECT key, label, price, cost, markup, basis, pricing_method, price_code, active, sort_order, updated_at
         FROM service_options
         ORDER BY sort_order ASC, key ASC
         """
@@ -410,6 +452,59 @@ def _list_service_options() -> list[dict[str, Any]]:
     rows = [dict(row) for row in cur.fetchall()]
     conn.close()
     return rows
+
+
+def _seed_printing_options_from_legacy_service() -> None:
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        existing_prints = cur.execute("SELECT COUNT(*) FROM printing_options").fetchone()[0]
+        if existing_prints == 0:
+            printing = cur.execute(
+                "SELECT label, price, pricing_method, price_code FROM service_options WHERE key = 'printing'"
+            ).fetchone()
+            label = str(printing["label"] or "").strip() if printing else ""
+            if label and label.lower() not in {"printing", "no printing"}:
+                unit_price = float(printing["price"] or 0)
+                if unit_price <= 0 and printing["pricing_method"] == "price_table" and printing["price_code"]:
+                    price_row = cur.execute(
+                        "SELECT price FROM price_table_entries WHERE price_code = ? ORDER BY half_perimeter ASC LIMIT 1",
+                        (printing["price_code"],),
+                    ).fetchone()
+                    unit_price = float(price_row["price"] if price_row else 0)
+                cur.execute(
+                    "INSERT INTO printing_options (label, unit_price, active, sort_order) VALUES (?, ?, 1, 10)",
+                    (label, unit_price),
+                )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _list_printing_options(include_inactive: bool = True) -> list[dict[str, Any]]:
+    conn = get_connection()
+    try:
+        sql = "SELECT id, label, unit_price, active, sort_order, created_at, updated_at FROM printing_options"
+        if not include_inactive:
+            sql += " WHERE active = 1"
+        return [dict(row) for row in conn.execute(sql + " ORDER BY sort_order ASC, label ASC, id ASC")]
+    finally:
+        conn.close()
+
+
+def _fetch_printing_option(cur, option_id: int | None) -> dict[str, Any] | None:
+    if not option_id:
+        return None
+    row = cur.execute(
+        "SELECT id, label, unit_price, active, sort_order FROM printing_options WHERE id = ?",
+        (option_id,),
+    ).fetchone()
+    if row is None:
+        raise HTTPException(status_code=400, detail=f"Printing option {option_id} not found")
+    option = dict(row)
+    if not option["active"]:
+        raise HTTPException(status_code=400, detail=f"Printing option {option_id} is inactive")
+    return option
 
 
 def _safe_float(raw: str | None, default: float = 0.0) -> float:
@@ -520,7 +615,7 @@ def _backfill_catalog_preview_links() -> int:
     return updated
 
 
-def _extract_catalog_package_preview_assets(zip_path: Path, folder_name: str) -> set[str]:
+def _extract_pfd_preview_assets(zip_path: Path, folder_name: str) -> set[str]:
     target_dir = PREVIEW_DIR / folder_name
     target_dir.mkdir(parents=True, exist_ok=True)
     extracted: set[str] = set()
@@ -539,18 +634,18 @@ def _extract_catalog_package_preview_assets(zip_path: Path, folder_name: str) ->
     return extracted
 
 
-def _import_local_catalog_package(source: str) -> dict[str, Any]:
+def _import_pfd_catalog(source: str) -> dict[str, Any]:
     source_key = source.strip().lower()
     if source_key not in {"mats", "mouldings"}:
         raise HTTPException(status_code=400, detail="source must be mats or mouldings")
 
-    csv_path = CATALOG_IMPORT_DIR / ("mats.csv" if source_key == "mats" else "mouldings.csv")
-    zip_path = CATALOG_IMPORT_DIR / ("mats.zip" if source_key == "mats" else "mouldings.zip")
+    csv_path = PFD_DIR / ("Mats.csv" if source_key == "mats" else "Mouldings.csv")
+    zip_path = PFD_DIR / ("Mats.zip" if source_key == "mats" else "Mouldings.zip")
     if not csv_path.exists():
-        raise HTTPException(status_code=404, detail=f"{csv_path.name} not found in catalog_imports folder")
+        raise HTTPException(status_code=404, detail=f"{csv_path.name} not found in pfd folder")
 
     import_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-    preview_index = _extract_catalog_package_preview_assets(zip_path, source_key) if zip_path.exists() else set()
+    preview_index = _extract_pfd_preview_assets(zip_path, source_key) if zip_path.exists() else set()
     conn = get_connection()
     cur = conn.cursor()
     inserted = 0
@@ -576,7 +671,7 @@ def _import_local_catalog_package(source: str) -> dict[str, Any]:
                 height_in = _safe_float(row.get("Height"), -1)
                 rabbet_in = 0.0
                 metadata = {
-                    "source": "local_catalog_mats",
+                    "source": "pfd_mats",
                     "source_file": csv_path.name,
                     "imported_at": import_at,
                     "vendor_category": (row.get("Category") or "").strip(),
@@ -595,7 +690,7 @@ def _import_local_catalog_package(source: str) -> dict[str, Any]:
                 height_in = _safe_float(row.get("Height in."), -1)
                 rabbet_in = _safe_float(row.get("Rabbet in."), -1)
                 metadata = {
-                    "source": "local_catalog_mouldings",
+                    "source": "pfd_mouldings",
                     "source_file": csv_path.name,
                     "imported_at": import_at,
                     "vendor_category": (row.get("Category") or "").strip(),
@@ -805,6 +900,77 @@ def get_services() -> dict[str, list[dict[str, Any]]]:
     return {"services": _list_service_options()}
 
 
+@app.get("/api/printing-options")
+def get_printing_options() -> dict[str, list[dict[str, Any]]]:
+    return {"printing_options": _list_printing_options()}
+
+
+@app.post("/api/printing-options")
+def create_printing_option(
+    label: str = Form(""),
+    unit_price: float = Form(...),
+    active: str = Form("1"),
+    sort_order: int = Form(0),
+) -> dict[str, Any]:
+    clean_label = label.strip()
+    if not clean_label:
+        raise HTTPException(status_code=400, detail="label is required")
+    clean_price = _require_service_price(unit_price, "unit_price")
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO printing_options (label, unit_price, active, sort_order) VALUES (?, ?, ?, ?)",
+            (clean_label, clean_price, 1 if _form_truthy(active) else 0, sort_order),
+        )
+        option_id = cur.lastrowid
+        conn.commit()
+        row = cur.execute(
+            "SELECT id, label, unit_price, active, sort_order, created_at, updated_at FROM printing_options WHERE id = ?",
+            (option_id,),
+        ).fetchone()
+        option = dict(row)
+    finally:
+        conn.close()
+    return {"printing_option": option, "printing_options": _list_printing_options()}
+
+
+@app.post("/api/printing-options/{option_id}")
+def update_printing_option(
+    option_id: int,
+    label: str = Form(""),
+    unit_price: float = Form(...),
+    active: str = Form("1"),
+    sort_order: int = Form(0),
+) -> dict[str, Any]:
+    clean_label = label.strip()
+    if not clean_label:
+        raise HTTPException(status_code=400, detail="label is required")
+    clean_price = _require_service_price(unit_price, "unit_price")
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        if cur.execute("SELECT id FROM printing_options WHERE id = ?", (option_id,)).fetchone() is None:
+            raise HTTPException(status_code=400, detail=f"Printing option {option_id} not found")
+        cur.execute(
+            """
+            UPDATE printing_options
+            SET label = ?, unit_price = ?, active = ?, sort_order = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            (clean_label, clean_price, 1 if _form_truthy(active) else 0, sort_order, option_id),
+        )
+        conn.commit()
+        row = cur.execute(
+            "SELECT id, label, unit_price, active, sort_order, created_at, updated_at FROM printing_options WHERE id = ?",
+            (option_id,),
+        ).fetchone()
+        option = dict(row)
+    finally:
+        conn.close()
+    return {"printing_option": option, "printing_options": _list_printing_options()}
+
+
 @app.post("/api/services")
 async def update_services(request: Request) -> dict[str, list[dict[str, Any]]]:
     form = await request.form()
@@ -812,7 +978,10 @@ async def update_services(request: Request) -> dict[str, list[dict[str, Any]]]:
     cur = conn.cursor()
 
     for index, key in enumerate(SERVICE_KEYS):
-        current = cur.execute("SELECT label, cost, markup, basis, active, sort_order FROM service_options WHERE key = ?", (key,)).fetchone()
+        current = cur.execute(
+            "SELECT label, cost, markup, basis, pricing_method, price_code, active, sort_order FROM service_options WHERE key = ?",
+            (key,),
+        ).fetchone()
         label_default = current["label"] if current else key.replace("_", " ").title()
         cost_default = float(current["cost"] if current else 0)
         markup_default = float(current["markup"] if current else 1)
@@ -832,20 +1001,24 @@ async def update_services(request: Request) -> dict[str, list[dict[str, Any]]]:
         basis = raw_basis if raw_basis in SERVICE_BASIS else basis_default
         active = 1 if str(form.get(f"{key}_active", current["active"] if current else 1)) in {"1", "true", "on"} else 0
         price = round(cost * markup, 2)
+        pricing_method = current["pricing_method"] if current else "cost_markup"
+        price_code = current["price_code"] if current else None
         cur.execute(
             """
-            INSERT INTO service_options (key, label, price, cost, markup, basis, active, sort_order, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            INSERT INTO service_options (key, label, price, cost, markup, basis, pricing_method, price_code, active, sort_order, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             ON CONFLICT(key) DO UPDATE SET
                 label = excluded.label,
                 price = excluded.price,
                 cost = excluded.cost,
                 markup = excluded.markup,
                 basis = excluded.basis,
+                pricing_method = excluded.pricing_method,
+                price_code = excluded.price_code,
                 active = excluded.active,
                 updated_at = CURRENT_TIMESTAMP
             """,
-            (key, label, price, cost, markup, basis, active, sort_default),
+            (key, label, price, cost, markup, basis, pricing_method, price_code, active, sort_default),
         )
     conn.commit()
     conn.close()
@@ -860,7 +1033,7 @@ def list_backups() -> dict[str, list[dict[str, Any]]]:
 @app.post("/api/backups")
 def create_backup() -> dict[str, Any]:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
-    filename = f"framershaven_backup_{stamp}.zip"
+    filename = f"printery_backup_{stamp}.zip"
     target = BACKUP_DIR / filename
     snapshot_dir = BACKUP_DIR / f"snapshot_{stamp}"
     snapshot_dir.mkdir(exist_ok=True)
@@ -1059,7 +1232,11 @@ def _fetch_service_option(cur, service_key: str | None) -> dict[str, Any] | None
     if not service_key:
         return None
     cur.execute(
-        "SELECT key, label, price, cost, markup, basis, active, sort_order, updated_at FROM service_options WHERE key = ?",
+        """
+        SELECT key, label, price, cost, markup, basis, pricing_method, price_code, active, sort_order, updated_at
+        FROM service_options
+        WHERE key = ?
+        """,
         (service_key,),
     )
     row = cur.fetchone()
@@ -1077,18 +1254,71 @@ def _discount_amount(amount: float, item_discount_pct: float, global_discount_pc
     return round(max(discounted, 0.0), 2)
 
 
+def _require_discount(value: float, field_name: str) -> float:
+    _require_non_negative(value, field_name)
+    if value > 100:
+        raise HTTPException(status_code=400, detail=f"{field_name} must be 100 or less")
+    return value
+
+
+def _effective_discount(line_discount_pct: float | None, global_discount_pct: float) -> float:
+    return global_discount_pct if line_discount_pct is None else line_discount_pct
+
+
+def _quote_connection():
+    conn = get_connection()
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
 def _service_variable(service: dict[str, Any], outside_w: float, outside_h: float, count: float) -> float:
     basis = str(service.get("basis") or "count")
     if basis == "square_inches":
         return max(outside_w * outside_h, 0.0)
+    if basis == "square_feet":
+        return max((outside_w * outside_h) / 144.0, 0.0)
     if basis == "united_inches":
         return max(outside_w + outside_h, 0.0)
     return max(count, 0.0)
 
 
-def _service_line_amount(service: dict[str, Any], outside_w: float, outside_h: float, count: float) -> tuple[float, float]:
+def _price_table_amount(cur, price_code: str, half_perimeter: float) -> float:
+    cur.execute(
+        """
+        SELECT price FROM price_table_entries
+        WHERE price_code = ? AND half_perimeter >= ?
+        ORDER BY half_perimeter ASC
+        LIMIT 1
+        """,
+        (price_code, half_perimeter),
+    )
+    row = cur.fetchone()
+    if row:
+        return float(row["price"])
+    cur.execute(
+        """
+        SELECT price FROM price_table_entries
+        WHERE price_code = ?
+        ORDER BY half_perimeter DESC
+        LIMIT 1
+        """,
+        (price_code,),
+    )
+    row = cur.fetchone()
+    return float(row["price"]) if row else 0.0
+
+
+def _service_line_amount(cur, service: dict[str, Any], outside_w: float, outside_h: float, count: float) -> tuple[float, float]:
+    markup = float(service["markup"]) if service.get("markup") is not None else 1.0
+    price_code = str(service.get("price_code") or "").strip()
+    if service.get("pricing_method") == "price_table" and price_code:
+        half_perimeter = max(outside_w + outside_h, 0.0)
+        table_price = _price_table_amount(cur, price_code, half_perimeter)
+        return round(max(table_price * markup, 0.0), 2), round(half_perimeter, 2)
     variable = _service_variable(service, outside_w, outside_h, count)
-    amount = float(service.get("cost") or 0) * float(service.get("markup") or 1) * variable
+    amount = float(service.get("cost") or 0) * markup * variable
     return round(max(amount, 0.0), 2), round(variable, 2)
 
 
@@ -1110,16 +1340,17 @@ def _build_service_selections(
         amount = 0.0
         variable = 0.0
         if service:
-            amount, variable = _service_line_amount(service, outside_w, outside_h, count)
+            amount, variable = _service_line_amount(cur, service, outside_w, outside_h, count)
+        effective_discount = _effective_discount(entry["discount_pct"], global_discount_pct)
         selected[key] = {
             "service": service,
-            "discount_pct": entry["discount_pct"],
+            "discount_pct": effective_discount,
             "count": count,
             "variable": variable,
             "basis": service.get("basis") if service else None,
         }
         if service and amount > 0:
-            line_items[key] = _discount_amount(amount, entry["discount_pct"], global_discount_pct)
+            line_items[key] = _discount_amount(amount, effective_discount, 0)
 
     selected["custom"] = []
     for idx, entry in enumerate(other_entries, start=1):
@@ -1128,14 +1359,15 @@ def _build_service_selections(
         if not label and amount <= 0:
             continue
         display_label = label or f"Other {idx}"
-        discounted = _discount_amount(amount, entry["discount_pct"], global_discount_pct)
+        effective_discount = _effective_discount(entry["discount_pct"], global_discount_pct)
+        discounted = _discount_amount(amount, effective_discount, 0)
         if discounted <= 0:
             continue
         selected["custom"].append(
             {
                 "label": display_label,
                 "amount": amount,
-                "discount_pct": entry["discount_pct"],
+                "discount_pct": effective_discount,
             }
         )
         line_items[display_label] = discounted
@@ -1363,9 +1595,9 @@ async def import_catalog(file: UploadFile = File(...)) -> dict[str, int]:
     return {"inserted": inserted, "updated": updated, "skipped": skipped}
 
 
-@app.post("/api/catalog/import/package")
-def import_local_catalog_package(source: str = Form(...)) -> dict[str, Any]:
-    return _import_local_catalog_package(source)
+@app.post("/api/catalog/import/pfd")
+def import_pfd_catalog(source: str = Form(...)) -> dict[str, Any]:
+    return _import_pfd_catalog(source)
 
 
 def _normalize_inventory_key(value: str | None) -> str:
@@ -1643,6 +1875,7 @@ def calculate(
     mounting_key: str = Form(""),
     frame_mounting_key: str = Form(""),
     printing_key: str = Form(""),
+    printing_option_id: int | None = Form(None),
     various_key: str = Form(""),
     assembly_key: str = Form(""),
     royalties_key: str = Form(""),
@@ -1650,6 +1883,8 @@ def calculate(
     custom_2_key: str = Form(""),
     image_id: int | None = Form(None),
     mat_border_in: float = Form(2.0),
+    outside_width_in: float | None = Form(None),
+    outside_height_in: float | None = Form(None),
     second_mat_reveal_in: float = Form(0.25),
     third_mat_reveal_in: float = Form(0.25),
     global_discount_pct: float = Form(0.0),
@@ -1662,21 +1897,28 @@ def calculate(
     royalties_count: float = Form(1.0),
     custom_1_count: float = Form(1.0),
     custom_2_count: float = Form(1.0),
-    backing_discount_pct: float = Form(0.0),
-    mounting_discount_pct: float = Form(0.0),
-    frame_mounting_discount_pct: float = Form(0.0),
-    printing_discount_pct: float = Form(0.0),
-    various_discount_pct: float = Form(0.0),
-    assembly_discount_pct: float = Form(0.0),
-    royalties_discount_pct: float = Form(0.0),
-    custom_1_discount_pct: float = Form(0.0),
-    custom_2_discount_pct: float = Form(0.0),
+    moulding_discount_pct: float | None = Form(None),
+    top_mat_discount_pct: float | None = Form(None),
+    second_mat_discount_pct: float | None = Form(None),
+    third_mat_discount_pct: float | None = Form(None),
+    glazing_discount_pct: float | None = Form(None),
+    labor_discount_pct: float | None = Form(None),
+    backing_discount_pct: float | None = Form(None),
+    mounting_discount_pct: float | None = Form(None),
+    frame_mounting_discount_pct: float | None = Form(None),
+    printing_discount_pct: float | None = Form(None),
+    various_discount_pct: float | None = Form(None),
+    assembly_discount_pct: float | None = Form(None),
+    royalties_discount_pct: float | None = Form(None),
+    custom_1_discount_pct: float | None = Form(None),
+    custom_2_discount_pct: float | None = Form(None),
     other_label: str = Form(""),
     other_amount: float = Form(0.0),
-    other_discount_pct: float = Form(0.0),
+    other_discount_pct: float | None = Form(None),
     other2_label: str = Form(""),
     other2_amount: float = Form(0.0),
-    other2_discount_pct: float = Form(0.0),
+    other2_discount_pct: float | None = Form(None),
+    conn: Any = Depends(_quote_connection),
 ) -> dict[str, Any]:
     _require_positive(width_in, "width_in")
     _require_positive(height_in, "height_in")
@@ -1685,10 +1927,29 @@ def calculate(
     _require_non_negative(glazing_cost_sqft, "glazing_cost_sqft")
     _require_non_negative(labor_flat, "labor_flat")
     _require_non_negative(mat_border_in, "mat_border_in")
+    if (outside_width_in is None) != (outside_height_in is None):
+        raise HTTPException(
+            status_code=400,
+            detail="outside_width_in and outside_height_in must be supplied together",
+        )
+    if outside_width_in is not None and outside_height_in is not None:
+        _require_positive(outside_width_in, "outside_width_in")
+        _require_positive(outside_height_in, "outside_height_in")
+        if outside_width_in <= width_in or outside_height_in <= height_in:
+            raise HTTPException(
+                status_code=400,
+                detail="outside dimensions must be larger than the opening dimensions",
+            )
     _require_non_negative(second_mat_reveal_in, "second_mat_reveal_in")
     _require_non_negative(third_mat_reveal_in, "third_mat_reveal_in")
-    _require_non_negative(global_discount_pct, "global_discount_pct")
+    _require_discount(global_discount_pct, "global_discount_pct")
     for field_name, value in {
+        "moulding_discount_pct": moulding_discount_pct,
+        "top_mat_discount_pct": top_mat_discount_pct,
+        "second_mat_discount_pct": second_mat_discount_pct,
+        "third_mat_discount_pct": third_mat_discount_pct,
+        "glazing_discount_pct": glazing_discount_pct,
+        "labor_discount_pct": labor_discount_pct,
         "backing_discount_pct": backing_discount_pct,
         "mounting_discount_pct": mounting_discount_pct,
         "frame_mounting_discount_pct": frame_mounting_discount_pct,
@@ -1698,6 +1959,12 @@ def calculate(
         "royalties_discount_pct": royalties_discount_pct,
         "custom_1_discount_pct": custom_1_discount_pct,
         "custom_2_discount_pct": custom_2_discount_pct,
+        "other_discount_pct": other_discount_pct,
+        "other2_discount_pct": other2_discount_pct,
+    }.items():
+        if value is not None:
+            _require_discount(value, field_name)
+    for field_name, value in {
         "backing_count": backing_count,
         "mounting_count": mounting_count,
         "frame_mounting_count": frame_mounting_count,
@@ -1708,14 +1975,11 @@ def calculate(
         "custom_1_count": custom_1_count,
         "custom_2_count": custom_2_count,
         "other_amount": other_amount,
-        "other_discount_pct": other_discount_pct,
         "other2_amount": other2_amount,
-        "other2_discount_pct": other2_discount_pct,
     }.items():
         _require_non_negative(value, field_name)
 
     settings = _get_settings()
-    conn = get_connection()
     cur = conn.cursor()
     moulding_item = _fetch_catalog_item(cur, moulding_id, "mould")
     mat_layers = _build_mat_layers(
@@ -1727,16 +1991,16 @@ def calculate(
         third_mat_reveal_in,
     )
     glazing_item = _fetch_catalog_item(cur, glazing_id, "glaz")
+    printing_option = _fetch_printing_option(cur, printing_option_id)
     _fetch_image(cur, image_id)
-    outside_w = width_in + (2 * mat_border_in)
-    outside_h = height_in + (2 * mat_border_in)
+    outside_w = outside_width_in if outside_width_in is not None else width_in + (2 * mat_border_in)
+    outside_h = outside_height_in if outside_height_in is not None else height_in + (2 * mat_border_in)
     glazing_service = _fetch_service_option(cur, glazing_key)
     glazing_line_items: dict[str, float] = {}
     if glazing_service:
         if glazing_service["key"] not in GLAZING_SERVICE_KEYS:
-            conn.close()
             raise HTTPException(status_code=400, detail=f"Service {glazing_key} is not a glazing option")
-        glazing_amount, glazing_variable = _service_line_amount(glazing_service, outside_w, outside_h, 1)
+        glazing_amount, glazing_variable = _service_line_amount(cur, glazing_service, outside_w, outside_h, 1)
         glazing_item = {
             "key": glazing_service["key"],
             "sku": "",
@@ -1748,7 +2012,8 @@ def calculate(
             "variable": glazing_variable,
         }
         if glazing_amount > 0:
-            glazing_line_items["glazing"] = _discount_amount(glazing_amount, 0, global_discount_pct)
+            discount = _effective_discount(glazing_discount_pct, global_discount_pct)
+            glazing_line_items["glazing"] = _discount_amount(glazing_amount, discount, 0)
     addon_selected, addon_line_items = _build_service_selections(
         cur,
         global_discount_pct,
@@ -1756,7 +2021,7 @@ def calculate(
             "backing": {"service_key": backing_key, "discount_pct": backing_discount_pct, "count": backing_count},
             "mounting": {"service_key": mounting_key, "discount_pct": mounting_discount_pct, "count": mounting_count},
             "frame_mounting": {"service_key": frame_mounting_key, "discount_pct": frame_mounting_discount_pct, "count": frame_mounting_count},
-            "printing": {"service_key": printing_key, "discount_pct": printing_discount_pct, "count": printing_count},
+            "printing": {"service_key": "" if printing_option else printing_key, "discount_pct": printing_discount_pct, "count": printing_count},
             "various": {"service_key": various_key, "discount_pct": various_discount_pct, "count": various_count},
             "assembly": {"service_key": assembly_key, "discount_pct": assembly_discount_pct, "count": assembly_count},
             "royalties": {"service_key": royalties_key, "discount_pct": royalties_discount_pct, "count": royalties_count},
@@ -1770,17 +2035,64 @@ def calculate(
         outside_w,
         outside_h,
     )
+    if printing_option:
+        printing_discount = _effective_discount(printing_discount_pct, global_discount_pct)
+        printing_base = float(printing_option["unit_price"]) * printing_count
+        addon_line_items["printing"] = _discount_amount(printing_base, printing_discount, 0)
+        addon_selected["printing"] = {
+            "id": printing_option["id"],
+            "label": printing_option["label"],
+            "unit_price": float(printing_option["unit_price"]),
+            "count": printing_count,
+            "discount_pct": printing_discount,
+        }
     addon_line_items.update(glazing_line_items)
 
+    perimeter_ft = (2 * (outside_w + outside_h)) / 12.0
+    area_sqft = (outside_w * outside_h) / 144.0
+
     if moulding_item:
-        moulding_cost_ft = round(moulding_item["cost"] * settings["markup_moulding"], 2)
+        from .pricing import calculate_moulding_price
+        moulding_price_result = calculate_moulding_price(moulding_item["sku"], outside_w, outside_h)
+        moulding_discount = _effective_discount(moulding_discount_pct, global_discount_pct)
+        moulding_price = _discount_amount(float(moulding_price_result["price"]), moulding_discount, 0)
+        moulding_cost_ft = moulding_price / perimeter_ft if perimeter_ft > 0 else 0
+
     if mat_layers:
-        mat_cost_sqft = round(
-            sum(float(layer["item"]["cost"]) * settings["markup_mat"] for layer in mat_layers),
-            2,
-        )
+        from .pricing import calculate_mat_price
+        mat_discount_fields = [top_mat_discount_pct, second_mat_discount_pct, third_mat_discount_pct]
+        for index, layer in enumerate(mat_layers):
+            mat_sku = layer["item"]["sku"]
+            mat_price_result = calculate_mat_price(mat_sku, outside_w, outside_h)
+            base = float(mat_price_result["price"])
+            vendor = layer["item"].get("vendor", "")
+            if vendor == "Classic" and mat_price_result["method"] == "cost_markup":
+                base = float(mat_price_result["area"]) * float(layer["item"]["cost"]) * 9.0
+            key = ("mat", "mat_second", "mat_third")[index]
+            discount = _effective_discount(mat_discount_fields[index], global_discount_pct)
+            addon_line_items[key] = _discount_amount(base, discount, 0)
+        mat_cost_sqft = 0
+
     if glazing_item and not glazing_service:
-        glazing_cost_sqft = round(glazing_item["cost"] * settings["markup_glazing"], 2)
+        glazing_base = round(float(glazing_item["cost"]) * settings["markup_glazing"] * area_sqft, 2)
+        glazing_discount = _effective_discount(glazing_discount_pct, global_discount_pct)
+        addon_line_items["glazing"] = _discount_amount(glazing_base, glazing_discount, 0)
+        glazing_cost_sqft = 0
+
+    labor_discount = _effective_discount(labor_discount_pct, global_discount_pct)
+    labor_flat = _discount_amount(labor_flat, labor_discount, 0)
+    if not moulding_item:
+        moulding_cost_ft = _discount_amount(
+            moulding_cost_ft, _effective_discount(moulding_discount_pct, global_discount_pct), 0
+        )
+    if not mat_layers:
+        mat_cost_sqft = _discount_amount(
+            mat_cost_sqft, _effective_discount(top_mat_discount_pct, global_discount_pct), 0
+        )
+    if not glazing_item:
+        glazing_cost_sqft = _discount_amount(
+            glazing_cost_sqft, _effective_discount(glazing_discount_pct, global_discount_pct), 0
+        )
 
     try:
         result = calculate_quote(
@@ -1790,6 +2102,8 @@ def calculate(
                 moulding_cost_ft=moulding_cost_ft,
                 mat_cost_sqft=mat_cost_sqft,
                 mat_border_in=mat_border_in,
+                outside_width_in=outside_w if outside_width_in is not None else None,
+                outside_height_in=outside_h if outside_height_in is not None else None,
                 glazing_cost_sqft=glazing_cost_sqft,
                 labor_flat=labor_flat,
                 tax_rate=settings["tax_rate"],
@@ -1797,9 +2111,7 @@ def calculate(
             )
         )
     except ValueError as exc:
-        conn.close()
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    conn.close()
 
     selected = {
         "moulding": moulding_item,
@@ -2338,7 +2650,7 @@ def _draw_wrapped(c: canvas.Canvas, text: str, x: float, y: float, max_width: fl
     return y
 
 
-def _draw_studio_logo(c: canvas.Canvas) -> None:
+def _draw_printery_logo(c: canvas.Canvas) -> None:
     profile = _get_studio_profile()
     candidates = []
     if profile["logo_filename"]:
@@ -2401,9 +2713,9 @@ def _form_sizes(selected: dict[str, Any]) -> dict[str, float | None]:
     opening_h = max(subject_h - 0.25, 0) if subject_h is not None else None
     board_w = as_float(selected.get("outside_width_in"))
     board_h = as_float(selected.get("outside_height_in"))
-    if opening_w is not None:
+    if board_w is None and opening_w is not None:
         board_w = opening_w + (2 * mat_border)
-    if opening_h is not None:
+    if board_h is None and opening_h is not None:
         board_h = opening_h + (2 * mat_border)
     total_w = board_w + moulding_face if board_w is not None else None
     total_h = board_h + moulding_face if board_h is not None else None
@@ -2436,8 +2748,23 @@ def _order_form_lines(payload: dict[str, Any], include_production: bool) -> list
             spacing = float(design_state.get("opening_spacing") or 0)
             lines.append(f"Opening: 2 openings, {spacing:.2f} in. spacing")
         else:
-            border = format(mat_border, ".2f").rstrip("0").rstrip(".")
-            lines.append(f"Opening: {_size_pair(sizes['opening_w'], sizes['opening_h'])} in. ({border} - {border} - {border} - {border})")
+            subject_w = float(sizes["subject_w"] or 0)
+            subject_h = float(sizes["subject_h"] or 0)
+            board_w = float(sizes["board_w"] or 0)
+            board_h = float(sizes["board_h"] or 0)
+            offset_x = float(design_state.get("opening_offset_x") or 0)
+            offset_y = float(design_state.get("opening_offset_y") or 0)
+            horizontal = max((board_w - subject_w) / 2, 0)
+            vertical = max((board_h - subject_h) / 2, 0)
+            top = max(vertical - offset_y, 0)
+            right = max(horizontal - offset_x, 0)
+            bottom = max(vertical + offset_y, 0)
+            left = max(horizontal + offset_x, 0)
+            border_text = " · ".join(
+                f"{label} {format(value, '.2f').rstrip('0').rstrip('.')}"
+                for label, value in [("Top", top), ("Right", right), ("Bottom", bottom), ("Left", left)]
+            )
+            lines.append(f"Opening: {_size_pair(sizes['opening_w'], sizes['opening_h'])} in. ({border_text})")
     board_size = _size_pair(sizes["board_w"], sizes["board_h"])
     total_size = _size_pair(sizes["total_w"], sizes["total_h"]) or board_size
     if total_size:
@@ -2519,7 +2846,7 @@ def _export_order_form_pdf(order: dict[str, Any], payload: dict[str, Any], targe
     c.drawString(margin, 748, brand["business_name"])
     c.drawString(margin, 734, brand["address"])
     c.drawString(margin, 720, _brand_phone_for_forms())
-    _draw_studio_logo(c)
+    _draw_printery_logo(c)
 
     c.setFont("Helvetica", 11)
     c.drawString(margin, 672, "Customer")

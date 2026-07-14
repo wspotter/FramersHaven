@@ -29,6 +29,11 @@ let adminCatalogRenderLimit = 300;
 let adminCatalogEditorReturnFocus = null;
 let pricingSettings = null;
 let serviceOptionsCache = [];
+let printingOptionsCache = [];
+let printingOptionMutationQueue = Promise.resolve();
+let printingOptionMutationGeneration = 0;
+const printingOptionPendingCounts = new WeakMap();
+let printingSnapshotFallback = null;
 let customerSearchTimer = null;
 let orderSearchTimer = null;
 let designSearchTimer = null;
@@ -139,13 +144,46 @@ const OPTION_SELECTS = [
   { key: 'backing', selectId: 'optionBacking', priceId: 'priceBacking', countId: 'countBacking' },
   { key: 'mounting', selectId: 'optionMounting', priceId: 'priceMounting', countId: 'countMounting' },
   { key: 'frame_mounting', selectId: 'optionFrameMounting', priceId: 'priceFrameMounting', countId: 'countFrameMounting' },
-  { key: 'printing', selectId: 'optionPrinting', priceId: 'pricePrinting', countId: 'countPrinting' },
   { key: 'various', selectId: 'optionVarious', priceId: 'priceVarious', countId: 'countVarious' },
   { key: 'assembly', selectId: 'optionAssembly', priceId: 'priceAssembly', countId: 'countAssembly' },
   { key: 'royalties', selectId: 'optionRoyalties', priceId: 'priceRoyalties', countId: 'countRoyalties' },
   { key: 'custom_1', selectId: 'optionCustom1', priceId: 'priceCustom1', countId: 'countCustom1' },
   { key: 'custom_2', selectId: 'optionCustom2', priceId: 'priceCustom2', countId: 'countCustom2' },
 ];
+const LINE_DISCOUNT_FIELDS = {
+  moulding: 'discountMoulding',
+  mat: 'discountTopMat',
+  mat_second: 'discountSecondMat',
+  mat_third: 'discountThirdMat',
+  glazing: 'discountGlazing',
+  labor: 'discountLabor',
+  backing: 'discountBacking',
+  mounting: 'discountMounting',
+  frame_mounting: 'discountFrameMounting',
+  printing: 'discountPrinting',
+  various: 'discountVarious',
+  assembly: 'discountAssembly',
+  royalties: 'discountRoyalties',
+  custom_1: 'discountCustom1',
+  custom_2: 'discountCustom2',
+  other: 'otherLineDiscount',
+  other2: 'otherLine2Discount',
+};
+
+function normalizeDiscount(value) {
+  const number = Number(value || 0);
+  return Math.min(Math.max(Number.isFinite(number) ? number : 0, 0), 100);
+}
+
+function populateLineDiscounts(value) {
+  const discount = normalizeDiscount(value);
+  Object.values(LINE_DISCOUNT_FIELDS).forEach((id) => {
+    const input = document.getElementById(id);
+    if (input) input.value = String(discount);
+  });
+  invalidateQuote();
+  updateOptionPricePreviews();
+}
 const SERVICE_ADMIN_ROWS = [
   ['glazing_reg_glass', 'serviceGlazingRegGlass'],
   ['glazing_anti_reflection_glass', 'serviceGlazingAntiReflectionGlass'],
@@ -154,7 +192,6 @@ const SERVICE_ADMIN_ROWS = [
   ['backing', 'serviceBacking'],
   ['mounting', 'serviceMounting'],
   ['frame_mounting', 'serviceFrameMounting'],
-  ['printing', 'servicePrinting'],
   ['various', 'serviceVarious'],
   ['assembly', 'serviceAssembly'],
   ['royalties', 'serviceRoyalties'],
@@ -163,12 +200,12 @@ const SERVICE_ADMIN_ROWS = [
 ];
 const THEMES = {
   classic: {
-    label: 'Classic',
-    detail: 'Warm neutral default',
+    label: 'Studio Classic',
+    detail: 'Warm studio neutral default',
   },
-  framershaven: {
-    label: 'FramersHaven',
-    detail: 'FramersHaven pink, teal, black, and white',
+  printery: {
+    label: 'Printery',
+    detail: 'Printery pink, teal, black, and white',
   },
   gallery: {
     label: 'Gallery Neon (Light)',
@@ -279,6 +316,8 @@ function setFieldDisplay(id, value) {
     node.textContent = value;
   }
 }
+
+const MAT_BORDER_FIELD_IDS = ['matBorderTop', 'matBorderRight', 'matBorderBottom', 'matBorderLeft'];
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -401,7 +440,7 @@ function applyTheme(themeName, persist = true) {
     status.textContent = THEMES[theme].detail;
   }
   if (persist) {
-    window.localStorage.setItem('framershaven-theme', theme);
+    window.localStorage.setItem('printery-theme', theme);
   }
 }
 
@@ -758,13 +797,19 @@ function syncDesignLauncherState() {
   const panel = document.getElementById('designHomePanel');
   const toggle = document.getElementById('designLauncherToggle');
   if (!panel || !toggle) return;
-  panel.classList.toggle('compact', !designLauncherExpanded);
-  toggle.textContent = designLauncherExpanded ? 'Collapse Launcher' : 'Expand Launcher';
+  panel.hidden = !designLauncherExpanded;
+  toggle.textContent = designLauncherExpanded ? 'Close Designs' : '+ New Design';
+  toggle.setAttribute('aria-expanded', String(designLauncherExpanded));
 }
 
 function toggleDesignLauncher() {
   designLauncherExpanded = !designLauncherExpanded;
   syncDesignLauncherState();
+  if (designLauncherExpanded) {
+    document.querySelector('#designPresetGrid [data-preset].active')?.focus();
+  } else {
+    document.getElementById('designLauncherToggle')?.focus();
+  }
 }
 
 function getActivePreset() {
@@ -817,6 +862,8 @@ function openDesignPreset(key) {
   setFieldDisplay('openingBalance', PRESET_DEFAULTS.openingBalance);
   setFieldDisplay('openingOffsetX', PRESET_DEFAULTS.openingOffsetX);
   setFieldDisplay('openingOffsetY', PRESET_DEFAULTS.openingOffsetY);
+  setFieldDisplay('overallMatWidth', '');
+  setFieldDisplay('overallMatHeight', '');
   if (preset.clearMoulding) {
     selectedMaterials.moulding = null;
   }
@@ -945,18 +992,130 @@ function getSelectedMatLayers() {
   return layers;
 }
 
+function getMatSizing() {
+  const openingWidth = Number(document.getElementById('qw')?.value || document.getElementById('imgW')?.value || 0);
+  const openingHeight = Number(document.getElementById('qh')?.value || document.getElementById('imgH')?.value || 0);
+  const matBorder = Math.max(Number(document.getElementById('matBorder')?.value || 2), 0);
+  const widthRaw = String(document.getElementById('overallMatWidth')?.value || '').trim();
+  const heightRaw = String(document.getElementById('overallMatHeight')?.value || '').trim();
+  const hasWidth = widthRaw !== '';
+  const hasHeight = heightRaw !== '';
+  const explicit = hasWidth && hasHeight;
+  let valid = true;
+  let error = '';
+  let outsideWidth = openingWidth + (matBorder * 2);
+  let outsideHeight = openingHeight + (matBorder * 2);
+
+  if (hasWidth !== hasHeight) {
+    valid = false;
+    error = 'Enter both overall mat width and height, or clear both.';
+  } else if (explicit) {
+    outsideWidth = Number(widthRaw);
+    outsideHeight = Number(heightRaw);
+    if (!Number.isFinite(outsideWidth) || !Number.isFinite(outsideHeight) || outsideWidth <= 0 || outsideHeight <= 0) {
+      valid = false;
+      error = 'Overall mat dimensions must be positive numbers.';
+    } else if (outsideWidth <= openingWidth || outsideHeight <= openingHeight) {
+      valid = false;
+      error = 'Overall mat size must be larger than the opening in both directions.';
+    }
+  }
+
+  if (!valid) {
+    outsideWidth = openingWidth + (matBorder * 2);
+    outsideHeight = openingHeight + (matBorder * 2);
+  }
+
+  const horizontalMargin = Math.max((outsideWidth - openingWidth) / 2, 0);
+  const verticalMargin = Math.max((outsideHeight - openingHeight) / 2, 0);
+  const offsetX = clamp(Number(document.getElementById('openingOffsetX')?.value || 0), -horizontalMargin, horizontalMargin);
+  const offsetY = clamp(Number(document.getElementById('openingOffsetY')?.value || 0), -verticalMargin, verticalMargin);
+  return {
+    openingWidth,
+    openingHeight,
+    outsideWidth,
+    outsideHeight,
+    horizontalMargin,
+    verticalMargin,
+    offsetX,
+    offsetY,
+    matBorder,
+    explicit,
+    valid,
+    error,
+  };
+}
+
 function getEffectiveOpeningOffsets() {
-  const matBorder = Number(document.getElementById('matBorder')?.value || 2);
-  const offsetX = clamp(Number(document.getElementById('openingOffsetX')?.value || 0), -matBorder, matBorder);
-  const offsetY = clamp(Number(document.getElementById('openingOffsetY')?.value || 0), -matBorder, matBorder);
-  return { offsetX, offsetY, matBorder };
+  const sizing = getMatSizing();
+  return {
+    ...sizing,
+    maxOffsetX: sizing.horizontalMargin,
+    maxOffsetY: sizing.verticalMargin,
+  };
+}
+
+function updateMatSizeStatus(sizing = getMatSizing()) {
+  const status = document.getElementById('overallMatStatus');
+  const widthInput = document.getElementById('overallMatWidth');
+  const heightInput = document.getElementById('overallMatHeight');
+  widthInput?.setAttribute('aria-invalid', String(!sizing.valid));
+  heightInput?.setAttribute('aria-invalid', String(!sizing.valid));
+  if (!status) return;
+  status.classList.toggle('error', !sizing.valid);
+  if (!sizing.valid) {
+    status.textContent = sizing.error;
+  } else if (sizing.explicit) {
+    status.textContent = `Exact finished mat: ${formatInches(sizing.outsideWidth)} × ${formatInches(sizing.outsideHeight)} in. Opening centered unless moved.`;
+  } else {
+    status.textContent = `Equal-border mode: ${formatInches(sizing.matBorder)} in on each side.`;
+  }
+}
+
+function applyEditableMatBorders() {
+  const values = MAT_BORDER_FIELD_IDS.map((id) => Number(document.getElementById(id)?.value));
+  if (values.some((value) => !Number.isFinite(value) || value < 0)) return false;
+
+  const [top, right, bottom, left] = values;
+  const openingWidth = Number(document.getElementById('qw')?.value || document.getElementById('imgW')?.value || 0);
+  const openingHeight = Number(document.getElementById('qh')?.value || document.getElementById('imgH')?.value || 0);
+  const sizing = window.WorkspaceUI.matSizingFromBorders({
+    openingWidth,
+    openingHeight,
+    top,
+    right,
+    bottom,
+    left,
+  });
+  setFieldDisplay('overallMatWidth', formatInches(sizing.outsideWidth));
+  setFieldDisplay('overallMatHeight', formatInches(sizing.outsideHeight));
+  setFieldDisplay('openingOffsetX', sizing.offsetX.toFixed(2));
+  setFieldDisplay('openingOffsetY', sizing.offsetY.toFixed(2));
+  return true;
+}
+
+function adjustOpeningFromEditableBorders({ openDrawer = true } = {}) {
+  if (!applyEditableMatBorders()) {
+    setNotice('Enter valid non-negative Top, Right, Bottom, and Left mat borders first.', 'error');
+    return false;
+  }
+  invalidateQuote();
+  syncOpeningPositionInputs();
+  updateSelectionSummary();
+  renderMockup();
+  scheduleDesignHistorySnapshot();
+  if (openDrawer) {
+    openOpeningDrawer();
+  }
+  return true;
 }
 
 function syncOpeningPositionInputs(sourceId = '') {
   const openingLayout = document.getElementById('openingLayout')?.value || 'single';
   document.querySelector('.design-builder-card')?.classList.toggle('single-opening', openingLayout !== 'diptych');
   document.getElementById('openingDrawer')?.classList.toggle('single-opening', openingLayout !== 'diptych');
-  const { offsetX, offsetY, matBorder } = getEffectiveOpeningOffsets();
+  const sizing = getEffectiveOpeningOffsets();
+  const { offsetX, offsetY, maxOffsetX, maxOffsetY } = sizing;
   const spacingInput = document.getElementById('openingSpacing');
   const balanceInput = document.getElementById('openingBalance');
   const offsetXInput = document.getElementById('openingOffsetX');
@@ -966,13 +1125,13 @@ function syncOpeningPositionInputs(sourceId = '') {
   const offsetXValue = document.getElementById('openingOffsetXValue');
   const offsetYValue = document.getElementById('openingOffsetYValue');
   if (offsetXInput) {
-    offsetXInput.min = String(-matBorder);
-    offsetXInput.max = String(matBorder);
+    offsetXInput.min = String(-maxOffsetX);
+    offsetXInput.max = String(maxOffsetX);
     offsetXInput.value = offsetX.toFixed(2);
   }
   if (offsetYInput) {
-    offsetYInput.min = String(-matBorder);
-    offsetYInput.max = String(matBorder);
+    offsetYInput.min = String(-maxOffsetY);
+    offsetYInput.max = String(maxOffsetY);
     offsetYInput.value = offsetY.toFixed(2);
   }
   if (spacingValue && spacingInput) {
@@ -987,6 +1146,13 @@ function syncOpeningPositionInputs(sourceId = '') {
   if (offsetYValue) {
     offsetYValue.textContent = `${offsetY.toFixed(2)} in`;
   }
+  if (!MAT_BORDER_FIELD_IDS.includes(sourceId)) {
+    setFieldDisplay('matBorderTop', formatInches(sizing.verticalMargin - offsetY));
+    setFieldDisplay('matBorderBottom', formatInches(sizing.verticalMargin + offsetY));
+    setFieldDisplay('matBorderLeft', formatInches(sizing.horizontalMargin + offsetX));
+    setFieldDisplay('matBorderRight', formatInches(sizing.horizontalMargin - offsetX));
+  }
+  updateMatSizeStatus(sizing);
 }
 
 function syncMatLayerUI() {
@@ -2253,15 +2419,9 @@ function updateSelectionSummary() {
   const thirdMat = matLayers.find((layer) => layer.slot === 'third') || null;
   const width = Number(document.getElementById('qw').value || document.getElementById('imgW').value || 0);
   const height = Number(document.getElementById('qh').value || document.getElementById('imgH').value || 0);
-  const { offsetX, offsetY, matBorder } = getEffectiveOpeningOffsets();
-  const layout = document.getElementById('openingLayout').value || 'single';
-  const balance = Number(document.getElementById('openingBalance').value || 50);
-  const totalWidth = width > 0 ? width + (matBorder * 2) : 0;
-  const totalHeight = height > 0 ? height + (matBorder * 2) : 0;
-  const topWeight = formatInches(clamp(matBorder - offsetY, 0, matBorder * 2));
-  const bottomWeight = formatInches(clamp(matBorder + offsetY, 0, matBorder * 2));
-  const leftWeight = formatInches(clamp(matBorder + offsetX, 0, matBorder * 2));
-  const rightWeight = formatInches(clamp(matBorder - offsetX, 0, matBorder * 2));
+  const sizing = getEffectiveOpeningOffsets();
+  const totalWidth = width > 0 ? sizing.outsideWidth : 0;
+  const totalHeight = height > 0 ? sizing.outsideHeight : 0;
   setFieldDisplay('selectionImage', selectedImage ? selectedImage.filename : 'No image');
   setFieldDisplay('selectionMoulding', moulding ? moulding.sku : 'None');
   setFieldDisplay('selectionTopMat', topMat ? topMat.sku : 'None');
@@ -2363,11 +2523,9 @@ function parseMarkupInput(value) {
 }
 
 function getPricingVariable(service, countId = null) {
-  const width = Number(document.getElementById('qw')?.value || document.getElementById('imgW')?.value || 0);
-  const height = Number(document.getElementById('qh')?.value || document.getElementById('imgH')?.value || 0);
-  const { matBorder } = getEffectiveOpeningOffsets();
-  const outsideW = Math.max(width + (matBorder * 2), 0);
-  const outsideH = Math.max(height + (matBorder * 2), 0);
+  const sizing = getMatSizing();
+  const outsideW = Math.max(sizing.outsideWidth, 0);
+  const outsideH = Math.max(sizing.outsideHeight, 0);
   if (service?.basis === 'square_inches') return outsideW * outsideH;
   if (service?.basis === 'united_inches') return outsideW + outsideH;
   return Number(document.getElementById(countId)?.value || 1);
@@ -2379,7 +2537,17 @@ function servicePreviewAmount(service, countId = null) {
 }
 
 function updateOptionPricePreviews(lineItems = null) {
-  const globalDiscount = Number(document.getElementById('globalDiscount')?.value || 0);
+  const fixedLinePrices = {
+    moulding: 'priceMoulding',
+    mat: 'priceTopMat',
+    mat_second: 'priceSecondMat',
+    mat_third: 'priceThirdMat',
+    labor: 'priceLabor',
+  };
+  Object.entries(fixedLinePrices).forEach(([key, id]) => {
+    const node = document.getElementById(id);
+    if (node) node.textContent = lineItems?.[key] === undefined ? '-' : formatCurrency(lineItems[key]);
+  });
   OPTION_SELECTS.forEach(({ key, priceId, countId, selectId }) => {
     const node = document.getElementById(priceId);
     if (!node) return;
@@ -2394,15 +2562,148 @@ function updateOptionPricePreviews(lineItems = null) {
       return;
     }
     const base = servicePreviewAmount(service, countId);
-    const discounted = base * (1 - (globalDiscount / 100));
+    const discount = normalizeDiscount(document.getElementById(LINE_DISCOUNT_FIELDS[key])?.value);
+    const discounted = base * (1 - (discount / 100));
     node.textContent = formatCurrency(discounted);
   });
+  const printingNode = document.getElementById('pricePrinting');
+  const printingSelection = document.getElementById('optionPrinting')?.value || '';
+  const printingOption = printingOptionsCache.find((row) => String(row.id) === printingSelection);
+  if (printingNode) {
+    if (lineItems?.printing !== undefined) printingNode.textContent = formatCurrency(lineItems.printing);
+    else if (printingSelection.startsWith('snapshot:') && printingSnapshotFallback) {
+      printingNode.textContent = formatCurrency(
+        printingSnapshotFallback.amount * (1 - (printingSnapshotFallback.discount_pct / 100))
+      );
+    }
+    else if (printingOption) {
+      const count = Math.max(Number(document.getElementById('countPrinting')?.value || 1), 0);
+      const discount = normalizeDiscount(document.getElementById('discountPrinting')?.value);
+      printingNode.textContent = formatCurrency(Number(printingOption.unit_price) * count * (1 - (discount / 100)));
+    } else printingNode.textContent = '-';
+  }
   const glazingNode = document.getElementById('selectionGlazing');
   const glazingPriceNode = document.getElementById('priceGlazing');
   const glazing = getServiceOption(document.getElementById('glazingType')?.value || '');
-  const glazingAmount = lineItems?.glazing ?? (glazing ? servicePreviewAmount(glazing) : null);
+  const glazingBase = glazing ? servicePreviewAmount(glazing) : null;
+  const glazingDiscount = normalizeDiscount(document.getElementById('discountGlazing')?.value);
+  const glazingAmount = lineItems?.glazing ?? (glazingBase === null ? null : glazingBase * (1 - (glazingDiscount / 100)));
   if (glazingNode) glazingNode.value = glazing ? glazing.label : 'None';
   if (glazingPriceNode) glazingPriceNode.textContent = glazingAmount === null ? '-' : formatCurrency(glazingAmount);
+}
+
+function populatePrintingSelect() {
+  const select = document.getElementById('optionPrinting');
+  if (!select) return;
+  const current = select.value;
+  select.innerHTML = '<option value="">No printing</option>';
+  printingOptionsCache.filter(
+    (row) => row.active && Number.isInteger(Number(row.id)) && Number(row.id) > 0
+  ).forEach((row) => {
+    const option = document.createElement('option');
+    option.value = String(row.id);
+    option.textContent = `${row.label} · ${formatCurrency(row.unit_price)}`;
+    select.appendChild(option);
+  });
+  select.appendChild(new Option('Custom — use Other row', 'custom'));
+  if (printingSnapshotFallback) {
+    select.appendChild(new Option(
+      `${printingSnapshotFallback.label} (unavailable) · ${formatCurrency(printingSnapshotFallback.unit_price)}`,
+      `snapshot:${printingSnapshotFallback.id ?? 'legacy'}`
+    ));
+  }
+  select.value = [...select.options].some((option) => option.value === current) ? current : '';
+}
+
+function printingSnapshotFromAddon(addon) {
+  if (!addon) return null;
+  const count = Math.max(Number(addon.count ?? 1), 0);
+  const discountPct = normalizeDiscount(addon.discount_pct);
+  if (addon.id != null && addon.label) {
+    const unitPrice = Math.max(Number(addon.unit_price || 0), 0);
+    return { id: addon.id, label: addon.label, unit_price: unitPrice, count, discount_pct: discountPct, amount: unitPrice * count };
+  }
+  if (addon.service?.label) {
+    const unitPrice = Math.max(Number(addon.service.cost || 0) * Number(addon.service.markup || 1), 0);
+    const amount = Math.max(unitPrice * Number(addon.variable ?? count), 0);
+    return { id: null, label: addon.service.label, unit_price: unitPrice, count, discount_pct: discountPct, amount };
+  }
+  return null;
+}
+
+function restorePrintingSelection(addon) {
+  const select = document.getElementById('optionPrinting');
+  if (!select) return;
+  const activeId = addon?.id == null ? '' : String(addon.id);
+  const activeExists = printingOptionsCache.some((row) => row.active && String(row.id) === activeId);
+  printingSnapshotFallback = activeExists ? null : printingSnapshotFromAddon(addon);
+  populatePrintingSelect();
+  select.value = activeExists ? activeId : (printingSnapshotFallback ? `snapshot:${printingSnapshotFallback.id ?? 'legacy'}` : '');
+  const count = document.getElementById('countPrinting');
+  const discount = document.getElementById('discountPrinting');
+  if (count) count.value = String(addon?.count ?? 1);
+  if (discount) discount.value = String(normalizeDiscount(addon?.discount_pct));
+}
+
+function handlePrintingSelectionChange(value) {
+  if (!value.startsWith('snapshot:')) {
+    printingSnapshotFallback = null;
+    populatePrintingSelect();
+  }
+  if (value !== 'custom') return;
+  const otherLabel = document.getElementById('otherLineLabel');
+  if (otherLabel && !otherLabel.value.trim()) otherLabel.value = 'Printing ';
+  otherLabel?.focus();
+}
+
+function materializePrintingSnapshotFallback() {
+  if (!printingSnapshotFallback) return true;
+  const slots = [
+    ['otherLineLabel', 'otherLineAmount', 'otherLineDiscount'],
+    ['otherLine2Label', 'otherLine2Amount', 'otherLine2Discount'],
+  ];
+  const slot = slots.find(([labelId, amountId]) => {
+    const label = document.getElementById(labelId)?.value.trim() || '';
+    const amount = Number(document.getElementById(amountId)?.value || 0);
+    return !label && amount <= 0;
+  });
+  if (!slot) {
+    setNotice('Both Other rows are in use. Clear one before recalculating this unavailable printing snapshot.', 'error');
+    return false;
+  }
+  document.getElementById(slot[0]).value = printingSnapshotFallback.label;
+  document.getElementById(slot[1]).value = String(printingSnapshotFallback.amount);
+  document.getElementById(slot[2]).value = String(printingSnapshotFallback.discount_pct);
+  const select = document.getElementById('optionPrinting');
+  if (select) select.value = 'custom';
+  printingSnapshotFallback = null;
+  populatePrintingSelect();
+  return true;
+}
+
+function appendQuoteOptionFields(fd) {
+  OPTION_SELECTS.forEach(({ key, selectId, countId }) => {
+    const value = document.getElementById(selectId)?.value || '';
+    if (value) fd.append(`${key}_key`, value);
+    fd.append(`${key}_count`, document.getElementById(countId)?.value || '1');
+    fd.append(`${key}_discount_pct`, String(normalizeDiscount(document.getElementById(LINE_DISCOUNT_FIELDS[key])?.value)));
+  });
+  Object.entries(LINE_DISCOUNT_FIELDS).forEach(([key, id]) => {
+    if (['other', 'other2', ...OPTION_SELECTS.map((row) => row.key)].includes(key)) return;
+    const formKey = { mat: 'top_mat', mat_second: 'second_mat', mat_third: 'third_mat' }[key] || key;
+    fd.append(`${formKey}_discount_pct`, String(normalizeDiscount(document.getElementById(id)?.value)));
+  });
+  const printingSelection = document.getElementById('optionPrinting')?.value || '';
+  if (printingSelection.startsWith('snapshot:') && !materializePrintingSnapshotFallback()) return false;
+  if (/^\d+$/.test(printingSelection)) fd.append('printing_option_id', printingSelection);
+  fd.append('printing_count', document.getElementById('countPrinting')?.value || '1');
+  fd.append('other_label', document.getElementById('otherLineLabel')?.value || '');
+  fd.append('other_amount', document.getElementById('otherLineAmount')?.value || '0');
+  fd.append('other_discount_pct', document.getElementById('otherLineDiscount')?.value || '0');
+  fd.append('other2_label', document.getElementById('otherLine2Label')?.value || '');
+  fd.append('other2_amount', document.getElementById('otherLine2Amount')?.value || '0');
+  fd.append('other2_discount_pct', document.getElementById('otherLine2Discount')?.value || '0');
+  return true;
 }
 
 function populateServiceSelects() {
@@ -2415,7 +2716,6 @@ function populateServiceSelects() {
       backing: 'No backing',
       mounting: 'No subject mounting',
       frame_mounting: 'No frame mounting',
-      printing: 'No printing',
       various: 'No various',
       assembly: 'No assembly',
       royalties: 'No royalties',
@@ -2855,7 +3155,14 @@ function renderMockup() {
   const artH = Number(document.getElementById('qh')?.value || document.getElementById('imgH')?.value || 10);
   const hasImage = !!cropState.img;
   const showMockupGuides = window.WorkspaceUI?.shouldShowMockupGuides(hasImage) ?? !hasImage;
-  const { offsetX: openingOffsetX, offsetY: openingOffsetY, matBorder } = getEffectiveOpeningOffsets();
+  const sizing = getEffectiveOpeningOffsets();
+  const {
+    offsetX: openingOffsetX,
+    offsetY: openingOffsetY,
+    matBorder,
+    outsideWidth,
+    outsideHeight,
+  } = sizing;
   const openingLayout = document.getElementById('openingLayout')?.value || 'single';
   const openingSpacing = Number(document.getElementById('openingSpacing')?.value || 1.5);
   const openingBalance = Number(document.getElementById('openingBalance')?.value || 50);
@@ -2864,8 +3171,8 @@ function renderMockup() {
   const matLayers = getSelectedMatLayers();
   const mouldingWidth = Math.max(Number(moulding?.width_in || 0) || 1.5, 0.75);
 
-  const outerWIn = artW + (matBorder * 2) + (mouldingWidth * 2);
-  const outerHIn = artH + (matBorder * 2) + (mouldingWidth * 2);
+  const outerWIn = outsideWidth + (mouldingWidth * 2);
+  const outerHIn = outsideHeight + (mouldingWidth * 2);
   const scale = Math.min((canvas.width - 120) / outerWIn, (canvas.height - 120) / outerHIn);
   const frameProfile = getMouldingProfile(moulding, scale);
   const secondRevealPx = Number(document.getElementById('secondMatReveal')?.value || 0.25) * scale;
@@ -3195,12 +3502,15 @@ function renderMockup() {
   ctx.font = '14px Georgia';
   const layoutLabel = openingLayout === 'multi' ? `Custom Multi-Opening (${customOpenings.length} windows)` : (openingLayout === 'diptych' ? '2 openings' : 'single opening');
   if (cropState.img) {
-    ctx.fillText(`Total size: ${formatInches(artW + (matBorder * 2))} x ${formatInches(artH + (matBorder * 2))} in`, 24, canvas.height - 46);
+    ctx.fillText(`Total size: ${formatInches(outsideWidth)} x ${formatInches(outsideHeight)} in`, 24, canvas.height - 46);
     ctx.fillText(`Mats: ${matLayers.length || 0} · Layout: ${layoutLabel} · Pos X ${openingOffsetX.toFixed(2)} in · Pos Y ${openingOffsetY.toFixed(2)} in`, 24, canvas.height - 24);
   } else {
     const frameWidth = mouldingWidth.toFixed(2);
     ctx.fillText('No artwork loaded — working in measurement view', 24, canvas.height - 66);
-    ctx.fillText(`Opening: ${formatInches(artW)} x ${formatInches(artH)} in · Mat border ${matBorder.toFixed(2)} in · Frame ${frameWidth} in`, 24, canvas.height - 44);
+    const sizeLabel = sizing.explicit
+      ? `Mat ${formatInches(outsideWidth)} x ${formatInches(outsideHeight)} in`
+      : `Mat border ${matBorder.toFixed(2)} in`;
+    ctx.fillText(`Opening: ${formatInches(artW)} x ${formatInches(artH)} in · ${sizeLabel} · Frame ${frameWidth} in`, 24, canvas.height - 44);
     ctx.fillText(`Layout: ${layoutLabel} · Offset X ${openingOffsetX.toFixed(2)} in · Offset Y ${openingOffsetY.toFixed(2)} in`, 24, canvas.height - 24);
   }
 }
@@ -3390,11 +3700,7 @@ function bindMockupDesigner() {
         
         // Define temporary object to test bounds
         const tempOp = { w: newW, h: newH, x: newX, y: newY };
-        const artW = Number(document.getElementById('qw')?.value || document.getElementById('imgW')?.value || 8);
-        const artH = Number(document.getElementById('qh')?.value || document.getElementById('imgH')?.value || 10);
-        const { matBorder } = getEffectiveOpeningOffsets();
-        const matWIn = artW + (matBorder * 2);
-        const matHIn = artH + (matBorder * 2);
+        const { outsideWidth: matWIn, outsideHeight: matHIn } = getEffectiveOpeningOffsets();
         
         clampOpeningToBounds(tempOp, matWIn, matHIn, 1.0);
         
@@ -3427,11 +3733,7 @@ function bindMockupDesigner() {
         };
         
         // Apply clamping boundary!
-        const artW = Number(document.getElementById('qw')?.value || document.getElementById('imgW')?.value || 8);
-        const artH = Number(document.getElementById('qh')?.value || document.getElementById('imgH')?.value || 10);
-        const { matBorder } = getEffectiveOpeningOffsets();
-        const matWIn = artW + (matBorder * 2);
-        const matHIn = artH + (matBorder * 2);
+        const { outsideWidth: matWIn, outsideHeight: matHIn } = getEffectiveOpeningOffsets();
         
         clampOpeningToBounds(tempOp, matWIn, matHIn, 1.0);
         
@@ -3462,13 +3764,13 @@ function bindMockupDesigner() {
     if (dragType === 'position') {
       const deltaInX = (event.clientX - startX) / Math.max(mockupInteraction.scale, 1);
       const deltaInY = (event.clientY - startY) / Math.max(mockupInteraction.scale, 1);
-      const { matBorder } = getEffectiveOpeningOffsets();
+      const { maxOffsetX, maxOffsetY } = getEffectiveOpeningOffsets();
       const offsetXInput = document.getElementById('openingOffsetX');
       const offsetYInput = document.getElementById('openingOffsetY');
       const currentX = Number(offsetXInput.value || '0');
       const currentY = Number(offsetYInput.value || '0');
-      offsetXInput.value = clamp(currentX + deltaInX, -matBorder, matBorder).toFixed(2);
-      offsetYInput.value = clamp(currentY - deltaInY, -matBorder, matBorder).toFixed(2);
+      offsetXInput.value = clamp(currentX + deltaInX, -maxOffsetX, maxOffsetX).toFixed(2);
+      offsetYInput.value = clamp(currentY - deltaInY, -maxOffsetY, maxOffsetY).toFixed(2);
       startX = event.clientX;
       startY = event.clientY;
       syncOpeningPositionInputs();
@@ -3523,18 +3825,18 @@ function filterCatalogItems(items, query) {
     });
 }
 
-async function importLocalCatalogPackage(source) {
+async function importPfdCatalog(source) {
   try {
     const fd = new FormData();
     fd.append('source', source);
-    const data = await fetchJson('/api/catalog/import/package', { method: 'POST', body: fd });
+    const data = await fetchJson('/api/catalog/import/pfd', { method: 'POST', body: fd });
     show(data);
     await searchCatalog(true);
     const previewText = Number.isFinite(Number(data.preview_count)) ? `, ${data.preview_count} previews linked` : '';
     const summary = `Last ${source} import: ${data.inserted} inserted, ${data.updated} updated, ${data.skipped} skipped${previewText}`;
     setNotice(summary, 'success');
     document.getElementById('catalogStats').textContent = summary;
-    window.localStorage.setItem('studio-last-import', summary);
+    window.localStorage.setItem('printery-last-import', summary);
     window.localStorage.setItem('lastImportSummary', summary);
   } catch (error) {
     setNotice(error.message, 'error');
@@ -3556,7 +3858,7 @@ async function importCatalog() {
     const summary = `Last CSV import: ${data.inserted} inserted, ${data.updated} updated, ${data.skipped} skipped`;
     setNotice(summary, 'success');
     document.getElementById('catalogStats').textContent = summary;
-    window.localStorage.setItem('studio-last-import', summary);
+    window.localStorage.setItem('printery-last-import', summary);
     window.localStorage.setItem('lastImportSummary', summary);
     fileInput.value = '';
   } catch (error) {
@@ -3599,6 +3901,110 @@ async function loadServiceOptions() {
     setNotice(error.message, 'error');
   }
 }
+
+async function loadPrintingOptions() {
+  try {
+    const data = await fetchJson('/api/printing-options');
+    printingOptionsCache = data.printing_options || [];
+    renderPrintingOptionAdmin();
+    populatePrintingSelect();
+    updateOptionPricePreviews(lastQuote?.line_items || null);
+  } catch (error) {
+    setNotice(error.message, 'error');
+  }
+}
+
+function renderPrintingOptionAdmin() {
+  const root = document.getElementById('printingOptionsAdmin');
+  if (!root) return;
+  const rows = printingOptionsCache.filter((row) => Number.isInteger(Number(row.id)) && Number(row.id) > 0);
+  root.innerHTML = `
+    <div class="admin-service-header printing-option-header">
+      <span>Print size</span><span>Unit price</span><span>Use</span><span>Order</span><span></span>
+    </div>
+    ${rows.map((row) => {
+      const id = Number(row.id);
+      return `<div class="admin-service-row printing-option-row" data-printing-option-id="${id}">
+        <input data-field="label" value="${escapeHtml(row.label || '')}" aria-label="Print size label" />
+        <input data-field="unit-price" type="number" min="0" max="999.99" step="0.01" value="${Number(row.unit_price || 0).toFixed(2)}" aria-label="Unit price" />
+        <label class="admin-service-toggle"><input data-field="active" type="checkbox"${row.active ? ' checked' : ''} /> On</label>
+        <input data-field="sort-order" type="number" step="1" value="${Number(row.sort_order || 0)}" aria-label="Sort order" />
+        <button type="button" class="secondary" onclick="savePrintingOption(${id})">Save</button>
+      </div>`;
+    }).join('')}
+  `;
+}
+
+async function addPrintingOption() {
+  const button = document.getElementById('addPrintingOptionButton');
+  const nextSortOrder = printingOptionsCache.reduce(
+    (highest, row) => Math.max(highest, Number(row.sort_order) || 0),
+    0
+  ) + 10;
+  const fd = new FormData();
+  fd.append('label', 'New Print Size');
+  fd.append('unit_price', '0');
+  fd.append('active', '1');
+  fd.append('sort_order', String(nextSortOrder));
+  return queuePrintingOptionMutation(button, async (generation) => {
+    const data = await fetchJson('/api/printing-options', { method: 'POST', body: fd });
+    refreshPrintingOptionSurfaces(data.printing_options, generation);
+  });
+}
+
+function setPrintingOptionPending(control, pending) {
+  if (!control) return;
+  const count = Math.max(0, (printingOptionPendingCounts.get(control) || 0) + (pending ? 1 : -1));
+  printingOptionPendingCounts.set(control, count);
+  control.disabled = count > 0;
+}
+
+function queuePrintingOptionMutation(control, operation) {
+  const generation = ++printingOptionMutationGeneration;
+  setPrintingOptionPending(control, true);
+  const mutation = printingOptionMutationQueue.then(async () => {
+    try {
+      await operation(generation);
+    } catch (error) {
+      setNotice(error.message, 'error');
+    } finally {
+      setPrintingOptionPending(control, false);
+    }
+  });
+  printingOptionMutationQueue = mutation.catch(() => {});
+  return mutation;
+}
+
+function refreshPrintingOptionSurfaces(rows, generation) {
+  printingOptionsCache = rows || [];
+  populatePrintingSelect();
+  updateOptionPricePreviews(lastQuote?.line_items || null);
+  if (generation === printingOptionMutationGeneration) renderPrintingOptionAdmin();
+}
+
+async function savePrintingOption(id) {
+  const optionId = Number(id);
+  if (!Number.isInteger(optionId) || optionId <= 0) return;
+  const row = document.querySelector(`[data-printing-option-id="${optionId}"]`);
+  if (!row) return;
+  const button = row.querySelector('button');
+  const fd = new FormData();
+  fd.append('label', row.querySelector('[data-field="label"]').value || '');
+  fd.append('unit_price', row.querySelector('[data-field="unit-price"]').value || '0');
+  fd.append('active', row.querySelector('[data-field="active"]').checked ? '1' : '0');
+  fd.append('sort_order', row.querySelector('[data-field="sort-order"]').value || '0');
+  return queuePrintingOptionMutation(button, async (generation) => {
+    const data = await fetchJson(`/api/printing-options/${optionId}`, { method: 'POST', body: fd });
+    refreshPrintingOptionSurfaces(data.printing_options, generation);
+    if (generation === printingOptionMutationGeneration) setNotice('Printing option saved.', 'success');
+  });
+}
+
+/*
+  Printing mutations are serialized because every response contains the full list.
+  A superseded response may refresh the quote cache, but only the latest mutation
+  can rebuild the editor, so a rejected newer edit remains available for correction.
+*/
 
 async function saveServiceOptions() {
   try {
@@ -4090,11 +4496,21 @@ async function listImages() {
 
 async function calcQuote() {
   try {
+    const sizing = getMatSizing();
+    if (!sizing.valid) {
+      invalidateQuote();
+      setNotice(sizing.error, 'error');
+      return;
+    }
     const fd = new FormData();
     fd.append('width_in', document.getElementById('qw').value || '0');
     fd.append('height_in', document.getElementById('qh').value || '0');
     fd.append('labor_flat', document.getElementById('labor').value || '0');
     fd.append('mat_border_in', document.getElementById('matBorder').value || '2');
+    if (sizing.explicit) {
+      fd.append('outside_width_in', String(sizing.outsideWidth));
+      fd.append('outside_height_in', String(sizing.outsideHeight));
+    }
     fd.append('image_id', selectedImageId || '');
     if (selectedMaterials.moulding) fd.append('moulding_id', selectedMaterials.moulding);
     if (selectedMaterials.topMat) {
@@ -4112,18 +4528,10 @@ async function calcQuote() {
     const glazingKey = document.getElementById('glazingType')?.value || '';
     if (glazingKey) fd.append('glazing_key', glazingKey);
     fd.append('global_discount_pct', document.getElementById('globalDiscount').value || '0');
-    OPTION_SELECTS.forEach(({ key, selectId, countId }) => {
-      const value = document.getElementById(selectId)?.value || '';
-      if (value) fd.append(`${key}_key`, value);
-      fd.append(`${key}_count`, document.getElementById(countId)?.value || '1');
-      fd.append(`${key}_discount_pct`, '0');
-    });
-    fd.append('other_label', document.getElementById('otherLineLabel').value || '');
-    fd.append('other_amount', document.getElementById('otherLineAmount').value || '0');
-    fd.append('other_discount_pct', document.getElementById('otherLineDiscount').value || '0');
-    fd.append('other2_label', document.getElementById('otherLine2Label').value || '');
-    fd.append('other2_amount', document.getElementById('otherLine2Amount').value || '0');
-    fd.append('other2_discount_pct', document.getElementById('otherLine2Discount').value || '0');
+    if (!appendQuoteOptionFields(fd)) {
+      invalidateQuote();
+      return;
+    }
 
     lastQuote = await fetchJson('/api/quotes/calculate', { method: 'POST', body: fd });
     updateQuoteSummary(lastQuote);
@@ -4184,6 +4592,11 @@ async function createOrder() {
 function buildOrderPayload(mockupImageDataUrl = getMockupSnapshotDataUrl()) {
   return {
     ...lastQuote,
+    line_discounts: Object.fromEntries(
+      Object.entries(LINE_DISCOUNT_FIELDS).map(
+        ([key, id]) => [key, normalizeDiscount(document.getElementById(id)?.value)]
+      )
+    ),
     design_state: {
       item_name: document.getElementById('designItemName').value || document.getElementById('activePresetLabel')?.textContent || 'Custom Framing',
       opening_layout: document.getElementById('openingLayout').value || 'single',
@@ -4200,7 +4613,9 @@ function buildOrderPayload(mockupImageDataUrl = getMockupSnapshotDataUrl()) {
       backing_key: document.getElementById('optionBacking').value || '',
       mounting_key: document.getElementById('optionMounting').value || '',
       frame_mounting_key: document.getElementById('optionFrameMounting').value || '',
-      printing_key: document.getElementById('optionPrinting').value || '',
+      printing_option_id: /^\d+$/.test(document.getElementById('optionPrinting').value)
+        ? Number(document.getElementById('optionPrinting').value)
+        : null,
       various_key: document.getElementById('optionVarious').value || '',
       assembly_key: document.getElementById('optionAssembly').value || '',
       royalties_key: document.getElementById('optionRoyalties').value || '',
@@ -4489,6 +4904,7 @@ async function editSelectedOrderQuote() {
       ? { order: selectedOrderDetail }
       : await fetchJson(`/api/orders/${selectedOrderId}`);
     await loadOrderIntoDesign(data.order);
+    closeOrderInspector({ restoreFocus: false, clearSelection: false });
     switchTab('design');
     scrollDesignBuilderIntoView();
     setNotice(`${data.order.quote_number} loaded for editing. Recalculate after changes, then update the saved quote.`, 'success');
@@ -4513,6 +4929,17 @@ async function loadOrderIntoDesign(order) {
   document.getElementById('imgW').value = selected.subject_width_in || payload.width_in || 8;
   document.getElementById('imgH').value = selected.subject_height_in || payload.height_in || 10;
   document.getElementById('matBorder').value = selected.mat_border_in ?? 2;
+  const subjectWidth = Number(selected.subject_width_in || payload.width_in || 8);
+  const subjectHeight = Number(selected.subject_height_in || payload.height_in || 10);
+  const equalOutsideWidth = subjectWidth + (2 * Number(selected.mat_border_in ?? 2));
+  const equalOutsideHeight = subjectHeight + (2 * Number(selected.mat_border_in ?? 2));
+  const storedOutsideWidth = Number(selected.outside_width_in || 0);
+  const storedOutsideHeight = Number(selected.outside_height_in || 0);
+  const hasExplicitOutside = storedOutsideWidth > subjectWidth
+    && storedOutsideHeight > subjectHeight
+    && (Math.abs(storedOutsideWidth - equalOutsideWidth) > 0.001 || Math.abs(storedOutsideHeight - equalOutsideHeight) > 0.001);
+  document.getElementById('overallMatWidth').value = hasExplicitOutside ? storedOutsideWidth : '';
+  document.getElementById('overallMatHeight').value = hasExplicitOutside ? storedOutsideHeight : '';
   document.getElementById('labor').value = Number(payload.line_items?.labor || 0).toFixed(2);
   document.getElementById('designItemName').value = designState.item_name || 'Custom Framing';
   document.getElementById('openingLayout').value = designState.opening_layout || 'single';
@@ -4545,11 +4972,17 @@ async function loadOrderIntoDesign(order) {
   }
 
   document.getElementById('globalDiscount').value = optionState.global_discount_pct ?? selected.global_discount_pct ?? 0;
+  const legacyDiscount = optionState.global_discount_pct ?? selected.global_discount_pct ?? 0;
+  Object.entries(LINE_DISCOUNT_FIELDS).forEach(([key, id]) => {
+    const input = document.getElementById(id);
+    if (input) input.value = String(normalizeDiscount(payload.line_discounts?.[key] ?? legacyDiscount));
+  });
   OPTION_SELECTS.forEach(({ key, selectId, countId }) => {
     const addon = selected.addons?.[key] || {};
     document.getElementById(selectId).value = optionState[`${key}_key`] || addon.service?.key || '';
     document.getElementById(countId).value = addon.count ?? 1;
   });
+  restorePrintingSelection(selected.addons?.printing || null);
   document.getElementById('glazingType').value = selected.glazing?.key || optionState.glazing_key || '';
   document.getElementById('otherLineLabel').value = optionState.other_label || selected.addons?.custom?.[0]?.label || '';
   document.getElementById('otherLineAmount').value = optionState.other_amount ?? selected.addons?.custom?.[0]?.amount ?? 0;
@@ -4855,13 +5288,26 @@ function loadLocalPreview() {
 
 function bindDesignInputs() {
   const dimensionIds = new Set(['qw', 'qh', 'imgW', 'imgH']);
-  ['qw', 'qh', 'matBorder', 'imgW', 'imgH', 'openingSpacing', 'openingLayout', 'openingOffsetX', 'openingOffsetY', 'openingBalance', 'secondMatReveal', 'thirdMatReveal'].forEach((id) => {
+  ['qw', 'qh', 'matBorder', 'overallMatWidth', 'overallMatHeight', 'imgW', 'imgH', 'openingSpacing', 'openingLayout', 'openingOffsetX', 'openingOffsetY', 'openingBalance', 'secondMatReveal', 'thirdMatReveal'].forEach((id) => {
     document.getElementById(id).addEventListener('input', () => {
       if (id === 'qw') document.getElementById('imgW').value = document.getElementById('qw').value;
       if (id === 'qh') document.getElementById('imgH').value = document.getElementById('qh').value;
       if (id === 'imgW') document.getElementById('qw').value = document.getElementById('imgW').value;
       if (id === 'imgH') document.getElementById('qh').value = document.getElementById('imgH').value;
-      if (['qw', 'qh', 'imgW', 'imgH', 'matBorder'].includes(id)) {
+      if (id === 'overallMatWidth' && !document.getElementById('overallMatWidth').value && document.getElementById('overallMatHeight').value) {
+        document.getElementById('overallMatHeight').value = '';
+      }
+      if (id === 'overallMatHeight' && !document.getElementById('overallMatHeight').value && document.getElementById('overallMatWidth').value) {
+        document.getElementById('overallMatWidth').value = '';
+      }
+      if (['overallMatWidth', 'overallMatHeight'].includes(id)) {
+        const sizing = getMatSizing();
+        if (sizing.valid && sizing.explicit) {
+          document.getElementById('openingOffsetX').value = '0';
+          document.getElementById('openingOffsetY').value = '0';
+        }
+      }
+      if (['qw', 'qh', 'imgW', 'imgH', 'matBorder', 'overallMatWidth', 'overallMatHeight'].includes(id)) {
         invalidateQuote();
       }
       if (dimensionIds.has(id)) {
@@ -4874,23 +5320,51 @@ function bindDesignInputs() {
       scheduleDesignHistorySnapshot();
     });
   });
+  MAT_BORDER_FIELD_IDS.forEach((id) => {
+    const node = document.getElementById(id);
+    if (!node) return;
+    const applyMatBorderEdit = () => {
+      if (!applyEditableMatBorders()) {
+        syncOpeningPositionInputs(id);
+        return;
+      }
+      invalidateQuote();
+      syncOpeningPositionInputs();
+      updateSelectionSummary();
+      renderMockup();
+      scheduleDesignHistorySnapshot();
+    };
+    node.addEventListener('input', applyMatBorderEdit);
+    node.addEventListener('change', applyMatBorderEdit);
+  });
   [
     ...OPTION_SELECTS.flatMap(({ selectId, countId }) => [selectId, countId]),
+    'optionPrinting', 'countPrinting',
     'glazingType',
-    'otherLineLabel', 'otherLineAmount', 'otherLineDiscount',
-    'otherLine2Label', 'otherLine2Amount', 'otherLine2Discount', 'globalDiscount',
+    'otherLineLabel', 'otherLineAmount',
+    'otherLine2Label', 'otherLine2Amount',
+    ...Object.values(LINE_DISCOUNT_FIELDS),
   ].forEach((id) => {
     const node = document.getElementById(id);
     if (!node) return;
     node.addEventListener('input', () => {
       lastQuote = null;
       updateQuoteSummary(null);
+      updateOptionPricePreviews();
     });
     node.addEventListener('change', () => {
       lastQuote = null;
       updateQuoteSummary(null);
       updateOptionPricePreviews();
     });
+  });
+  document.getElementById('globalDiscount')?.addEventListener('input', (event) => {
+    populateLineDiscounts(event.target.value);
+    lastQuote = null;
+    updateQuoteSummary(null);
+  });
+  document.getElementById('optionPrinting')?.addEventListener('change', (event) => {
+    handlePrintingSelectionChange(event.target.value);
   });
   document.querySelectorAll('.admin-service-price').forEach((node) => {
     node.addEventListener('blur', () => {
@@ -5144,7 +5618,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       closeCatalogEditor();
     }
   });
-  applyTheme(window.localStorage.getItem('framershaven-theme') || 'classic', false);
+  applyTheme(window.localStorage.getItem('printery-theme') || 'classic', false);
   loadLocalPreview();
   bindMockupDesigner();
   bindDesignInputs();
@@ -5158,8 +5632,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   updateGalleryDetails(null);
   updateQuoteSummary(null);
   renderMockup();
-  await Promise.all([listImages(), listOrders(), listCustomers(), searchCatalog(true), loadPricingSettings(), loadServiceOptions(), listBackups()]);
-  const lastImport = window.localStorage.getItem('studio-last-import');
+  await Promise.all([listImages(), listOrders(), listCustomers(), searchCatalog(true), loadPricingSettings(), loadServiceOptions(), loadPrintingOptions(), listBackups()]);
+  const lastImport = window.localStorage.getItem('printery-last-import');
   if (lastImport) {
     const stats = document.getElementById('catalogStats');
     if (stats) stats.textContent = lastImport;
@@ -5181,6 +5655,8 @@ const DESIGN_HISTORY_FIELD_IDS = [
   'imgW',
   'imgH',
   'matBorder',
+  'overallMatWidth',
+  'overallMatHeight',
   'openingLayout',
   'openingSpacing',
   'openingBalance',
@@ -5220,10 +5696,9 @@ const DESIGN_HISTORY_FIELD_IDS = [
   'countCustom2',
   'otherLineLabel',
   'otherLineAmount',
-  'otherLineDiscount',
   'otherLine2Label',
   'otherLine2Amount',
-  'otherLine2Discount',
+  ...Object.values(LINE_DISCOUNT_FIELDS),
 ];
 let designHistory = [];
 let designHistoryIndex = -1;
@@ -5487,12 +5962,8 @@ function updateMultiOpeningBoundingBox() {
   if (document.getElementById('openingLayout')?.value !== 'multi') return;
   if (!customOpenings || !customOpenings.length) return;
   
-  // Read the user-defined mat area — do NOT overwrite qw/qh
-  const artW = Number(document.getElementById('qw')?.value || document.getElementById('imgW')?.value || 8);
-  const artH = Number(document.getElementById('qh')?.value || document.getElementById('imgH')?.value || 10);
-  const { matBorder } = getEffectiveOpeningOffsets();
-  const matWIn = artW + (matBorder * 2);
-  const matHIn = artH + (matBorder * 2);
+  // Read the user-defined mat area without overwriting the subject dimensions.
+  const { outsideWidth: matWIn, outsideHeight: matHIn } = getEffectiveOpeningOffsets();
   
   // Clamp every opening to stay inside the fixed mat area
   customOpenings.forEach(op => {
@@ -5596,11 +6067,7 @@ function updateCustomOpeningField(id, field, value) {
   }
   
   // Apply clamping boundaries when fields are typed!
-  const artW = Number(document.getElementById('qw')?.value || document.getElementById('imgW')?.value || 8);
-  const artH = Number(document.getElementById('qh')?.value || document.getElementById('imgH')?.value || 10);
-  const { matBorder } = getEffectiveOpeningOffsets();
-  const matWIn = artW + (matBorder * 2);
-  const matHIn = artH + (matBorder * 2);
+  const { outsideWidth: matWIn, outsideHeight: matHIn } = getEffectiveOpeningOffsets();
   clampOpeningToBounds(matchingOp, matWIn, matHIn, 1.0);
   
   updateMultiOpeningBoundingBox();
@@ -5659,9 +6126,7 @@ function alignCustomOpenings(alignType) {
   }
   
   // Clamp aligned openings safely
-  const { matBorder } = getEffectiveOpeningOffsets();
-  const matWIn = areaW + (matBorder * 2);
-  const matHIn = areaH + (matBorder * 2);
+  const { outsideWidth: matWIn, outsideHeight: matHIn } = getEffectiveOpeningOffsets();
   targets.forEach(op => clampOpeningToBounds(op, matWIn, matHIn, 0.5));
   
   syncMultiOpeningsList();
@@ -5705,9 +6170,7 @@ function distributeCustomOpenings(distType) {
   }
   
   // Clamp distributed openings safely
-  const { matBorder } = getEffectiveOpeningOffsets();
-  const matWIn = areaW + (matBorder * 2);
-  const matHIn = areaH + (matBorder * 2);
+  const { outsideWidth: matWIn, outsideHeight: matHIn } = getEffectiveOpeningOffsets();
   targets.forEach(op => clampOpeningToBounds(op, matWIn, matHIn, 0.5));
   
   syncMultiOpeningsList();
@@ -5821,9 +6284,7 @@ function applyMultiTemplate(templateName) {
   selectedOpeningId = 1;
   
   // Clamp to safe bounds
-  const { matBorder } = getEffectiveOpeningOffsets();
-  const matWIn = areaW + (matBorder * 2);
-  const matHIn = areaH + (matBorder * 2);
+  const { outsideWidth: matWIn, outsideHeight: matHIn } = getEffectiveOpeningOffsets();
   customOpenings.forEach(op => clampOpeningToBounds(op, matWIn, matHIn, 0.25));
   
   syncMultiOpeningsList();

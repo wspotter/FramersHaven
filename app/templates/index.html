@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>FramersHaven</title>
+  <title>Printery Framing Studio</title>
   <style>
     :root {
       --ink: #1e293b; /* slate-800 */
@@ -40,7 +40,7 @@
       --mockup-bg-end: #e4e1d7;
     }
 
-        body[data-theme="framershaven"] {
+        body[data-theme="printery"] {
       --ink: #111111;
       --muted: #555555;
       --line: #F9C6D3; /* Pink border */
@@ -182,7 +182,7 @@
       min-height: 100vh;
     }
 
-        body[data-theme="framershaven"] {
+        body[data-theme="printery"] {
       --ink: #111111;
       --muted: #555555;
       --line: #F9C6D3; /* Pink border */
@@ -330,9 +330,9 @@
       backdrop-filter: blur(10px);
       border: 1px solid var(--line);
       border-radius: 18px;
-      padding: 10px 14px;
+      padding: 7px 10px;
       display: grid;
-      grid-template-columns: minmax(160px, 0.55fr) minmax(360px, 1.4fr) minmax(160px, 0.55fr);
+      grid-template-columns: minmax(150px, 0.55fr) minmax(360px, 1.4fr) auto;
       align-items: center;
       gap: 10px;
       box-shadow: var(--shadow);
@@ -391,6 +391,11 @@
       justify-content: center;
       min-height: 30px;
       text-decoration: none;
+      width: 30px;
+      min-width: 30px;
+      padding: 0;
+      border-radius: 50%;
+      font-weight: 700;
     }
 
     .actions {
@@ -398,22 +403,43 @@
       justify-content: flex-end;
       gap: 8px;
       flex-wrap: wrap;
-      align-items: flex-end;
+      align-items: center;
+      flex-wrap: nowrap;
     }
 
     .theme-picker {
-      min-width: 160px;
+      min-width: 0;
     }
 
     .theme-picker label {
-      margin-top: 0;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
     }
 
-    .theme-picker small {
-      display: block;
-      margin-top: 3px;
-      color: var(--muted);
-      font-size: 10px;
+    .theme-picker select {
+      width: auto;
+      max-width: 150px;
+      min-height: 30px;
+      margin: 0;
+      padding: 4px 28px 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+    }
+
+    .design-launcher-button {
+      width: auto;
+      min-height: 30px;
+      margin: 0;
+      padding: 5px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    body:not([data-workspace="design"]) .design-launcher-button {
+      display: none;
     }
 
     .workspace {
@@ -825,15 +851,15 @@
       opacity: 0.48;
     }
 
-    body[data-theme="framershaven"] button {
+    body[data-theme="printery"] button {
       color: #111111;
     }
 
-    body[data-theme="framershaven"] .nav-button {
+    body[data-theme="printery"] .nav-button {
       color: var(--sidebar-text);
     }
 
-    body[data-theme="framershaven"] .nav-button.active {
+    body[data-theme="printery"] .nav-button.active {
       color: #111111;
     }
 
@@ -1463,7 +1489,7 @@
       background: var(--nav-soft);
     }
 
-    body[data-theme="framershaven"] .material-slot.has-selection {
+    body[data-theme="printery"] .material-slot.has-selection {
       border-color: #F9C6D3;
       box-shadow: inset 0 0 0 2px #53C2BA;
       background: var(--nav-soft);
@@ -1611,10 +1637,11 @@
       margin-top: 6px;
     }
 
+    .option-header,
     .option-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 32px 46px;
-      gap: 3px;
+      grid-template-columns: minmax(0, 1fr) 34px 42px 58px;
+      gap: 4px;
       align-items: center;
     }
 
@@ -1631,9 +1658,6 @@
     }
 
     .option-header {
-      display: none;
-      grid-template-columns: minmax(0, 1fr) 38px 50px;
-      gap: 4px;
       margin-top: 2px;
       color: var(--muted);
       font-size: 9px;
@@ -1708,7 +1732,7 @@
     }
 
     .quote-service-grid .option-row {
-      grid-template-columns: minmax(0, 1fr) 30px 48px;
+      grid-template-columns: minmax(0, 1fr) 34px 42px 58px;
     }
 
     .quote-service-grid .option-price {
@@ -1789,6 +1813,10 @@
       margin-top: 3px;
     }
 
+    .quote-extra-grid .option-row {
+      grid-template-columns: minmax(0, 1fr) 42px 58px;
+    }
+
     .quote-mini-meta {
       display: grid;
       grid-template-columns: 1fr 48px;
@@ -1808,6 +1836,11 @@
       grid-template-columns: minmax(0, 1fr) 44px 64px 58px 96px;
       gap: 4px;
       align-items: center;
+    }
+
+    .printing-option-header,
+    .printing-option-row {
+      grid-template-columns: minmax(0, 1fr) 76px 44px 64px auto;
     }
 
     .admin-service-header {
@@ -1929,21 +1962,44 @@
       text-align: center;
     }
 
-    .position-readout span,
-    .position-readout strong {
+    .position-readout label,
+    .position-readout input {
       display: block;
     }
 
-    .position-readout span {
+    .position-readout label {
       color: var(--muted);
       font-size: 9px;
       text-transform: uppercase;
       letter-spacing: 0.08em;
     }
 
-    .position-readout strong {
+    .position-readout input {
       margin-top: 1px;
+      min-height: 24px;
+      padding: 2px 3px;
+      text-align: center;
       font-size: 10px;
+    }
+
+    .mat-size-override {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 4px;
+      margin-top: 5px;
+    }
+
+    .mat-size-status {
+      min-height: 14px;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.3;
+    }
+
+    .mat-size-status.error {
+      color: var(--danger, #a12622);
+      font-weight: 700;
     }
 
     .position-slider-grid {
@@ -2090,7 +2146,7 @@
         linear-gradient(180deg, var(--mockup-bg-start) 0%, var(--mockup-bg-end) 100%);
     }
 
-    body[data-theme="framershaven"] #mockupCanvas {
+    body[data-theme="printery"] #mockupCanvas {
       background: #ffffff;
     }
 
@@ -2191,13 +2247,9 @@
       line-height: 1.45;
     }
 
-    .design-home-panel {
+    .design-launcher-panel {
       margin-bottom: 8px;
-      padding: 16px;
-    }
-
-    .design-home-panel.compact {
-      padding: 4px 6px;
+      padding: 10px;
     }
 
     .design-home-head {
@@ -2233,12 +2285,7 @@
       justify-content: flex-end;
     }
 
-    .design-home-grid {
-      display: grid;
-      grid-template-columns: 1.1fr 1.1fr 0.8fr;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
+    .design-launcher-panel[hidden] { display: none; }
 
     .home-tile {
       display: flex;
@@ -2313,44 +2360,6 @@
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
-    }
-
-    .design-home-panel.compact .design-home-head {
-      align-items: center;
-      margin-bottom: 2px;
-    }
-
-    .design-home-panel.compact .eyebrow,
-    .design-home-panel.compact .design-home-head p,
-    .design-home-panel.compact .design-home-grid,
-    .design-home-panel.compact .preset-head small {
-      display: none;
-    }
-
-    .design-home-panel.compact .design-home-head h3 {
-      margin: 0;
-      font-size: 13px;
-    }
-
-    .design-home-panel.compact .preset-head {
-      margin-bottom: 3px;
-    }
-
-    .design-home-panel.compact .preset-head h4 {
-      font-size: 11px;
-    }
-
-    .design-home-panel.compact .preset-grid {
-      display: flex;
-      flex-wrap: nowrap;
-      gap: 5px;
-      overflow-x: auto;
-      padding-bottom: 2px;
-      scrollbar-width: thin;
-    }
-
-    .design-home-panel.compact .preset-card {
-      flex: 0 0 auto;
     }
 
     .preset-card {
@@ -3834,7 +3843,7 @@
 
     body .order-inspector-tabs button,
     body[data-theme="gallery"] .order-inspector-tabs button,
-    body[data-theme="framershaven"] .order-inspector-tabs button {
+    body[data-theme="printery"] .order-inspector-tabs button {
       width: auto;
       min-width: 0;
       margin: 0;
@@ -3849,7 +3858,7 @@
 
     body .order-inspector-tabs button.active,
     body[data-theme="gallery"] .order-inspector-tabs button.active,
-    body[data-theme="framershaven"] .order-inspector-tabs button.active {
+    body[data-theme="printery"] .order-inspector-tabs button.active {
       border-bottom-color: var(--accent) !important;
       color: var(--ink) !important;
       font-weight: 800;
@@ -4118,55 +4127,32 @@
           <button type="button" class="topbar-nav-button" data-tab="admin" onclick="switchTab('admin', this)" title="Admin: Catalog import and pricing controls.">Admin</button>
         </div>
         <div class="actions">
-          <a class="topbar-nav-button topbar-help-link" href="/help/" target="_blank" rel="noopener" title="Open the FramersHaven operator guide.">Help</a>
+          <button id="designLauncherToggle" type="button" class="design-launcher-button" aria-expanded="false" aria-controls="designHomePanel" onclick="toggleDesignLauncher()">+ New Design</button>
           <div class="theme-picker">
             <label for="themeSelect">Theme</label>
             <select id="themeSelect" onchange="onThemeChange(this.value)" title="Switch the workstation theme.">
-              <option value="classic">Classic</option>
-              <option value="framershaven">FramersHaven</option>
+              <option value="classic">Studio Classic</option>
+              <option value="printery">Printery (Light)</option>
               <option value="gallery">Gallery Neon (Light)</option>
             </select>
-            <small id="themeStatus">Warm neutral default</small>
           </div>
+          <a class="topbar-nav-button topbar-help-link" href="/help/" target="_blank" rel="noopener" aria-label="Open operator help" title="Open the operator guide.">?</a>
         </div>
       </div>
       <div id="notice" class="notice"></div>
 
       <div class="workspace">
         <section id="tab-design" class="tab-panel active">
-          <div id="designHomePanel" class="card design-home-panel compact">
+          <div id="designHomePanel" class="design-launcher-panel" hidden>
             <div class="design-home-head">
               <div>
-                <div class="eyebrow">Design Home</div>
-                <h3>Start a New Design</h3>
-                <p>Use the gallery for intake, then launch a preset into the framing workspace.</p>
+                <h3>Choose a Starting Design</h3>
+                <p>Select a preset to apply it and return directly to the builder.</p>
               </div>
               <div class="design-home-actions">
-                <button id="designLauncherToggle" type="button" class="ghost mini-button" onclick="toggleDesignLauncher()">Expand Launcher</button>
                 <button type="button" class="ghost mini-button" onclick="switchTab('gallery')">Open Gallery</button>
-                <button type="button" class="secondary mini-button" onclick="scrollDesignBuilderIntoView()">Resume Builder</button>
+                <button type="button" class="secondary mini-button" onclick="toggleDesignLauncher()">Close</button>
               </div>
-            </div>
-            <div class="design-home-grid">
-              <button type="button" class="home-tile home-tile-accent" onclick="switchTab('gallery')">
-                <strong>Select &amp; Upload</strong>
-                <span>Bring in new artwork, set physical size, crop it, then carry it into Design.</span>
-                <small>Gallery intake</small>
-              </button>
-              <button type="button" class="home-tile" onclick="switchTab('gallery')">
-                <strong>Gallery Images</strong>
-                <span>Browse saved shop images and recent uploads without bloating the worksheet itself.</span>
-                <small>Reuse staged artwork</small>
-              </button>
-              <div class="home-tile">
-                <strong id="designHomeStatusTitle">Current Builder</strong>
-                <span id="designHomeStatusBody">No preset launched yet. Start from a preset, then use the builder below.</span>
-                <small id="designHomeStatusMeta">Design home</small>
-              </div>
-            </div>
-            <div class="preset-head">
-              <h4>Design Presets</h4>
-              <small>Launch a practical starting layout, then finish the quote in the builder.</small>
             </div>
             <div id="designPresetGrid" class="preset-grid">
               <button type="button" class="preset-card active" data-preset="single_mat" title="Standard single-opening frame with one visible mat. Preset 1000001." onclick="openDesignPreset('single_mat')">
@@ -4326,11 +4312,28 @@
                   </div>
                   <div class="builder-grid-2" style="margin-top: 5px;">
                     <div>
-                      <div class="row-2">
+                      <div class="mat-size-override">
                         <div>
                           <label>Mat Border (in)</label>
                           <input id="matBorder" type="number" value="2" step="0.25" title="Set the visible mat width around the artwork opening." />
                         </div>
+                        <div>
+                          <label>Overall Mat W</label>
+                          <input id="overallMatWidth" type="number" value="" step="0.25" min="0.01" placeholder="optional" title="Optional exact finished mat width. Enter both width and height to override the equal mat border." />
+                        </div>
+                        <div>
+                          <label>Overall Mat H</label>
+                          <input id="overallMatHeight" type="number" value="" step="0.25" min="0.01" placeholder="optional" title="Optional exact finished mat height. Enter both width and height to override the equal mat border." />
+                        </div>
+                      </div>
+                      <div id="overallMatStatus" class="mat-size-status" aria-live="polite">Optional: enter both finished mat dimensions. The opening starts centered.</div>
+                      <div class="position-readout" aria-label="Editable mat borders">
+                        <div><label for="matBorderTop">Top</label><input id="matBorderTop" type="number" value="2" step="0.125" min="0" /></div>
+                        <div><label for="matBorderRight">Right</label><input id="matBorderRight" type="number" value="2" step="0.125" min="0" /></div>
+                        <div><label for="matBorderBottom">Bottom</label><input id="matBorderBottom" type="number" value="2" step="0.125" min="0" /></div>
+                        <div><label for="matBorderLeft">Left</label><input id="matBorderLeft" type="number" value="2" step="0.125" min="0" /></div>
+                      </div>
+                      <div class="row-2" style="margin-top: 5px;">
                         <div>
                           <label>Opening Layout</label>
                           <select id="openingLayout" title="Switch between a standard single opening and a simple two-opening mat layout.">
@@ -4338,9 +4341,10 @@
                             <option value="diptych">2 openings</option>
                           </select>
                         </div>
+                        <div></div>
                       </div>
                       <div class="inline-actions">
-                        <button type="button" class="secondary mini-button" onclick="openOpeningDrawer()" title="Open the drawer for opening spacing and position controls.">Adjust Opening</button>
+                        <button type="button" class="secondary mini-button" onclick="adjustOpeningFromEditableBorders()" title="Apply the Top, Right, Bottom, and Left border numbers, then open position controls.">Adjust Opening</button>
                         <button class="secondary mini-button" onclick="resetOpeningPosition()" title="Reset opening position back to centered.">Center Opening</button>
                       </div>
                     </div>
@@ -4401,60 +4405,76 @@
                       <input id="quoteTaxRate" value="6.00%" readonly placeholder="Tax" />
                     </div>
                     <div class="option-header">
-                      <span>Option</span>
-                      <span>Count</span>
+                      <span>Item</span>
+                      <span>Qty</span>
+                      <span>Discount %</span>
                       <span>Price</span>
                     </div>
                     <div class="quote-service-grid">
+                      <div class="option-row"><span>Moulding</span><span class="option-basis">1</span><input id="discountMoulding" type="number" min="0" max="100" step="1" value="0" /><div id="priceMoulding" class="option-price">-</div></div>
+                      <div class="option-row"><span>Top mat</span><span class="option-basis">1</span><input id="discountTopMat" type="number" min="0" max="100" step="1" value="0" /><div id="priceTopMat" class="option-price">-</div></div>
+                      <div class="option-row"><span>Second mat</span><span class="option-basis">1</span><input id="discountSecondMat" type="number" min="0" max="100" step="1" value="0" /><div id="priceSecondMat" class="option-price">-</div></div>
+                      <div class="option-row"><span>Third mat</span><span class="option-basis">1</span><input id="discountThirdMat" type="number" min="0" max="100" step="1" value="0" /><div id="priceThirdMat" class="option-price">-</div></div>
+                      <div class="option-row"><span>Labor</span><span class="option-basis">1</span><input id="discountLabor" type="number" min="0" max="100" step="1" value="0" /><div id="priceLabor" class="option-price">-</div></div>
                       <div class="option-row">
                         <select id="glazingType" title="Choose glazing type for this frame."><option value="">No glazing</option></select>
                         <span class="option-basis">area</span>
+                        <input id="discountGlazing" type="number" min="0" max="100" step="1" value="0" />
                         <div id="priceGlazing" class="option-price">-</div>
                         <input id="selectionGlazing" type="hidden" value="None" />
                       </div>
                       <div class="option-row">
                         <select id="optionBacking"><option value="">— Backing —</option></select>
                         <input id="countBacking" type="number" min="0" step="1" value="1" title="Count for backing. Area-priced rows use the frame area." />
+                        <input id="discountBacking" type="number" min="0" max="100" step="1" value="0" />
                         <div id="priceBacking" class="option-price">-</div>
                       </div>
                       <div class="option-row">
                         <select id="optionMounting"><option value="">— Mounting —</option></select>
                         <input id="countMounting" type="number" min="0" step="1" value="1" title="Count for subject mounting." />
+                        <input id="discountMounting" type="number" min="0" max="100" step="1" value="0" />
                         <div id="priceMounting" class="option-price">-</div>
                       </div>
                       <div class="option-row">
                         <select id="optionFrameMounting"><option value="">— Frame Mount —</option></select>
                         <input id="countFrameMounting" type="number" min="0" step="1" value="1" title="Count for frame mounting." />
+                        <input id="discountFrameMounting" type="number" min="0" max="100" step="1" value="0" />
                         <div id="priceFrameMounting" class="option-price">-</div>
                       </div>
                       <div class="option-row">
                         <select id="optionPrinting"><option value="">— Printing —</option></select>
                         <input id="countPrinting" type="number" min="0" step="1" value="1" title="Count for printing." />
+                        <input id="discountPrinting" type="number" min="0" max="100" step="1" value="0" />
                         <div id="pricePrinting" class="option-price">-</div>
                       </div>
                       <div class="option-row">
                         <select id="optionVarious"><option value="">— Various —</option></select>
                         <input id="countVarious" type="number" min="0" step="1" value="1" title="Count for various." />
+                        <input id="discountVarious" type="number" min="0" max="100" step="1" value="0" />
                         <div id="priceVarious" class="option-price">-</div>
                       </div>
                       <div class="option-row">
                         <select id="optionAssembly"><option value="">— Assembly —</option></select>
                         <input id="countAssembly" type="number" min="0" step="1" value="1" title="Count for assembly." />
+                        <input id="discountAssembly" type="number" min="0" max="100" step="1" value="0" />
                         <div id="priceAssembly" class="option-price">-</div>
                       </div>
                       <div class="option-row">
                         <select id="optionRoyalties"><option value="">— Royalties —</option></select>
                         <input id="countRoyalties" type="number" min="0" step="1" value="1" title="Count for royalties." />
+                        <input id="discountRoyalties" type="number" min="0" max="100" step="1" value="0" />
                         <div id="priceRoyalties" class="option-price">-</div>
                       </div>
                       <div class="option-row">
                         <select id="optionCustom1"><option value="">— Custom 1 —</option></select>
                         <input id="countCustom1" type="number" min="0" step="1" value="1" title="Count for the first custom service." />
+                        <input id="discountCustom1" type="number" min="0" max="100" step="1" value="0" />
                         <div id="priceCustom1" class="option-price">-</div>
                       </div>
                       <div class="option-row">
                         <select id="optionCustom2"><option value="">— Custom 2 —</option></select>
                         <input id="countCustom2" type="number" min="0" step="1" value="1" title="Count for the second custom service." />
+                        <input id="discountCustom2" type="number" min="0" max="100" step="1" value="0" />
                         <div id="priceCustom2" class="option-price">-</div>
                       </div>
                     </div>
@@ -4471,7 +4491,7 @@
                       </div>
                       <div class="option-row">
                         <div></div>
-                        <input id="globalDiscount" type="number" min="0" max="100" step="1" value="0" title="Global quote discount applied after row discounts." />
+                        <input id="globalDiscount" type="number" min="0" max="100" step="1" value="0" title="Fill every line discount; individual lines can then be changed." />
                         <div class="option-price">Global %</div>
                       </div>
                     </div>
@@ -4953,8 +4973,8 @@
                 <input type="file" id="catalogFile" accept=".csv" />
                 <div class="catalog-import-actions">
                   <button onclick="importCatalog()" title="Import vendor catalog rows from a CSV file.">Import CSV</button>
-                  <button class="secondary" onclick="importLocalCatalogPackage('mats')" title="Import local mat CSV and preview zip files supplied by the operator.">Import Mat Package</button>
-                  <button class="secondary" onclick="importLocalCatalogPackage('mouldings')" title="Import local moulding CSV and preview zip files supplied by the operator.">Import Moulding Package</button>
+                  <button class="secondary" onclick="importPfdCatalog('mats')" title="Import the dropped PFD mats CSV and preview zip.">PFD Mats</button>
+                  <button class="secondary" onclick="importPfdCatalog('mouldings')" title="Import the dropped PFD mouldings CSV and preview zip.">PFD Mouldings</button>
                   <button class="secondary" onclick="searchCatalog()" title="Reload current local catalog items into the admin snapshot.">Load Catalog</button>
                 </div>
               </div>
@@ -5120,13 +5140,6 @@
                     <select id="serviceFrameMountingBasis"><option value="count">count</option><option value="square_inches">sq in</option><option value="united_inches">united in</option></select>
                   </div>
                   <div class="admin-service-row">
-                    <input id="servicePrintingLabel" />
-                    <label class="admin-service-toggle"><input id="servicePrintingActive" type="checkbox" /> On</label>
-                    <input id="servicePrintingCost" class="admin-service-price" inputmode="decimal" maxlength="8" placeholder="$0.00" />
-                    <input id="servicePrintingMarkup" class="admin-service-markup" inputmode="decimal" maxlength="6" placeholder="1.00" />
-                    <select id="servicePrintingBasis"><option value="count">count</option><option value="square_inches">sq in</option><option value="united_inches">united in</option></select>
-                  </div>
-                  <div class="admin-service-row">
                     <input id="serviceVariousLabel" />
                     <label class="admin-service-toggle"><input id="serviceVariousActive" type="checkbox" /> On</label>
                     <input id="serviceVariousCost" class="admin-service-price" inputmode="decimal" maxlength="8" placeholder="$0.00" />
@@ -5161,6 +5174,12 @@
                     <input id="serviceCustom2Markup" class="admin-service-markup" inputmode="decimal" maxlength="6" placeholder="1.00" />
                     <select id="serviceCustom2Basis"><option value="count">count</option><option value="square_inches">sq in</option><option value="united_inches">united in</option></select>
                   </div>
+                </div>
+                <h4>Printing Options</h4>
+                <p>Manage the print sizes available in the quote worksheet.</p>
+                <div id="printingOptionsAdmin" class="admin-service-grid"></div>
+                <div class="inline-actions">
+                  <button id="addPrintingOptionButton" type="button" class="secondary" onclick="addPrintingOption()">Add Print Size</button>
                 </div>
                 <div class="inline-actions">
                   <button onclick="saveServiceOptions()" title="Save manual pricing used by the quote service rows.">Save Manual Pricing</button>
@@ -5243,6 +5262,6 @@
   <script type="module" src="/static/admin-ui.js"></script>
   <script type="module" src="/static/workspace-ui.js"></script>
   <script type="module" src="/static/customer-ui.js"></script>
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v={{ app_js_version }}"></script>
 </body>
 </html>

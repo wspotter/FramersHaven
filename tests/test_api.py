@@ -8,6 +8,7 @@ import unittest
 import zipfile
 from html import unescape
 from pathlib import Path
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 from PIL import Image
@@ -17,7 +18,183 @@ from app import main as main_module
 from app.main import app
 
 
+def run_frontend_behavior(body: str) -> dict:
+    script_path = Path(__file__).parents[1] / "app" / "static" / "app.js"
+    harness = r"""
+const fs = require('fs');
+const nodes = {};
+function input(value = '') {
+  return { value: String(value), type: 'text', focus() { this.focused = true; }, addEventListener() {} };
+}
+function select(value = '') {
+  const node = input(value);
+  node.options = [];
+  node.appendChild = (option) => node.options.push(option);
+  Object.defineProperty(node, 'innerHTML', { set() { node.options = []; } });
+  return node;
+}
+global.window = { addEventListener() {}, setTimeout, clearTimeout, localStorage: { getItem() { return null; } } };
+global.document = {
+  getElementById(id) { return nodes[id] || null; },
+  createElement(tag) { return tag === 'option' ? new Option('', '') : {}; },
+  querySelectorAll() { return []; },
+  querySelector() { return null; },
+};
+global.Option = class { constructor(text, value) { this.textContent = text; this.value = value; } };
+class TestFormData {
+  constructor() { this.entries = []; }
+  append(key, value) { this.entries.push([key, String(value)]); }
+  get(key) { return this.entries.find(([name]) => name === key)?.[1]; }
+  has(key) { return this.entries.some(([name]) => name === key); }
+}
+eval(fs.readFileSync(process.argv[1], 'utf8') + '\n' + process.argv[2]);
+"""
+    result = subprocess.run(
+        ["node", "-e", harness, str(script_path), body],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(result.stdout)
+
+
 class ApiTests(unittest.TestCase):
+    def test_admin_services_panel_has_printing_option_editor(self):
+        home = self.client.get("/")
+        self.assertIn('id="printingOptionsAdmin"', home.text)
+        self.assertIn("Add Print Size", home.text)
+        self.assertNotIn('id="servicePrintingLabel"', home.text)
+
+    def test_frontend_contains_printing_option_admin_actions(self):
+        script = self.client.get("/static/app.js").text
+        self.assertIn("function renderPrintingOptionAdmin()", script)
+        self.assertIn("async function addPrintingOption()", script)
+        self.assertIn("async function savePrintingOption(id)", script)
+
+    def test_frontend_printing_admin_renders_escaped_numeric_rows_and_filters_inactive_quotes(self):
+        result = run_frontend_behavior(r"""
+nodes.printingOptionsAdmin = { innerHTML: '' };
+nodes.optionPrinting = select('');
+printingOptionsCache = [
+  { id: 7, label: '<img src=x onerror="bad">', unit_price: 12.5, active: 1, sort_order: 10 },
+  { id: 8, label: 'Inactive', unit_price: 9, active: 0, sort_order: 20 },
+  { id: '9);bad()', label: 'Invalid id', unit_price: 1, active: 1, sort_order: 30 },
+];
+renderPrintingOptionAdmin();
+populatePrintingSelect();
+console.log(JSON.stringify({
+  html: nodes.printingOptionsAdmin.innerHTML,
+  quoteValues: nodes.optionPrinting.options.map((option) => option.value),
+  quoteTexts: nodes.optionPrinting.options.map((option) => option.textContent),
+}));
+""")
+        self.assertIn('&lt;img src=x onerror=&quot;bad&quot;&gt;', result["html"])
+        self.assertIn('savePrintingOption(7)', result["html"])
+        self.assertNotIn('bad()', result["html"])
+        self.assertEqual(result["quoteValues"], ["7", "custom"])
+        self.assertEqual(result["quoteTexts"][0], '<img src=x onerror="bad"> · $12.50')
+
+    def test_frontend_printing_mutations_are_serialized_and_restore_failed_row(self):
+        result = run_frontend_behavior(r"""
+global.FormData = TestFormData;
+nodes.notice = { textContent: '', className: '' };
+nodes.printingOptionsAdmin = { innerHTML: '' };
+nodes.optionPrinting = select('');
+const saveButton = { disabled: false };
+const fields = {
+  label: { value: 'First edit' },
+  'unit-price': { value: '12.75' },
+  active: { checked: false },
+  'sort-order': { value: '35' },
+};
+const row = {
+  querySelector(selector) {
+    if (selector === 'button') return saveButton;
+    return fields[selector.match(/data-field="([^"]+)/)?.[1]] || null;
+  },
+};
+document.querySelector = (selector) => selector === '[data-printing-option-id="7"]' ? row : null;
+const calls = [];
+let resolveFirst;
+fetchJson = (url, options) => {
+  calls.push({ url, body: Object.fromEntries(options.body.entries) });
+  if (calls.length === 1) return new Promise((resolve) => { resolveFirst = resolve; });
+  return Promise.reject(new Error('newer save rejected'));
+};
+printingOptionsCache = [{ id: 7, label: 'Original', unit_price: 1, active: 1, sort_order: 1 }];
+const first = savePrintingOption(7);
+const pendingAfterFirst = saveButton.disabled;
+fields.label.value = 'Second edit';
+fields['unit-price'].value = '22.50';
+fields.active.checked = true;
+fields['sort-order'].value = '45';
+const second = savePrintingOption(7);
+Promise.resolve().then(() => {
+  const callsBeforeFirstSettles = calls.length;
+  resolveFirst({ printing_options: [{ id: 7, label: 'First edit', unit_price: 12.75, active: 0, sort_order: 35 }] });
+  return Promise.all([first, second]).then(() => console.log(JSON.stringify({
+  pendingAfterFirst,
+  callsBeforeFirstSettles,
+  calls,
+  cacheLabel: printingOptionsCache[0].label,
+  rowLabel: fields.label.value,
+  disabledAfter: saveButton.disabled,
+  notice: nodes.notice.textContent,
+  tone: nodes.notice.className,
+  })));
+});
+""")
+        self.assertTrue(result["pendingAfterFirst"])
+        self.assertEqual(result["callsBeforeFirstSettles"], 1)
+        self.assertEqual(result["calls"][0]["body"], {
+            "label": "First edit", "unit_price": "12.75", "active": "0", "sort_order": "35",
+        })
+        self.assertEqual(result["calls"][1]["body"], {
+            "label": "Second edit", "unit_price": "22.50", "active": "1", "sort_order": "45",
+        })
+        self.assertEqual(result["cacheLabel"], "First edit")
+        self.assertEqual(result["rowLabel"], "Second edit")
+        self.assertFalse(result["disabledAfter"])
+        self.assertEqual(result["notice"], "newer save rejected")
+        self.assertIn("error", result["tone"])
+
+    def test_frontend_add_printing_option_refreshes_admin_cache_and_quote_dropdown(self):
+        result = run_frontend_behavior(r"""
+global.FormData = TestFormData;
+nodes.notice = { textContent: '', className: '' };
+nodes.printingOptionsAdmin = { innerHTML: '' };
+nodes.optionPrinting = select('');
+nodes.addPrintingOptionButton = { disabled: false };
+let request;
+fetchJson = async (url, options) => {
+  request = { url, body: Object.fromEntries(options.body.entries) };
+  return { printing_options: [
+    { id: 11, label: 'Existing', unit_price: 5, active: 0, sort_order: 20 },
+    { id: 12, label: 'New Print Size', unit_price: 0, active: 1, sort_order: 30 },
+  ] };
+};
+printingOptionsCache = [{ id: 11, label: 'Existing', unit_price: 5, active: 0, sort_order: 20 }];
+const mutation = addPrintingOption();
+const pending = nodes.addPrintingOptionButton.disabled;
+mutation.then(() => console.log(JSON.stringify({
+  request,
+  pending,
+  disabledAfter: nodes.addPrintingOptionButton.disabled,
+  cacheIds: printingOptionsCache.map((row) => row.id),
+  adminHtml: nodes.printingOptionsAdmin.innerHTML,
+  quoteValues: nodes.optionPrinting.options.map((option) => option.value),
+})));
+""")
+        self.assertEqual(result["request"], {
+            "url": "/api/printing-options",
+            "body": {"label": "New Print Size", "unit_price": "0", "active": "1", "sort_order": "30"},
+        })
+        self.assertTrue(result["pending"])
+        self.assertFalse(result["disabledAfter"])
+        self.assertEqual(result["cacheIds"], [11, 12])
+        self.assertIn("New Print Size", result["adminHtml"])
+        self.assertEqual(result["quoteValues"], ["12", "custom"])
+
     def setUp(self):
         self.tempdir = tempfile.TemporaryDirectory()
         db.DB_PATH = Path(self.tempdir.name) / "test_studio.db"
@@ -25,14 +202,21 @@ class ApiTests(unittest.TestCase):
         main_module.BACKUP_DIR.mkdir(exist_ok=True)
         main_module.PREVIEW_DIR = Path(self.tempdir.name) / "catalog_previews"
         main_module.PREVIEW_DIR.mkdir(exist_ok=True)
-        main_module.CATALOG_IMPORT_DIR = Path(self.tempdir.name) / "catalog_imports"
-        main_module.CATALOG_IMPORT_DIR.mkdir(exist_ok=True)
+        main_module.PFD_DIR = Path(self.tempdir.name) / "pfd"
+        main_module.PFD_DIR.mkdir(exist_ok=True)
         self.original_upload_dir = main_module.UPLOAD_DIR
         main_module.UPLOAD_DIR = Path(self.tempdir.name) / "uploads"
         main_module.UPLOAD_DIR.mkdir(exist_ok=True)
         main_module._catalog_preview_basename_index.cache_clear()
         db.init_db()
         self.client = TestClient(app)
+        main_module.init_admin_tables()
+        login = self.client.post(
+            "/admin/login",
+            data={"email": "admin", "password": "admin"},
+            follow_redirects=False,
+        )
+        self.assertEqual(login.status_code, 303)
 
     def tearDown(self):
         self.client.close()
@@ -40,13 +224,252 @@ class ApiTests(unittest.TestCase):
         main_module._catalog_preview_basename_index.cache_clear()
         self.tempdir.cleanup()
 
+    def test_quote_markup_exposes_discount_column_and_printing_option_ids(self):
+        home = self.client.get("/")
+        self.assertIn("Discount %", home.text)
+        for field_id in (
+            "discountMoulding", "discountTopMat", "discountSecondMat", "discountThirdMat",
+            "discountGlazing", "discountLabor", "discountBacking", "discountMounting",
+            "discountFrameMounting", "discountPrinting", "discountVarious",
+            "discountAssembly", "discountRoyalties", "discountCustom1", "discountCustom2",
+        ):
+            self.assertIn(f'id="{field_id}"', home.text)
+        self.assertIn('id="optionPrinting"', home.text)
+
+    def test_frontend_global_discount_populates_line_fields_without_stacking(self):
+        script = self.client.get("/static/app.js").text
+        self.assertIn("function populateLineDiscounts(value)", script)
+        self.assertIn("fd.append('printing_option_id'", script)
+        self.assertIn("fd.append(`${key}_discount_pct`", script)
+        self.assertNotIn("fd.append(`${key}_discount_pct`, '0')", script)
+
+    def test_frontend_discount_fanout_keeps_individual_overrides_independent(self):
+        result = run_frontend_behavior(r"""
+nodes.globalDiscount = input('25');
+Object.values(LINE_DISCOUNT_FIELDS).forEach((id) => { nodes[id] = input('0'); });
+populateLineDiscounts(nodes.globalDiscount.value);
+nodes.discountLabor.value = '10';
+console.log(JSON.stringify({
+  global: nodes.globalDiscount.value,
+  labor: nodes.discountLabor.value,
+  moulding: nodes.discountMoulding.value,
+  other: nodes.otherLineDiscount.value,
+  otherHistoryEntries: DESIGN_HISTORY_FIELD_IDS.filter((id) => id === 'otherLineDiscount').length,
+}));
+""")
+        self.assertEqual(result, {
+            "global": "25", "labor": "10", "moulding": "25", "other": "25",
+            "otherHistoryEntries": 1,
+        })
+
+    def test_frontend_quote_form_maps_discounts_and_printing_selection_behavior(self):
+        result = run_frontend_behavior(r"""
+Object.entries(LINE_DISCOUNT_FIELDS).forEach(([key, id]) => { nodes[id] = input(key === 'mat' ? '11' : '20'); });
+OPTION_SELECTS.forEach(({ selectId, countId }) => { nodes[selectId] = select(''); nodes[countId] = input('1'); });
+nodes.optionPrinting = select('41');
+nodes.countPrinting = input('3');
+nodes.otherLineLabel = input(''); nodes.otherLineAmount = input('0');
+nodes.otherLine2Label = input(''); nodes.otherLine2Amount = input('0');
+let fd = new TestFormData();
+appendQuoteOptionFields(fd);
+const numeric = { top: fd.get('top_mat_discount_pct'), wrong: fd.has('mat_discount_pct'),
+  printingId: fd.get('printing_option_id'), printingCount: fd.get('printing_count'),
+  printingDiscount: fd.get('printing_discount_pct') };
+nodes.optionPrinting.value = 'custom';
+handlePrintingSelectionChange('custom');
+fd = new TestFormData();
+appendQuoteOptionFields(fd);
+console.log(JSON.stringify({ numeric, custom: { hasId: fd.has('printing_option_id'),
+  label: nodes.otherLineLabel.value, focused: Boolean(nodes.otherLineLabel.focused) } }));
+""")
+        self.assertEqual(result["numeric"], {
+            "top": "11", "wrong": False, "printingId": "41",
+            "printingCount": "3", "printingDiscount": "20",
+        })
+        self.assertEqual(result["custom"], {"hasId": False, "label": "Printing ", "focused": True})
+
+    def test_frontend_unavailable_and_legacy_printing_restore_as_safe_other_lines(self):
+        result = run_frontend_behavior(r"""
+nodes.optionPrinting = select(''); nodes.countPrinting = input('1'); nodes.discountPrinting = input('0');
+nodes.otherLineLabel = input(''); nodes.otherLineAmount = input('0'); nodes.otherLineDiscount = input('0');
+nodes.otherLine2Label = input(''); nodes.otherLine2Amount = input('0'); nodes.otherLine2Discount = input('0');
+printingOptionsCache = [];
+populatePrintingSelect();
+restorePrintingSelection({ id: 9, label: 'Retired Print', unit_price: 12.5, count: 3, discount_pct: 20 });
+const managedVisible = { value: nodes.optionPrinting.value, text: nodes.optionPrinting.options.at(-1).textContent,
+  count: nodes.countPrinting.value, discount: nodes.discountPrinting.value };
+let fd = new TestFormData();
+appendQuoteOptionFields(fd);
+const managedFallback = { value: nodes.optionPrinting.value, hasId: fd.has('printing_option_id'), label: fd.get('other_label'),
+  amount: fd.get('other_amount'), discount: fd.get('other_discount_pct') };
+
+nodes.otherLineLabel.value = ''; nodes.otherLineAmount.value = '0'; nodes.otherLineDiscount.value = '0';
+restorePrintingSelection({ service: { label: 'Legacy Printing', cost: 8, markup: 1.5 }, count: 2,
+  variable: 2, discount_pct: 25 });
+fd = new TestFormData();
+appendQuoteOptionFields(fd);
+console.log(JSON.stringify({ managedVisible, managedFallback, legacyFallback: {
+  value: nodes.optionPrinting.value, hasId: fd.has('printing_option_id'), label: fd.get('other_label'),
+  amount: fd.get('other_amount'), discount: fd.get('other_discount_pct') } }));
+""")
+        self.assertEqual(result["managedVisible"], {
+            "value": "snapshot:9", "text": "Retired Print (unavailable) · $12.50",
+            "count": "3", "discount": "20",
+        })
+        self.assertEqual(result["managedFallback"], {
+            "value": "custom", "hasId": False, "label": "Retired Print", "amount": "37.5", "discount": "20",
+        })
+        self.assertEqual(result["legacyFallback"], {
+            "value": "custom", "hasId": False, "label": "Legacy Printing",
+            "amount": "24", "discount": "25",
+        })
+
+    def test_frontend_printing_snapshot_materializes_only_once_across_recalculation(self):
+        result = run_frontend_behavior(r"""
+Object.values(LINE_DISCOUNT_FIELDS).forEach((id) => { nodes[id] = input('0'); });
+OPTION_SELECTS.forEach(({ selectId, countId }) => { nodes[selectId] = select(''); nodes[countId] = input('1'); });
+nodes.optionPrinting = select(''); nodes.countPrinting = input('2');
+nodes.otherLineLabel = input(''); nodes.otherLineAmount = input('0'); nodes.otherLineDiscount = input('0');
+nodes.otherLine2Label = input(''); nodes.otherLine2Amount = input('0'); nodes.otherLine2Discount = input('0');
+printingOptionsCache = [];
+restorePrintingSelection({ id: 19, label: 'Archived Print', unit_price: 15, count: 2, discount_pct: 10 });
+const first = new TestFormData();
+const firstOk = appendQuoteOptionFields(first);
+const second = new TestFormData();
+const secondOk = appendQuoteOptionFields(second);
+console.log(JSON.stringify({ firstOk, secondOk, selection: nodes.optionPrinting.value,
+  firstLabels: first.entries.filter(([key]) => key === 'other_label' || key === 'other2_label').map(([, value]) => value),
+  secondLabels: second.entries.filter(([key]) => key === 'other_label' || key === 'other2_label').map(([, value]) => value),
+  other1: [nodes.otherLineLabel.value, nodes.otherLineAmount.value, nodes.otherLineDiscount.value],
+  other2: [nodes.otherLine2Label.value, nodes.otherLine2Amount.value, nodes.otherLine2Discount.value] }));
+""")
+        self.assertEqual(result, {
+            "firstOk": True, "secondOk": True, "selection": "custom",
+            "firstLabels": ["Archived Print", ""], "secondLabels": ["Archived Print", ""],
+            "other1": ["Archived Print", "30", "10"], "other2": ["", "0", "0"],
+        })
+
+    def test_frontend_blocked_printing_snapshot_shows_error_without_mutating_other_rows(self):
+        result = run_frontend_behavior(r"""
+Object.values(LINE_DISCOUNT_FIELDS).forEach((id) => { nodes[id] = input('0'); });
+OPTION_SELECTS.forEach(({ selectId, countId }) => { nodes[selectId] = select(''); nodes[countId] = input('1'); });
+nodes.optionPrinting = select(''); nodes.countPrinting = input('1');
+nodes.otherLineLabel = input('Existing A'); nodes.otherLineAmount = input('8'); nodes.otherLineDiscount = input('5');
+nodes.otherLine2Label = input('Existing B'); nodes.otherLine2Amount = input('9'); nodes.otherLine2Discount = input('6');
+nodes.notice = { textContent: '', className: '' };
+printingOptionsCache = [];
+restorePrintingSelection({ id: 20, label: 'Blocked Print', unit_price: 12, count: 1, discount_pct: 15 });
+const before = [nodes.otherLineLabel.value, nodes.otherLineAmount.value, nodes.otherLineDiscount.value,
+  nodes.otherLine2Label.value, nodes.otherLine2Amount.value, nodes.otherLine2Discount.value];
+const fd = new TestFormData();
+const ok = appendQuoteOptionFields(fd);
+const after = [nodes.otherLineLabel.value, nodes.otherLineAmount.value, nodes.otherLineDiscount.value,
+  nodes.otherLine2Label.value, nodes.otherLine2Amount.value, nodes.otherLine2Discount.value];
+console.log(JSON.stringify({ ok, before, after, notice: nodes.notice.textContent, tone: nodes.notice.className,
+  selection: nodes.optionPrinting.value, submittedId: fd.has('printing_option_id') }));
+""")
+        self.assertEqual(result, {
+            "ok": False,
+            "before": ["Existing A", "8", "5", "Existing B", "9", "6"],
+            "after": ["Existing A", "8", "5", "Existing B", "9", "6"],
+            "notice": "Both Other rows are in use. Clear one before recalculating this unavailable printing snapshot.",
+            "tone": "notice visible error", "selection": "snapshot:20", "submittedId": False,
+        })
+
+    def test_printing_options_migrate_once_from_existing_service(self):
+        conn = db.get_connection()
+        conn.execute(
+            "UPDATE service_options SET label = ?, price = ?, pricing_method = 'cost_markup' WHERE key = 'printing'",
+            ("Print 5x7", 8.50),
+        )
+        conn.execute("DELETE FROM printing_options")
+        conn.commit()
+        conn.close()
+
+        main_module._seed_printing_options_from_legacy_service()
+        main_module._seed_printing_options_from_legacy_service()
+
+        rows = self.client.get("/api/printing-options").json()["printing_options"]
+        self.assertEqual([(row["label"], row["unit_price"]) for row in rows], [("Print 5x7", 8.50)])
+
+    def test_admin_can_create_update_and_deactivate_printing_options(self):
+        created = self.client.post(
+            "/api/printing-options",
+            data={"label": "  Print 8x10  ", "unit_price": "14.00", "active": "1", "sort_order": "20"},
+        )
+        self.assertEqual(created.status_code, 200)
+        created_body = created.json()
+        option_id = created_body["printing_option"]["id"]
+        self.assertEqual(created_body["printing_option"]["label"], "Print 8x10")
+        self.assertEqual(created_body["printing_option"]["sort_order"], 20)
+        self.assertEqual([row["id"] for row in created_body["printing_options"]], [option_id])
+
+        updated = self.client.post(
+            f"/api/printing-options/{option_id}",
+            data={"label": "Print 8 x 10", "unit_price": "15.00", "active": "0", "sort_order": "10"},
+        )
+        self.assertEqual(updated.status_code, 200)
+        updated_body = updated.json()
+        self.assertEqual(updated_body["printing_option"]["unit_price"], 15.0)
+        self.assertEqual(updated_body["printing_option"]["active"], 0)
+        self.assertEqual(updated_body["printing_option"]["sort_order"], 10)
+        self.assertEqual(updated_body["printing_options"][0]["id"], option_id)
+
+        missing = self.client.post(
+            "/api/printing-options/999999",
+            data={"label": "Missing", "unit_price": "10", "active": "1", "sort_order": "10"},
+        )
+        self.assertEqual(missing.status_code, 400)
+        self.assertIn("not found", missing.json()["detail"])
+
+    def test_printing_option_validation_rejects_blank_label_and_large_price(self):
+        blank = self.client.post(
+            "/api/printing-options",
+            data={"label": "", "unit_price": "10", "active": "1", "sort_order": "10"},
+        )
+        self.assertEqual(blank.status_code, 400)
+        self.assertIn("label is required", blank.json()["detail"])
+
+        expensive = self.client.post(
+            "/api/printing-options",
+            data={"label": "Huge Print", "unit_price": "1000", "active": "1", "sort_order": "10"},
+        )
+        self.assertEqual(expensive.status_code, 400)
+        self.assertIn("999.99 or less", expensive.json()["detail"])
+
+    def test_printing_option_validation_rejects_non_finite_prices_on_create_and_update(self):
+        for raw_price in ("nan", "inf", "-inf"):
+            with self.subTest(operation="create", unit_price=raw_price):
+                response = self.client.post(
+                    "/api/printing-options",
+                    data={"label": "Invalid Print", "unit_price": raw_price, "active": "1", "sort_order": "10"},
+                )
+                self.assertEqual(response.status_code, 400)
+                self.assertIn("finite number", response.json()["detail"])
+
+        created = self.client.post(
+            "/api/printing-options",
+            data={"label": "Valid Print", "unit_price": "10", "active": "1", "sort_order": "10"},
+        )
+        self.assertEqual(created.status_code, 200)
+        option_id = created.json()["printing_option"]["id"]
+
+        for raw_price in ("nan", "inf", "-inf"):
+            with self.subTest(operation="update", unit_price=raw_price):
+                response = self.client.post(
+                    f"/api/printing-options/{option_id}",
+                    data={"label": "Still Valid", "unit_price": raw_price, "active": "1", "sort_order": "10"},
+                )
+                self.assertEqual(response.status_code, 400)
+                self.assertIn("finite number", response.json()["detail"])
+
     def test_help_site_routes_pages_and_shared_assets(self):
         redirect = self.client.get("/help", follow_redirects=False)
         self.assertEqual(redirect.status_code, 307)
         self.assertEqual(redirect.headers["location"], "http://testserver/help/")
 
         pages = {
-            "/help/": "FramersHaven Operator Guide",
+            "/help/": "Printery Framing Studio Operator Guide",
             "/help/design-workspace.html": "Design Workspace",
             "/help/gallery-intake.html": "Gallery & Intake",
             "/help/orders-quotes.html": "Orders & Quotes",
@@ -68,7 +491,7 @@ class ApiTests(unittest.TestCase):
         stylesheet = self.client.get("/help/css/help-style.css")
         self.assertEqual(stylesheet.status_code, 200)
         self.assertIn("text/css", stylesheet.headers["content-type"])
-        self.assertIn("--studio-pink", stylesheet.text)
+        self.assertIn("--printery-pink", stylesheet.text)
 
     def test_studio_profile_updates_branding_used_by_the_app_and_handoffs(self):
         saved = self.client.post(
@@ -76,10 +499,10 @@ class ApiTests(unittest.TestCase):
             data={
                 "business_name": "Mountain Frame House",
                 "contact_name": "Ada Frame",
-                "phone": "555-010-0142",
+                "phone": "606-555-0142",
                 "email": "ada@example.com",
                 "street": "10 Main Street",
-                "city": "Cedar Falls",
+                "city": "Prestonsburg",
                 "state": "KY",
                 "postal_code": "41653",
             },
@@ -87,7 +510,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(saved.status_code, 200)
         profile = saved.json()["profile"]
         self.assertEqual(profile["business_name"], "Mountain Frame House")
-        self.assertEqual(profile["address"], "10 Main Street, Cedar Falls, KY 41653")
+        self.assertEqual(profile["address"], "10 Main Street, Prestonsburg, KY 41653")
 
         fetched = self.client.get("/api/studio-profile")
         self.assertEqual(fetched.status_code, 200)
@@ -101,7 +524,7 @@ class ApiTests(unittest.TestCase):
             "/api/orders",
             data={
                 "customer_name": "Profile Handoff",
-                "customer_contact": "555-010-0180",
+                "customer_contact": "606-555-0180",
                 "payload_json": json.dumps({"subtotal": 10, "tax": 0.6, "total": 10.6}),
                 "subtotal": "10",
                 "tax": "0.6",
@@ -110,12 +533,52 @@ class ApiTests(unittest.TestCase):
         )
         handoff = self.client.get(f"/api/orders/{created.json()['order_id']}/handoff")
         self.assertIn("Mountain Frame House quote", handoff.json()["email_subject"])
-        self.assertIn("Ada Frame\n555-010-0142\nada@example.com", handoff.json()["email_body"])
+        self.assertIn("Ada Frame\n606-555-0142\nada@example.com", handoff.json()["email_body"])
+
+    def test_design_launcher_is_compact_and_collapsed_by_default(self):
+        home = self.client.get("/")
+        self.assertEqual(home.status_code, 200)
+        self.assertIn('id="designLauncherToggle"', home.text)
+        self.assertIn('aria-expanded="false"', home.text)
+        self.assertIn('>+ New Design</button>', home.text)
+        self.assertIn('id="designHomePanel" class="design-launcher-panel" hidden', home.text)
+        self.assertNotIn('id="themeStatus"', home.text)
+
+    def test_frontend_assets_are_not_stale_cached_during_local_updates(self):
+        script = self.client.get("/static/app.js")
+        self.assertEqual(script.status_code, 200)
+        self.assertEqual(script.headers.get("cache-control"), "no-store")
+
+        home = self.client.get("/")
+        self.assertIn('/static/app.js?v=', home.text)
+
+    def test_studio_opens_locally_without_login(self):
+        self.client.get("/admin/logout", follow_redirects=False)
+
+        home = self.client.get("/", follow_redirects=False)
+        self.assertEqual(home.status_code, 200)
+
+        api = self.client.get("/api/config")
+        self.assertEqual(api.status_code, 200)
+
+        me = self.client.get("/admin/me")
+        self.assertEqual(me.status_code, 200)
+        self.assertIn(me.json()["role"], ["admin", "owner"])
+
+        login_page = self.client.get("/admin/login", follow_redirects=False)
+        self.assertEqual(login_page.status_code, 303)
+        self.assertEqual(login_page.headers["location"], "/")
+
+        login = self.client.post(
+            "/admin/login",
+            data={"email": "admin", "password": "admin", "next": "/"},
+            follow_redirects=False,
+        )
+        self.assertEqual(login.status_code, 303)
+        self.assertEqual(login.headers["location"], "/")
+        self.assertEqual(self.client.get("/").status_code, 200)
 
     def test_studio_logo_upload_validates_format_size_and_dimensions(self):
-        default_profile = self.client.get("/api/studio-profile")
-        self.assertEqual(default_profile.json()["profile"]["logo_url"], "/static/logo.png")
-
         valid = io.BytesIO()
         Image.new("RGBA", (600, 200), (20, 80, 90, 0)).save(valid, format="PNG")
         uploaded = self.client.post(
@@ -156,7 +619,7 @@ class ApiTests(unittest.TestCase):
 
         removed = self.client.delete("/api/studio-profile/logo")
         self.assertEqual(removed.status_code, 200)
-        self.assertEqual(removed.json()["profile"]["logo_url"], "/static/logo.png")
+        self.assertIsNone(removed.json()["profile"]["logo_url"])
 
     def test_catalog_import_upsert_and_skip(self):
         csv1 = "sku,name,category,cost,width_in\nA1,Frame Alpha,moulding,10,1.5\nA2,Mat White,mat,3,0\nA1,Glass Clear,glazing,6,0\n"
@@ -237,30 +700,30 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(payload["items"][0]["sku"], "F305")
         self.assertEqual(payload["items"][-1]["sku"], "F001")
 
-    def test_local_catalog_package_import_normalizes_rows_and_preview_urls(self):
-        (main_module.CATALOG_IMPORT_DIR / "mats.csv").write_text(
+    def test_pfd_import_normalizes_rows_and_preview_urls(self):
+        (main_module.PFD_DIR / "Mats.csv").write_text(
             "Code,Vendor,Category,Description,Price Code,Price,Core,Width,Height,Thickness,Available to,System\n"
-            "DEMO-MAT-109,Sample Catalog,CONSERVATION,TV. BLACK,2,10.95,wh1,32,40,1,3,1\n",
+            "A109,Peterboro,CONSERVATION,TV. BLACK,2,10.95,wh1,32,40,1,3,1\n",
             encoding="utf-8",
         )
-        with zipfile.ZipFile(main_module.CATALOG_IMPORT_DIR / "mats.zip", "w") as zf:
-            zf.writestr("DEMO-MAT-109.jpg", b"fake-jpg")
+        with zipfile.ZipFile(main_module.PFD_DIR / "Mats.zip", "w") as zf:
+            zf.writestr("A109.jpg", b"fake-jpg")
 
-        imported = self.client.post("/api/catalog/import/package", data={"source": "mats"})
+        imported = self.client.post("/api/catalog/import/pfd", data={"source": "mats"})
         self.assertEqual(imported.status_code, 200)
         self.assertEqual(imported.json()["inserted"], 1)
 
-        search = self.client.get("/api/catalog/search", params={"q": "DEMO-MAT-109"})
+        search = self.client.get("/api/catalog/search", params={"q": "A109"})
         self.assertEqual(search.status_code, 200)
         item = search.json()["items"][0]
-        self.assertEqual(item["sku"], "DEMO-MAT-109")
+        self.assertEqual(item["sku"], "A109")
         self.assertEqual(item["category"], "mat")
-        self.assertEqual(item["vendor"], "Sample Catalog")
+        self.assertEqual(item["vendor"], "Peterboro")
         self.assertEqual(item["height_in"], 40.0)
-        self.assertTrue(item["preview_url"].startswith("/catalog-previews/mats/DEMO-MAT-109.jpg?v="))
+        self.assertTrue(item["preview_url"].startswith("/catalog-previews/mats/A109.jpg?v="))
         metadata = json.loads(item["metadata_json"])
-        self.assertEqual(item["preview_filename"], "mats/DEMO-MAT-109.jpg")
-        self.assertEqual(metadata["source"], "local_catalog_mats")
+        self.assertEqual(item["preview_filename"], "mats/A109.jpg")
+        self.assertEqual(metadata["source"], "pfd_mats")
         self.assertEqual(metadata["core"], "wh1")
         self.assertEqual(metadata["vendor_category"], "CONSERVATION")
 
@@ -282,39 +745,39 @@ class ApiTests(unittest.TestCase):
         self.assertIsNone(item["preview_url"])
         self.assertEqual(item["preview_filename"], "mouldings/missing.jpg")
 
-    def test_catalog_search_resolves_prefixed_preview_variants(self):
+    def test_catalog_search_resolves_international_preview_prefix_variants(self):
         target = main_module.PREVIEW_DIR / "mouldings"
         target.mkdir(parents=True, exist_ok=True)
-        (target / "IDEMO-FR-3086.jpg").write_bytes(b"fake-jpg")
+        (target / "I0354-3086.jpg").write_bytes(b"fake-jpg")
 
         conn = db.get_connection()
         cur = conn.cursor()
         cur.execute(
             """
             INSERT INTO catalog_items (sku, name, category, cost, preview_filename)
-            VALUES ('DEMO-FR-3086', 'Walnut Flat Profile', 'moulding', 2.54, 'mouldings/DEMO-FR-3086.jpg')
+            VALUES ('0354-3086', 'Walnut Reverse Stairs', 'moulding', 2.54, 'mouldings/0354-3086.jpg')
             """
         )
         conn.commit()
         conn.close()
 
-        search = self.client.get("/api/catalog/search", params={"q": "DEMO-FR-3086"})
+        search = self.client.get("/api/catalog/search", params={"q": "0354-3086"})
         self.assertEqual(search.status_code, 200)
         item = search.json()["items"][0]
-        self.assertTrue(item["preview_url"].startswith("/catalog-previews/mouldings/IDEMO-FR-3086.jpg?v="))
-        self.assertEqual(item["preview_filename"], "mouldings/DEMO-FR-3086.jpg")
+        self.assertTrue(item["preview_url"].startswith("/catalog-previews/mouldings/I0354-3086.jpg?v="))
+        self.assertEqual(item["preview_filename"], "mouldings/0354-3086.jpg")
 
     def test_backfills_missing_catalog_preview_links_from_nested_assets(self):
-        target = main_module.PREVIEW_DIR / "mats" / "Sample Collection"
+        target = main_module.PREVIEW_DIR / "mats" / "Crescent Select"
         target.mkdir(parents=True, exist_ok=True)
-        (target / "DEMO-MAT-9805.jpg").write_bytes(b"fake-jpg")
+        (target / "C9805.jpg").write_bytes(b"fake-jpg")
 
         conn = db.get_connection()
         cur = conn.cursor()
         cur.execute(
             """
             INSERT INTO catalog_items (sku, name, category, cost, preview_filename)
-            VALUES ('DEMO-MAT-9805', 'Coconut Milk 32x40', 'mat', 14, '')
+            VALUES ('C9805', 'Crescent Coconut Milk 32x40', 'mat', 14, '')
             """
         )
         conn.commit()
@@ -324,15 +787,15 @@ class ApiTests(unittest.TestCase):
 
         conn = db.get_connection()
         cur = conn.cursor()
-        cur.execute("SELECT preview_filename FROM catalog_items WHERE sku = 'DEMO-MAT-9805'")
-        self.assertEqual(cur.fetchone()["preview_filename"], "mats/Sample Collection/DEMO-MAT-9805.jpg")
+        cur.execute("SELECT preview_filename FROM catalog_items WHERE sku = 'C9805'")
+        self.assertEqual(cur.fetchone()["preview_filename"], "mats/Crescent Select/C9805.jpg")
         conn.close()
 
-        search = self.client.get("/api/catalog/search", params={"q": "DEMO-MAT-9805"})
+        search = self.client.get("/api/catalog/search", params={"q": "C9805"})
         self.assertEqual(search.status_code, 200)
         item = search.json()["items"][0]
-        self.assertEqual(item["preview_filename"], "mats/Sample Collection/DEMO-MAT-9805.jpg")
-        self.assertTrue(item["preview_url"].startswith("/catalog-previews/mats/Sample Collection/DEMO-MAT-9805.jpg?v="))
+        self.assertEqual(item["preview_filename"], "mats/Crescent Select/C9805.jpg")
+        self.assertTrue(item["preview_url"].startswith("/catalog-previews/mats/Crescent Select/C9805.jpg?v="))
 
     def test_service_options_remain_independent_from_catalog_materials(self):
         services = self.client.post(
@@ -477,13 +940,58 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(payload["selected"]["glazing"]["basis"], "square_inches")
         self.assertAlmostEqual(payload["line_items"]["glazing"], 6.72)
 
+    def test_price_table_service_applies_admin_markup_multiplier(self):
+        conn = db.get_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO price_table_entries (price_code, half_perimeter, price) VALUES (?, ?, ?)",
+            ("mounting:Dry Mounting", 36, 27.20),
+        )
+        cur.execute(
+            """
+            UPDATE service_options
+            SET label = 'Dry Mounting', pricing_method = 'price_table',
+                price_code = 'mounting:Dry Mounting', basis = 'square_inches'
+            WHERE key = 'mounting'
+            """
+        )
+        conn.commit()
+        conn.close()
+
+        saved = self.client.post(
+            "/api/services",
+            data={
+                "mounting_label": "Dry Mounting",
+                "mounting_cost": "0",
+                "mounting_markup": "0.33",
+                "mounting_basis": "square_inches",
+                "mounting_active": "1",
+            },
+        )
+        self.assertEqual(saved.status_code, 200)
+        mounting = next(row for row in saved.json()["services"] if row["key"] == "mounting")
+        self.assertEqual(mounting["markup"], 0.33)
+
+        quote = self.client.post(
+            "/api/quotes/calculate",
+            data={
+                "width_in": "8",
+                "height_in": "10",
+                "mat_border_in": "2",
+                "labor_flat": "0",
+                "mounting_key": "mounting",
+            },
+        )
+        self.assertEqual(quote.status_code, 200)
+        self.assertEqual(quote.json()["line_items"]["mounting"], 8.98)
+
     def test_order_lifecycle_transition_rules(self):
         quote_payload = {"subtotal": 50, "tax": 3, "total": 53}
         created = self.client.post(
             "/api/orders",
             data={
                 "customer_name": "Test Customer",
-                "customer_contact": "555-010-0101",
+                "customer_contact": "606-555-0101",
                 "payload_json": json.dumps(quote_payload),
                 "subtotal": "50",
                 "tax": "3",
@@ -608,12 +1116,39 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(exported.status_code, 400)
         self.assertIn("Stored order payload is invalid JSON", exported.json()["detail"])
 
+    def test_legacy_admin_orders_export_route_returns_csv(self):
+        login = self.client.post(
+            "/admin/login",
+            data={"email": "admin", "password": "admin"},
+            follow_redirects=False,
+        )
+        self.assertEqual(login.status_code, 303)
+
+        created = self.client.post(
+            "/api/orders",
+            data={
+                "customer_name": "Admin Export",
+                "customer_contact": "606-555-0102",
+                "payload_json": json.dumps({"subtotal": 50, "tax": 3, "total": 53}),
+                "subtotal": "50",
+                "tax": "3",
+                "total": "53",
+            },
+        )
+        self.assertEqual(created.status_code, 200)
+
+        exported = self.client.get("/admin/orders/export")
+        self.assertEqual(exported.status_code, 200)
+        self.assertEqual(exported.headers["content-type"].split(";")[0], "text/csv")
+        self.assertIn("quote_number,id,customer_name", exported.text)
+        self.assertIn("Admin Export", exported.text)
+
     def test_customers_can_be_created_and_linked_to_orders(self):
         created_customer = self.client.post(
             "/api/customers",
             data={
                 "name": "Ada Frame",
-                "contact": "555-010-0103",
+                "contact": "606-555-0103",
                 "customer_email": "ada@example.com",
                 "notes": "Prefers warm woods",
             },
@@ -633,7 +1168,7 @@ class ApiTests(unittest.TestCase):
             "/api/orders",
             data={
                 "customer_name": "Ada Frame",
-                "customer_contact": "555-010-0103",
+                "customer_contact": "606-555-0103",
                 "customer_email": "new-ada@example.com",
                 "payload_json": json.dumps(quote_payload),
                 "subtotal": "80",
@@ -647,7 +1182,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(detail.status_code, 200)
         payload = detail.json()
         self.assertEqual(payload["customer"]["name"], "Ada Frame")
-        self.assertEqual(payload["customer"]["contact"], "555-010-0103")
+        self.assertEqual(payload["customer"]["contact"], "606-555-0103")
         self.assertEqual(payload["customer"]["customer_email"], "new-ada@example.com")
         self.assertEqual(len(payload["orders"]), 1)
         self.assertEqual(payload["orders"][0]["status"], "quote")
@@ -681,9 +1216,9 @@ class ApiTests(unittest.TestCase):
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT DEFAULT CURRENT_TIMESTAMP
             );
-            INSERT INTO customers (name, contact, notes) VALUES ('Old Customer', '555-010-0199', 'keep');
+            INSERT INTO customers (name, contact, notes) VALUES ('Legacy Customer', '606-555-0199', 'keep');
             INSERT INTO orders (customer_name, customer_contact, payload_json, subtotal, tax, total)
-            VALUES ('Old Customer', '555-010-0199', '{}', 10, 0.6, 10.6);
+            VALUES ('Legacy Customer', '606-555-0199', '{}', 10, 0.6, 10.6);
             """
         )
         conn.commit()
@@ -695,10 +1230,10 @@ class ApiTests(unittest.TestCase):
         customer = conn.execute("SELECT name, contact, customer_email FROM customers").fetchone()
         order = conn.execute("SELECT customer_name, customer_contact, customer_email FROM orders").fetchone()
         conn.close()
-        self.assertEqual(dict(customer), {"name": "Old Customer", "contact": "555-010-0199", "customer_email": None})
+        self.assertEqual(dict(customer), {"name": "Legacy Customer", "contact": "606-555-0199", "customer_email": None})
         self.assertEqual(
             dict(order),
-            {"customer_name": "Old Customer", "customer_contact": "555-010-0199", "customer_email": None},
+            {"customer_name": "Legacy Customer", "customer_contact": "606-555-0199", "customer_email": None},
         )
 
     def test_quote_calculation_rejects_invalid_inputs(self):
@@ -803,7 +1338,7 @@ class ApiTests(unittest.TestCase):
             "/api/orders",
             data={
                 "customer_name": "Broken Payload",
-                "customer_contact": "555-010-0104",
+                "customer_contact": "606-555-0104",
                 "payload_json": "[]",
                 "subtotal": "50",
                 "tax": "3",
@@ -818,7 +1353,7 @@ class ApiTests(unittest.TestCase):
             "/api/customers",
             data={
                 "name": "Old Name",
-                "contact": "555-010-0105",
+                "contact": "606-555-0105",
                 "customer_email": "old@example.com",
                 "notes": "legacy",
             },
@@ -829,7 +1364,7 @@ class ApiTests(unittest.TestCase):
             "/api/orders",
             data={
                 "customer_name": "Old Name",
-                "customer_contact": "555-010-0105",
+                "customer_contact": "606-555-0105",
                 "customer_email": "old@example.com",
                 "payload_json": json.dumps({"subtotal": 10, "tax": 0.6, "total": 10.6}),
                 "subtotal": "10",
@@ -843,7 +1378,7 @@ class ApiTests(unittest.TestCase):
             f"/api/customers/{customer_id}",
             data={
                 "name": "New Name",
-                "contact": "555-010-0106",
+                "contact": "606-555-0106",
                 "customer_email": "new@example.com",
                 "notes": "preferred",
             },
@@ -853,7 +1388,7 @@ class ApiTests(unittest.TestCase):
         order_detail = self.client.get(f"/api/orders/{order_id}")
         self.assertEqual(order_detail.status_code, 200)
         self.assertEqual(order_detail.json()["order"]["customer_name"], "New Name")
-        self.assertEqual(order_detail.json()["order"]["customer_contact"], "555-010-0106")
+        self.assertEqual(order_detail.json()["order"]["customer_contact"], "606-555-0106")
         self.assertEqual(order_detail.json()["order"]["customer_email"], "new@example.com")
 
     def test_order_edit_updates_customer_fields(self):
@@ -861,7 +1396,7 @@ class ApiTests(unittest.TestCase):
             "/api/orders",
             data={
                 "customer_name": "Original Customer",
-                "customer_contact": "555-010-0107",
+                "customer_contact": "606-555-0107",
                 "customer_email": "original@example.com",
                 "payload_json": json.dumps({"subtotal": 40, "tax": 2.4, "total": 42.4}),
                 "subtotal": "40",
@@ -875,7 +1410,7 @@ class ApiTests(unittest.TestCase):
             f"/api/orders/{order_id}",
             data={
                 "customer_name": "Updated Customer",
-                "customer_contact": "555-010-0108",
+                "customer_contact": "606-555-0108",
                 "customer_email": "updated@example.com",
                 "note": "phone typo corrected",
             },
@@ -886,7 +1421,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(detail.status_code, 200)
         payload = detail.json()
         self.assertEqual(payload["order"]["customer_name"], "Updated Customer")
-        self.assertEqual(payload["order"]["customer_contact"], "555-010-0108")
+        self.assertEqual(payload["order"]["customer_contact"], "606-555-0108")
         self.assertEqual(payload["order"]["customer_email"], "updated@example.com")
         self.assertEqual(payload["history"][-1]["note"], "phone typo corrected")
 
@@ -900,7 +1435,7 @@ class ApiTests(unittest.TestCase):
             "/api/customers",
             data={
                 "name": "Preserved Email",
-                "contact": "555-010-0120",
+                "contact": "606-555-0120",
                 "customer_email": "preserve@example.com",
             },
         )
@@ -909,7 +1444,7 @@ class ApiTests(unittest.TestCase):
             "/api/orders",
             data={
                 "customer_name": "Preserved Email",
-                "customer_contact": "555-010-0120",
+                "customer_contact": "606-555-0120",
                 "customer_email": "preserve@example.com",
                 "payload_json": json.dumps({"subtotal": 20, "tax": 1.2, "total": 21.2}),
                 "subtotal": "20",
@@ -921,12 +1456,12 @@ class ApiTests(unittest.TestCase):
 
         customer_update = self.client.post(
             f"/api/customers/{customer_id}",
-            data={"name": "Preserved Email", "contact": "555-010-0121", "notes": "phone only"},
+            data={"name": "Preserved Email", "contact": "606-555-0121", "notes": "phone only"},
         )
         self.assertEqual(customer_update.status_code, 200)
         order_update = self.client.post(
             f"/api/orders/{order_id}",
-            data={"customer_name": "Preserved Email", "customer_contact": "555-010-0122"},
+            data={"customer_name": "Preserved Email", "customer_contact": "606-555-0122"},
         )
         self.assertEqual(order_update.status_code, 200)
 
@@ -940,7 +1475,7 @@ class ApiTests(unittest.TestCase):
             "/api/orders",
             data={
                 "customer_name": "Editable Quote",
-                "customer_contact": "555-010-0202",
+                "customer_contact": "606-555-0202",
                 "payload_json": json.dumps({"subtotal": 40, "tax": 2.4, "total": 42.4, "line_items": {"labor": 40}}),
                 "subtotal": "40",
                 "tax": "2.4",
@@ -961,7 +1496,7 @@ class ApiTests(unittest.TestCase):
             f"/api/orders/{order_id}",
             data={
                 "customer_name": "Editable Quote",
-                "customer_contact": "555-010-0202",
+                "customer_contact": "606-555-0202",
                 "payload_json": json.dumps(updated_payload),
                 "subtotal": "75",
                 "tax": "4.5",
@@ -1029,7 +1564,7 @@ class ApiTests(unittest.TestCase):
             "/api/orders",
             data={
                 "customer_name": "Export Customer",
-                "customer_contact": "555-010-0109",
+                "customer_contact": "606-555-0109",
                 "payload_json": json.dumps(
                     {
                         "subtotal": 50,
@@ -1057,7 +1592,7 @@ class ApiTests(unittest.TestCase):
                 "/api/orders",
                 data={
                     "customer_name": name,
-                    "customer_contact": "555-010-0188",
+                    "customer_contact": "606-555-0188",
                     "payload_json": json.dumps({"subtotal": 20, "tax": 1.2, "total": 21.2}),
                     "subtotal": "20",
                     "tax": "1.2",
@@ -1075,7 +1610,7 @@ class ApiTests(unittest.TestCase):
             "/api/orders",
             data={
                 "customer_name": "Beta Work",
-                "customer_contact": "555-010-0110",
+                "customer_contact": "606-555-0110",
                 "payload_json": json.dumps({"subtotal": 20, "tax": 1.2, "total": 21.2}),
                 "subtotal": "20",
                 "tax": "1.2",
@@ -1099,7 +1634,7 @@ class ApiTests(unittest.TestCase):
             "/api/orders",
             data={
                 "customer_name": "Split View Customer",
-                "customer_contact": "555-010-0201",
+                "customer_contact": "606-555-0201",
                 "customer_email": "split@example.com",
                 "payload_json": json.dumps({"subtotal": 100, "tax": 6, "total": 106}),
                 "subtotal": "100",
@@ -1115,7 +1650,7 @@ class ApiTests(unittest.TestCase):
         row = listed.json()["orders"][0]
         self.assertEqual(row["id"], order_id)
         self.assertEqual(row["quote_number"], f"Q{order_id:05d}")
-        self.assertEqual(row["customer_contact"], "555-010-0201")
+        self.assertEqual(row["customer_contact"], "606-555-0201")
         self.assertEqual(row["customer_email"], "split@example.com")
         self.assertEqual(row["balance"], 106.0)
         self.assertEqual(row["next_action"], "approve_quote")
@@ -1130,7 +1665,7 @@ class ApiTests(unittest.TestCase):
             cur.execute(
                 """
                 INSERT INTO orders (customer_name, customer_contact, status, payload_json, subtotal, tax, total)
-                VALUES (?, '555-010-0100', 'quote', '{}', 10, 0.6, 10.6)
+                VALUES (?, '606-555-0100', 'quote', '{}', 10, 0.6, 10.6)
                 """,
                 (f"Bulk Customer {index:03d}",),
             )
@@ -1195,7 +1730,7 @@ class ApiTests(unittest.TestCase):
             "/api/orders",
             data={
                 "customer_name": "Handoff Customer",
-                "customer_contact": "555-010-0111",
+                "customer_contact": "606-555-0111",
                 "customer_email": "handoff@example.com",
                 "payload_json": json.dumps(
                     {
@@ -1216,13 +1751,13 @@ class ApiTests(unittest.TestCase):
         handoff = self.client.get(f"/api/orders/{order_id}/handoff")
         self.assertEqual(handoff.status_code, 200)
         payload = handoff.json()
-        self.assertIn("FramersHaven quote", payload["email_subject"])
+        self.assertIn("The Printery Framing Studio quote", payload["email_subject"])
         self.assertIn("2 openings", payload["email_body"])
         self.assertIn("attach the PDF quote and mockup JPG", payload["email_body"])
         self.assertNotIn("/api/", payload["email_body"])
         self.assertNotIn("/api/", payload["sms_body"])
         self.assertEqual(payload["customer_email"], "handoff@example.com")
-        self.assertEqual(payload["customer_phone"], "555-010-0111")
+        self.assertEqual(payload["customer_phone"], "606-555-0111")
         self.assertEqual(payload["quote_pdf_url"], f"/api/orders/{order_id}/export?format=pdf&document=quote")
         self.assertEqual(payload["preview_jpg_url"], f"/api/orders/{order_id}/export?format=jpg")
 
@@ -1235,7 +1770,7 @@ class ApiTests(unittest.TestCase):
             "/api/orders",
             data={
                 "customer_name": "Export Smoke",
-                "customer_contact": "555-010-0109",
+                "customer_contact": "606-555-0109",
                 "payload_json": json.dumps(
                     {
                         "subtotal": 30,
@@ -1267,7 +1802,7 @@ class ApiTests(unittest.TestCase):
             "/api/orders",
             data={
                 "customer_name": "Preview Customer",
-                "customer_contact": "555-010-0181",
+                "customer_contact": "606-555-0181",
                 "payload_json": json.dumps({"subtotal": 30, "tax": 1.8, "total": 31.8, "selected": {}}),
                 "subtotal": "30",
                 "tax": "1.8",
@@ -1304,7 +1839,7 @@ class ApiTests(unittest.TestCase):
             "/api/orders",
             data={
                 "customer_name": "Form Customer",
-                "customer_contact": "555-010-0112",
+                "customer_contact": "606-555-0112",
                 "payload_json": json.dumps(
                     {
                         "subtotal": 30,
@@ -1424,6 +1959,301 @@ class ApiTests(unittest.TestCase):
         self.assertGreater(payload["line_items"]["mat"], 0)
         self.assertGreater(payload["area_sqft"], (16 * 20) / 144)
 
+    def test_explicit_line_discounts_override_global_without_stacking(self):
+        conn = db.get_connection()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO printing_options (label, unit_price, active, sort_order) VALUES ('Print 5x7', 10, 1, 10)")
+        printing_id = cur.lastrowid
+        conn.commit()
+        conn.close()
+
+        quote = self.client.post(
+            "/api/quotes/calculate",
+            data={
+                "width_in": "8", "height_in": "10", "labor_flat": "20",
+                "printing_option_id": str(printing_id), "printing_count": "2",
+                "global_discount_pct": "30", "printing_discount_pct": "30",
+                "labor_discount_pct": "30",
+            },
+        )
+        self.assertEqual(quote.status_code, 200)
+        payload = quote.json()
+        self.assertEqual(payload["line_items"]["printing"], 14.0)
+        self.assertEqual(payload["line_items"]["labor"], 14.0)
+        self.assertEqual(payload["selected"]["addons"]["printing"]["unit_price"], 10.0)
+        self.assertEqual(payload["selected"]["addons"]["printing"]["count"], 2.0)
+        self.assertEqual(payload["selected"]["addons"]["printing"]["discount_pct"], 30.0)
+
+    def test_material_and_mat_layer_discounts_are_independent(self):
+        conn = db.get_connection()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO catalog_items (sku, name, category, cost, width_in) VALUES ('M-D', 'Discount Frame', 'moulding', 10, 1.5)")
+        moulding_id = cur.lastrowid
+        cur.execute("INSERT INTO catalog_items (sku, name, category, cost, width_in) VALUES ('MAT-A', 'Top Mat', 'mat', 4, 0)")
+        top_mat_id = cur.lastrowid
+        cur.execute("INSERT INTO catalog_items (sku, name, category, cost, width_in) VALUES ('MAT-B', 'Second Mat', 'mat', 5, 0)")
+        second_mat_id = cur.lastrowid
+        conn.commit()
+        conn.close()
+
+        base = self.client.post(
+            "/api/quotes/calculate",
+            data={"width_in": "8", "height_in": "10", "labor_flat": "0", "moulding_id": moulding_id,
+                  "top_mat_id": top_mat_id, "second_mat_id": second_mat_id},
+        ).json()["line_items"]
+        sale = self.client.post(
+            "/api/quotes/calculate",
+            data={"width_in": "8", "height_in": "10", "labor_flat": "0", "moulding_id": moulding_id,
+                  "top_mat_id": top_mat_id, "second_mat_id": second_mat_id,
+                  "moulding_discount_pct": "80", "top_mat_discount_pct": "30", "second_mat_discount_pct": "10"},
+        ).json()["line_items"]
+        self.assertEqual(sale["moulding"], round(base["moulding"] * 0.20, 2))
+        self.assertEqual(sale["mat"], round(base["mat"] * 0.70, 2))
+        self.assertEqual(sale["mat_second"], round(base["mat_second"] * 0.90, 2))
+
+    def test_legacy_global_discount_is_used_when_line_discount_is_omitted(self):
+        conn = db.get_connection()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO printing_options (label, unit_price, active, sort_order) VALUES ('Print 8x10', 20, 1, 10)")
+        printing_id = cur.lastrowid
+        conn.commit()
+        conn.close()
+
+        quote = self.client.post(
+            "/api/quotes/calculate",
+            data={
+                "width_in": "8", "height_in": "10", "labor_flat": "20",
+                "printing_option_id": str(printing_id), "printing_count": "1",
+                "global_discount_pct": "25",
+            },
+        )
+        self.assertEqual(quote.status_code, 200)
+        self.assertEqual(quote.json()["line_items"]["printing"], 15.0)
+        self.assertEqual(quote.json()["line_items"]["labor"], 15.0)
+
+    def test_quote_rejects_line_discount_above_one_hundred(self):
+        response = self.client.post(
+            "/api/quotes/calculate",
+            data={"width_in": "8", "height_in": "10", "labor_flat": "20", "labor_discount_pct": "101"},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("labor_discount_pct must be 100 or less", response.json()["detail"])
+
+    def test_quote_rejects_negative_global_and_line_discounts(self):
+        for field_name in ("global_discount_pct", "labor_discount_pct"):
+            with self.subTest(field_name=field_name):
+                response = self.client.post(
+                    "/api/quotes/calculate",
+                    data={"width_in": "8", "height_in": "10", field_name: "-1"},
+                )
+                self.assertEqual(response.status_code, 400)
+                self.assertIn(f"{field_name} must be non-negative", response.json()["detail"])
+
+    def test_quote_rejects_non_finite_numeric_inputs(self):
+        cases = {
+            "width_in": "nan",
+            "moulding_cost_ft": "inf",
+            "other_amount": "-inf",
+            "printing_count": "nan",
+            "global_discount_pct": "inf",
+            "labor_discount_pct": "nan",
+        }
+        for field_name, value in cases.items():
+            with self.subTest(field_name=field_name):
+                data = {"width_in": "8", "height_in": "10", field_name: value}
+                response = self.client.post("/api/quotes/calculate", data=data)
+                self.assertEqual(response.status_code, 400)
+                self.assertIn(f"{field_name} must be a finite number", response.json()["detail"])
+
+    def test_quote_accepts_zero_and_one_hundred_percent_discount_boundaries(self):
+        zero = self.client.post(
+            "/api/quotes/calculate",
+            data={"width_in": "8", "height_in": "10", "labor_flat": "20",
+                  "global_discount_pct": "100", "labor_discount_pct": "0"},
+        )
+        hundred = self.client.post(
+            "/api/quotes/calculate",
+            data={"width_in": "8", "height_in": "10", "labor_flat": "20",
+                  "global_discount_pct": "0", "labor_discount_pct": "100"},
+        )
+        self.assertEqual(zero.status_code, 200)
+        self.assertEqual(zero.json()["line_items"]["labor"], 20.0)
+        self.assertEqual(hundred.status_code, 200)
+        self.assertEqual(hundred.json()["line_items"].get("labor", 0.0), 0.0)
+
+    def test_quote_rejects_negative_and_non_finite_counts(self):
+        for value in ("-1", "inf"):
+            with self.subTest(value=value):
+                response = self.client.post(
+                    "/api/quotes/calculate",
+                    data={"width_in": "8", "height_in": "10", "printing_count": value},
+                )
+                self.assertEqual(response.status_code, 400)
+
+    def test_legacy_printing_key_remains_available_without_printing_option_id(self):
+        conn = db.get_connection()
+        conn.execute(
+            "UPDATE service_options SET label = 'Legacy Printing', cost = 12, markup = 1, basis = 'count', active = 1 WHERE key = 'printing'"
+        )
+        conn.commit()
+        conn.close()
+        response = self.client.post(
+            "/api/quotes/calculate",
+            data={"width_in": "8", "height_in": "10", "labor_flat": "0",
+                  "printing_key": "printing", "printing_count": "2", "global_discount_pct": "25"},
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["line_items"]["printing"], 18.0)
+        self.assertEqual(payload["selected"]["addons"]["printing"]["service"]["label"], "Legacy Printing")
+
+    def test_quote_closes_owned_connection_when_lookup_fails(self):
+        original_get_connection = main_module.get_connection
+        tracked_connections = []
+
+        class TrackedConnection:
+            def __init__(self):
+                self.connection = original_get_connection()
+                self.closed = False
+
+            def __getattr__(self, name):
+                return getattr(self.connection, name)
+
+            def close(self):
+                self.closed = True
+                self.connection.close()
+
+        def tracked_get_connection():
+            connection = TrackedConnection()
+            tracked_connections.append(connection)
+            return connection
+
+        with patch.object(main_module, "get_connection", side_effect=tracked_get_connection):
+            response = self.client.post(
+                "/api/quotes/calculate",
+                data={"width_in": "8", "height_in": "10", "printing_option_id": "999999"},
+            )
+        self.assertEqual(response.status_code, 400)
+        self.assertGreaterEqual(len(tracked_connections), 2)
+        self.assertTrue(all(connection.closed for connection in tracked_connections))
+
+    def test_inactive_printing_option_is_rejected(self):
+        conn = db.get_connection()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO printing_options (label, unit_price, active, sort_order) VALUES ('Retired Print', 12, 0, 10)")
+        option_id = cur.lastrowid
+        conn.commit()
+        conn.close()
+        response = self.client.post(
+            "/api/quotes/calculate",
+            data={"width_in": "8", "height_in": "10", "labor_flat": "0", "printing_option_id": option_id},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("is inactive", response.json()["detail"])
+
+    def test_saved_quote_retains_printing_price_snapshot_after_admin_edit(self):
+        conn = db.get_connection()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO printing_options (label, unit_price, active, sort_order) VALUES ('Print 8x10', 20, 1, 10)")
+        option_id = cur.lastrowid
+        conn.commit()
+        conn.close()
+        quote = self.client.post(
+            "/api/quotes/calculate",
+            data={"width_in": "8", "height_in": "10", "labor_flat": "0", "printing_option_id": option_id},
+        ).json()
+        created = self.client.post(
+            "/api/orders",
+            data={"customer_name": "Print Buyer", "customer_contact": "606-555-0188",
+                  "payload_json": json.dumps(quote), "subtotal": quote["subtotal"],
+                  "tax": quote["tax"], "total": quote["total"]},
+        ).json()
+        self.client.post(
+            f"/api/printing-options/{option_id}",
+            data={"label": "Print 8x10", "unit_price": "30", "active": "1", "sort_order": "10"},
+        )
+        saved = self.client.get(f"/api/orders/{created['order_id']}").json()["order"]["payload"]
+        snapshot = saved["selected"]["addons"]["printing"]
+        self.assertEqual(snapshot["id"], option_id)
+        self.assertEqual(snapshot["label"], "Print 8x10")
+        self.assertEqual(snapshot["unit_price"], 20.0)
+        self.assertEqual(snapshot["count"], 1.0)
+        self.assertEqual(snapshot["discount_pct"], 0.0)
+
+    def test_quote_uses_explicit_overall_mat_size(self):
+        quote = self.client.post(
+            "/api/quotes/calculate",
+            data={
+                "width_in": "8",
+                "height_in": "10",
+                "mat_border_in": "2",
+                "outside_width_in": "10",
+                "outside_height_in": "15",
+                "moulding_cost_ft": "4",
+                "mat_cost_sqft": "2",
+            },
+        )
+        self.assertEqual(quote.status_code, 200)
+        payload = quote.json()
+        self.assertEqual(payload["selected"]["outside_width_in"], 10)
+        self.assertEqual(payload["selected"]["outside_height_in"], 15)
+        self.assertAlmostEqual(payload["area_sqft"], (10 * 15) / 144, places=4)
+        self.assertAlmostEqual(payload["perimeter_ft"], (2 * (10 + 15)) / 12, places=2)
+
+    def test_quote_rejects_partial_or_undersized_overall_mat_size(self):
+        partial = self.client.post(
+            "/api/quotes/calculate",
+            data={
+                "width_in": "8",
+                "height_in": "10",
+                "outside_width_in": "10",
+            },
+        )
+        self.assertEqual(partial.status_code, 400)
+        self.assertIn("outside_width_in and outside_height_in", partial.json()["detail"])
+
+        undersized = self.client.post(
+            "/api/quotes/calculate",
+            data={
+                "width_in": "8",
+                "height_in": "10",
+                "outside_width_in": "8",
+                "outside_height_in": "15",
+            },
+        )
+        self.assertEqual(undersized.status_code, 400)
+        self.assertIn("larger than the opening", undersized.json()["detail"])
+
+    def test_explicit_mat_size_export_uses_stored_board_dimensions(self):
+        payload = {
+            "selected": {
+                "subject_width_in": 8,
+                "subject_height_in": 10,
+                "mat_border_in": 2,
+                "outside_width_in": 10,
+                "outside_height_in": 15,
+                "mats": [
+                    {
+                        "slot": "top",
+                        "item": {"sku": "M1", "name": "White"},
+                        "reveal_in": 0,
+                    }
+                ],
+            },
+            "design_state": {
+                "item_name": "Exact Mat Test",
+                "opening_layout": "single",
+                "opening_offset_x": 0,
+                "opening_offset_y": 0,
+            },
+        }
+        sizes = main_module._form_sizes(payload["selected"])
+        self.assertEqual(sizes["board_w"], 10)
+        self.assertEqual(sizes["board_h"], 15)
+        lines = main_module._order_form_lines(payload, include_production=True)
+        self.assertTrue(any("Top Mat: M1 (10 x 15)" in line for line in lines))
+        self.assertTrue(any("Top 2.5" in line and "Left 1" in line for line in lines))
+
 
     def test_order_saves_design_state_layout(self):
         """Verify diptych layout design state roundtrips through order save/load."""
@@ -1457,7 +2287,7 @@ class ApiTests(unittest.TestCase):
             "/api/orders",
             data={
                 "customer_name": "Layout Test",
-                "customer_contact": "555-010-0113",
+                "customer_contact": "606-555-0113",
                 "payload_json": json.dumps({
                     **quote_data,
                     "design_state": {
@@ -1668,13 +2498,13 @@ class ApiTests(unittest.TestCase):
         """Verify customer search matches on partial name."""
         self.client.post(
             "/api/customers",
-            data={"name": "Alice Morgan", "contact": "555-010-0114", "notes": "owner"},
+            data={"name": "Katherine Potter", "contact": "606-555-0114", "notes": "owner"},
         )
-    
-        found = self.client.get("/api/customers", params={"q": "Ali"})
+
+        found = self.client.get("/api/customers", params={"q": "Kath"})
         self.assertEqual(found.status_code, 200)
         self.assertEqual(len(found.json()["customers"]), 1)
-        self.assertEqual(found.json()["customers"][0]["name"], "Alice Morgan")
+        self.assertEqual(found.json()["customers"][0]["name"], "Katherine Potter")
 
         not_found = self.client.get("/api/customers", params={"q": "Zzz"})
         self.assertEqual(len(not_found.json()["customers"]), 0)
@@ -1685,7 +2515,7 @@ class ApiTests(unittest.TestCase):
             "/api/orders",
             data={
                 "customer_name": "History Test",
-                "customer_contact": "555-010-0115",
+                "customer_contact": "606-555-0115",
                 "payload_json": json.dumps({"subtotal": 10, "tax": 0.6, "total": 10.6}),
                 "subtotal": "10",
                 "tax": "0.6",
@@ -1750,7 +2580,8 @@ class ApiTests(unittest.TestCase):
             },
         ).json()
 
-        self.assertGreater(stacked["line_items"]["mat"], single["line_items"]["mat"])
+        stacked_mat_total = stacked["line_items"]["mat"] + stacked["line_items"]["mat_second"]
+        self.assertGreater(stacked_mat_total, single["line_items"]["mat"])
 
     def test_inventory_reconciliation_classifies_matched_discrepant_and_missing_rows(self):
         response = self.client.post(
@@ -1871,7 +2702,7 @@ class ApiTests(unittest.TestCase):
             "/api/orders",
             data={
                 "customer_name": "Notes Timeline Test",
-                "customer_contact": "555-010-0116",
+                "customer_contact": "606-555-0116",
                 "payload_json": json.dumps({"subtotal": 10, "tax": 0.6, "total": 10.6}),
                 "subtotal": "10",
                 "tax": "0.6",
@@ -1884,10 +2715,10 @@ class ApiTests(unittest.TestCase):
         # 2. Add notes
         note_res = self.client.post(
             f"/api/orders/{order_id}/notes",
-            data={"note": "Handoff text prepared for contact: 555-010-0116"}
+            data={"note": "Handoff text prepared for contact: 606-555-0116"}
         )
         self.assertEqual(note_res.status_code, 200)
-        self.assertEqual(note_res.json()["note"], "Handoff text prepared for contact: 555-010-0116")
+        self.assertEqual(note_res.json()["note"], "Handoff text prepared for contact: 606-555-0116")
 
         # 3. Add second note
         note_res2 = self.client.post(
@@ -1903,7 +2734,7 @@ class ApiTests(unittest.TestCase):
         
         # Verify notes are saved in order status history with same status (quote)
         history_notes = [h["note"] for h in history if h["status"] == "quote"]
-        self.assertIn("Handoff text prepared for contact: 555-010-0116", history_notes)
+        self.assertIn("Handoff text prepared for contact: 606-555-0116", history_notes)
         self.assertIn("Email handoff draft opened (mailto link clicked)", history_notes)
 
         # 5. Error conditions
@@ -1926,7 +2757,7 @@ class ApiTests(unittest.TestCase):
             "/api/orders",
             data={
                 "customer_name": "PDF Disclaimer Test",
-                "customer_contact": "555-010-0117",
+                "customer_contact": "606-555-0117",
                 "payload_json": json.dumps(
                     {
                         "subtotal": 100,

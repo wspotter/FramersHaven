@@ -1,4 +1,4 @@
-# FramersHaven Feature Ledger
+# Printery Framing Studio Feature Ledger
 
 This file is the source of truth for implemented behavior so sprint work does not get lost.
 
@@ -22,7 +22,7 @@ This file is the source of truth for implemented behavior so sprint work does no
 - Each workspace keeps its own detail panel instead of stacking the full flow on one screen.
 - Workspace actions now surface success/error notices instead of relying only on raw JSON output.
 - Key operator controls include inline tooltips for less-obvious actions and framing fields.
-- Top bar includes a persistent theme selector with a Studio pink/teal palette option.
+- Top bar includes a persistent theme selector with a Printery pink/teal palette option.
 
 ### Operator Help Site
 - A multi-page operator guide is served locally at `/help/`; `/help` redirects to the same guide.
@@ -38,7 +38,9 @@ This file is the source of truth for implemented behavior so sprint work does no
 - Diptych layout includes draggable divider spacing and synced numeric spacing/offset controls.
 - Diptych layout also tracks opening balance and vertical offset controls in saved design state.
 - Opening position controls support asymmetrical top/bottom or left/right mat weighting while keeping the outside size fixed.
+- Top, right, bottom, and left mat borders are directly editable; changing one side recalculates the finished mat size and opening position while preserving the other sides.
 - Opening position can be adjusted from the mockup directly or with synced horizontal/vertical weight sliders and numeric fields.
+- Mat sizing keeps the 2-inch equal-border default but also supports an optional exact finished width and height; exact-size openings start centered and can then be repositioned within the available borders.
 - Design workspace now follows a single builder-style worksheet instead of splitting quote setup and materials into unrelated cards.
 - Builder controls use a denser, smaller-footprint layout so the material worksheet stays compact beside the mockup.
 - Design worksheet now uses compact right-side operator rows for customer info, add-on option dropdowns, discounts, totals, and save actions.
@@ -55,7 +57,7 @@ This file is the source of truth for implemented behavior so sprint work does no
 
 ### Catalog
 - Import catalog data from CSV (`sku,name,category,cost,width_in`).
-- Import operator-supplied local catalog packages for mats and mouldings directly from the local `catalog_imports/` folder.
+- Import dropped PFD vendor packages for mats and mouldings directly from the local `pfd/` folder.
 - Import behavior is upsert by `(sku, category)`:
   - new rows are inserted,
   - existing rows are updated,
@@ -64,7 +66,7 @@ This file is the source of truth for implemented behavior so sprint work does no
 - Admin workspace supports manual catalog item creation and correction.
 - Admin workspace supports cropped moulding texture upload for manually improving preview coverage.
 - Catalog items can now store vendor, height, rabbet depth, preview filename, and source metadata.
-- Imported local catalog mats/mouldings expose linked preview images in the picker lists when the operator supplies preview files.
+- Imported PFD mats/mouldings expose linked preview images in the picker lists.
 - Catalog write paths reject service-like categories so backing, mounting, printing, and similar rows stay in service pricing.
 
 ### Admin
@@ -79,7 +81,8 @@ This file is the source of truth for implemented behavior so sprint work does no
 - Uses perimeter + area calculations.
 - Supports linked catalog item IDs for moulding/mat/glazing.
 - Supports admin-priced service rows for backing, subject mounting, frame mounting, printing, various, assembly, and royalties.
-- Supports per-row discount percentages, one global discount percentage, and two custom manual charge rows.
+- Supports an editable discount percentage on every quote line. Global Discount fills every line box as a starting point; changing an individual line creates that line's own promotion and never stacks with the global percentage.
+- Printing uses Admin-managed fixed-price print sizes with quantity. For uncommon mixed sizes, select `Custom — use Other row` and enter the label and price in an Other row.
 - Applies pricing markups per material category.
 - Uses the admin-configured tax rate in totals.
 
@@ -129,7 +132,7 @@ This file is the source of truth for implemented behavior so sprint work does no
 - Backups include the SQLite database, uploads, exports, and a catalog snapshot for recovery.
 
 ### Branding Defaults
-- Owner/contact/address values are preloaded from FramersHaven defaults and used by exports/UI.
+- Owner/contact/address values are preloaded from The Printery defaults and used by exports/UI.
 
 ## Non-Goals in Current Build
 - POS integration.

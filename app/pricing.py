@@ -1,10 +1,11 @@
 """
-Pricing engine for FramersHaven.
+Pricing engine for the Printery Framing Studio.
 Supports two methods:
 1. Cost & Markup: price = (cost * markup) + factor
 2. Price Table: look up price based on half-perimeter (width + height)
 """
 
+import json
 import sqlite3
 from typing import Optional, List, Dict, Any
 from pathlib import Path
@@ -23,6 +24,8 @@ class QuoteRequest:
     mat_border_in: float = 2.0
     tax_rate: float = 0.06
     extra_line_items: Optional[Dict[str, float]] = None
+    outside_width_in: Optional[float] = None
+    outside_height_in: Optional[float] = None
 
 
 @dataclass
@@ -42,10 +45,10 @@ def get_price_rule(component_type: str) -> Dict[str, Any]:
     cur.execute("SELECT * FROM price_rules WHERE component_type = ?", (component_type,))
     rule = cur.fetchone()
     conn.close()
-    
+
     if rule:
         return dict(rule)
-    
+
     # Fallback defaults if rule not found in DB
     defaults = {
         'moulding': {'pricing_method': 'cost_markup', 'markup': 3.0, 'factor': 5.0},
@@ -68,7 +71,7 @@ def calculate_moulding_price(sku: str, width: float, height: float) -> dict:
     cur = conn.cursor()
     cur.execute("SELECT * FROM catalog_items WHERE sku = ? AND category = 'moulding'", (sku,))
     item = cur.fetchone()
-    
+
     if not item:
         conn.close()
         return {"price": 0, "error": "Moulding not found"}
@@ -77,29 +80,28 @@ def calculate_moulding_price(sku: str, width: float, height: float) -> dict:
     method = rule.get('pricing_method', 'cost_markup')
     markup = rule.get('markup', 1.0)
     factor = rule.get('factor', 0.0)
-    
+
     # Perimeter in feet for cost_markup
     # perimeter = 2 * (w + h) / 12
     perimeter_ft = (2 * (width + height)) / 12.0
     half_perimeter = width + height
-    
+
     price = 0.0
     price_code = None
-    
-    import json
+
     metadata = {}
     if item['metadata_json']:
         try:
             metadata = json.loads(item['metadata_json'])
             price_code = metadata.get('price_code')
-        except:
+        except (json.JSONDecodeError, TypeError):
             pass
 
     if method == 'price_table' and price_code:
         # Find the smallest half_perimeter >= our half_perimeter for this code
         cur.execute("""
-            SELECT price FROM price_table_entries 
-            WHERE price_code = ? AND half_perimeter >= ? 
+            SELECT price FROM price_table_entries
+            WHERE price_code = ? AND half_perimeter >= ?
             ORDER BY half_perimeter ASC LIMIT 1
         """, (price_code, half_perimeter))
         row = cur.fetchone()
@@ -108,8 +110,8 @@ def calculate_moulding_price(sku: str, width: float, height: float) -> dict:
         else:
             # Fallback to the largest available if none found
             cur.execute("""
-                SELECT price FROM price_table_entries 
-                WHERE price_code = ? 
+                SELECT price FROM price_table_entries
+                WHERE price_code = ?
                 ORDER BY half_perimeter DESC LIMIT 1
             """, (price_code,))
             row = cur.fetchone()
@@ -132,7 +134,7 @@ def calculate_moulding_price(sku: str, width: float, height: float) -> dict:
         "factor": factor
     }
 
-# Mat pricing  
+# Mat pricing
 def calculate_mat_price(sku: str, width: float, height: float) -> dict:
     """
     Calculate mat price based on:
@@ -146,34 +148,33 @@ def calculate_mat_price(sku: str, width: float, height: float) -> dict:
     cur = conn.cursor()
     cur.execute("SELECT * FROM catalog_items WHERE sku = ? AND category = 'mat'", (sku,))
     item = cur.fetchone()
-    
+
     if not item:
         conn.close()
         return {"price": 0, "error": "Mat not found"}
-    
+
     rule = get_price_rule('mat')
     method = rule.get('pricing_method', 'cost_markup')
     costing_method = rule.get('costing_method', 'square_area')
     markup = rule.get('markup', 1.0)
     factor = rule.get('factor', 0.0)
     min_price = rule.get('min_price', 0.0)
-    
-    import json
+
     price_code = None
     if item['metadata_json']:
         try:
             metadata = json.loads(item['metadata_json'])
             price_code = metadata.get('price_code')
-        except:
+        except (json.JSONDecodeError, TypeError):
             pass
-            
+
     half_perimeter = width + height
     price = 0.0
-    
+
     if method == 'price_table' and price_code:
         cur.execute("""
-            SELECT price FROM price_table_entries 
-            WHERE price_code = ? AND half_perimeter >= ? 
+            SELECT price FROM price_table_entries
+            WHERE price_code = ? AND half_perimeter >= ?
             ORDER BY half_perimeter ASC LIMIT 1
         """, (price_code, half_perimeter))
         row = cur.fetchone()
@@ -181,8 +182,8 @@ def calculate_mat_price(sku: str, width: float, height: float) -> dict:
             price = row['price']
         else:
             cur.execute("""
-                SELECT price FROM price_table_entries 
-                WHERE price_code = ? 
+                SELECT price FROM price_table_entries
+                WHERE price_code = ?
                 ORDER BY half_perimeter DESC LIMIT 1
             """, (price_code,))
             row = cur.fetchone()
@@ -196,7 +197,7 @@ def calculate_mat_price(sku: str, width: float, height: float) -> dict:
         price = (area_val * cost_basis) * markup + factor
         price = max(price, min_price)
         method = costing_method
-        
+
     conn.close()
     return {
         "price": round(price, 2),
@@ -221,7 +222,7 @@ def calculate_glazing_price(sku: str, width: float, height: float) -> dict:
     cur = conn.cursor()
     cur.execute("SELECT * FROM catalog_items WHERE sku = ? AND category = 'glazing'", (sku,))
     item = cur.fetchone()
-    
+
     if not item:
         conn.close()
         return {"price": 0, "error": "Glazing not found"}
@@ -230,24 +231,23 @@ def calculate_glazing_price(sku: str, width: float, height: float) -> dict:
     method = rule.get('pricing_method', 'cost_markup')
     markup = rule.get('markup', 1.0)
     factor = rule.get('factor', 0.0)
-    
-    import json
+
     price_code = None
     if item['metadata_json']:
         try:
             metadata = json.loads(item['metadata_json'])
             price_code = metadata.get('price_code')
-        except:
+        except (json.JSONDecodeError, TypeError):
             pass
-            
+
     half_perimeter = width + height
     price = 0.0
     area_sqft = (width * height) / 144.0
-    
+
     if method == 'price_table' and price_code:
         cur.execute("""
-            SELECT price FROM price_table_entries 
-            WHERE price_code = ? AND half_perimeter >= ? 
+            SELECT price FROM price_table_entries
+            WHERE price_code = ? AND half_perimeter >= ?
             ORDER BY half_perimeter ASC LIMIT 1
         """, (price_code, half_perimeter))
         row = cur.fetchone()
@@ -255,8 +255,8 @@ def calculate_glazing_price(sku: str, width: float, height: float) -> dict:
             price = row['price']
         else:
             cur.execute("""
-                SELECT price FROM price_table_entries 
-                WHERE price_code = ? 
+                SELECT price FROM price_table_entries
+                WHERE price_code = ?
                 ORDER BY half_perimeter DESC LIMIT 1
             """, (price_code,))
             row = cur.fetchone()
@@ -264,7 +264,7 @@ def calculate_glazing_price(sku: str, width: float, height: float) -> dict:
     else:
         price = (area_sqft * item['cost']) * markup + factor
         method = 'cost_markup'
-    
+
     conn.close()
     return {
         "price": round(max(price, 0), 2),
@@ -287,7 +287,7 @@ def calculate_backing_price(sku: str, width: float, height: float) -> dict:
     cur = conn.cursor()
     cur.execute("SELECT * FROM catalog_items WHERE sku = ? AND category = 'backing'", (sku,))
     item = cur.fetchone()
-    
+
     if not item:
         conn.close()
         return {"price": 0, "error": "Backing not found"}
@@ -296,24 +296,23 @@ def calculate_backing_price(sku: str, width: float, height: float) -> dict:
     method = rule.get('pricing_method', 'cost_markup')
     markup = rule.get('markup', 1.0)
     factor = rule.get('factor', 0.0)
-    
-    import json
+
     price_code = None
     if item['metadata_json']:
         try:
             metadata = json.loads(item['metadata_json'])
             price_code = metadata.get('price_code')
-        except:
+        except (json.JSONDecodeError, TypeError):
             pass
-            
+
     half_perimeter = width + height
     price = 0.0
     area_sqft = (width * height) / 144.0
-    
+
     if method == 'price_table' and price_code:
         cur.execute("""
-            SELECT price FROM price_table_entries 
-            WHERE price_code = ? AND half_perimeter >= ? 
+            SELECT price FROM price_table_entries
+            WHERE price_code = ? AND half_perimeter >= ?
             ORDER BY half_perimeter ASC LIMIT 1
         """, (price_code, half_perimeter))
         row = cur.fetchone()
@@ -321,8 +320,8 @@ def calculate_backing_price(sku: str, width: float, height: float) -> dict:
             price = row['price']
         else:
             cur.execute("""
-                SELECT price FROM price_table_entries 
-                WHERE price_code = ? 
+                SELECT price FROM price_table_entries
+                WHERE price_code = ?
                 ORDER BY half_perimeter DESC LIMIT 1
             """, (price_code,))
             row = cur.fetchone()
@@ -330,7 +329,7 @@ def calculate_backing_price(sku: str, width: float, height: float) -> dict:
     else:
         price = (area_sqft * item['cost']) * markup + factor
         method = 'cost_markup'
-    
+
     conn.close()
     return {
         "price": round(max(price, 0), 2),
@@ -344,17 +343,17 @@ def calculate_backing_price(sku: str, width: float, height: float) -> dict:
 # Additional charges
 def calculate_additional_charge(category: str, base_price: float = 0) -> dict:
     """
-    Calculate charges for: printing, subject_mounting, frame_mounting, 
+    Calculate charges for: printing, subject_mounting, frame_mounting,
     various, assembly, royalties
     Uses the price_rules table
     """
     rule = get_price_rule(category)
     markup = rule.get('markup', 1.0)
     factor = rule.get('factor', 0.0)
-    
+
     # If base_price is 0, we might just be using the factor as a flat fee
     price = (base_price * markup) + factor
-    
+
     return {
         "category": category,
         "price": round(max(price, 0), 2),
@@ -382,9 +381,18 @@ def calculate_quote(req_or_items, tax_rate: float = 0.06, discount_pct: float = 
         if req.moulding_cost_ft < 0 or req.mat_cost_sqft < 0 or req.glazing_cost_sqft < 0:
             raise ValueError("cost inputs must be non-negative")
 
-        # Compute outside sizes including mat border
-        outside_w = req.width_in + 2 * req.mat_border_in
-        outside_h = req.height_in + 2 * req.mat_border_in
+        has_outside_w = req.outside_width_in is not None
+        has_outside_h = req.outside_height_in is not None
+        if has_outside_w != has_outside_h:
+            raise ValueError("outside_width_in and outside_height_in must be supplied together")
+        if has_outside_w:
+            outside_w = float(req.outside_width_in)
+            outside_h = float(req.outside_height_in)
+            if outside_w <= req.width_in or outside_h <= req.height_in:
+                raise ValueError("outside dimensions must be larger than the opening dimensions")
+        else:
+            outside_w = req.width_in + 2 * req.mat_border_in
+            outside_h = req.height_in + 2 * req.mat_border_in
         area_sqft = (outside_w * outside_h) / 144.0
         # perimeter in feet (outside frame perimeter)
         perimeter_in = 2 * (outside_w + outside_h)
@@ -486,7 +494,7 @@ def get_price_rules() -> List[Dict[str, Any]]:
     conn.close()
     return rows
 
-def update_price_rule(component_type: str, method: str, markup: float, 
+def update_price_rule(component_type: str, method: str, markup: float,
                        factor: float = 0, costing_method: str = 'square_area',
                        min_price: float = 0):
     """Update a price rule"""
@@ -497,7 +505,7 @@ def update_price_rule(component_type: str, method: str, markup: float,
     row = cur.fetchone()
     if row:
         cur.execute("""
-            UPDATE price_rules 
+            UPDATE price_rules
             SET pricing_method = ?, markup = ?, factor = ?, costing_method = ?, min_price = ?
             WHERE component_type = ?
         """, (method, markup, factor, costing_method, min_price, component_type))

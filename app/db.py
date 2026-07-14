@@ -104,6 +104,16 @@ def init_db() -> None:
             sort_order INTEGER NOT NULL DEFAULT 0,
             updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS printing_options (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            label TEXT NOT NULL,
+            unit_price REAL NOT NULL DEFAULT 0,
+            active INTEGER NOT NULL DEFAULT 1,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
         """
     )
 
@@ -127,6 +137,8 @@ def init_db() -> None:
     _add_column_if_missing(cur, "service_options", "cost", "cost REAL NOT NULL DEFAULT 0")
     _add_column_if_missing(cur, "service_options", "markup", "markup REAL NOT NULL DEFAULT 1")
     _add_column_if_missing(cur, "service_options", "basis", "basis TEXT NOT NULL DEFAULT 'count'")
+    _add_column_if_missing(cur, "service_options", "pricing_method", "pricing_method TEXT NOT NULL DEFAULT 'cost_markup'")
+    _add_column_if_missing(cur, "service_options", "price_code", "price_code TEXT")
 
     defaults = {
         "tax_rate": "0.06",

@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Catalog, pricing, services, and backup administration for FramersHaven.">
-  <title>Admin &amp; Pricing | FramersHaven Help</title>
+  <meta name="description" content="Catalog, pricing, services, and backup administration for Printery Framing Studio.">
+  <title>Admin &amp; Pricing | Printery Framing Studio Help</title>
   <link rel="stylesheet" href="css/help-style.css">
 </head>
 <body>
@@ -13,7 +13,7 @@
     <aside class="help-sidebar">
       <div class="help-brand">
         <i class="help-brand-mark" aria-hidden="true"></i>
-        <strong>FramersHaven</strong>
+        <strong>Printery Framing Studio</strong>
         <span>Operator help</span>
       </div>
       <nav class="help-nav" aria-label="Help topics">
@@ -46,7 +46,7 @@
             </div>
             <div class="info-card">
               <h3>Shop services</h3>
-              <p>Backing, mounting, frame mounting, printing, various, assembly, royalties, and custom rows are admin-priced service options.</p>
+              <p>Backing, mounting, frame mounting, various, assembly, royalties, and custom rows are admin-priced service options. Printing Options is a separate fixed-price list of print sizes: add a size, set its unit price, and turn it on when it is ready for quotes.</p>
             </div>
           </div>
           <div class="callout warning">
@@ -58,12 +58,12 @@
         <section class="doc-section">
           <h2>Import vendor catalogs</h2>
           <ol class="step-list">
-            <li><strong>Prepare the source files.</strong> Put operator-supplied CSV and preview ZIP files in the local <code>catalog_imports/</code> folder.</li>
-            <li><strong>Choose the matching import.</strong> Use Import Mat Package or Import Moulding Package. A general CSV import is also available for the supported columns.</li>
+            <li><strong>Prepare the source files.</strong> Put the current vendor CSV and preview ZIP files in the local <code>pfd/</code> folder.</li>
+            <li><strong>Choose the matching import.</strong> Use PFD Mats or PFD Mouldings. A general CSV import is also available for the supported columns.</li>
             <li><strong>Review the result.</strong> The import reports inserted, updated, skipped, duplicate, and preview counts.</li>
             <li><strong>Spot-check the catalog.</strong> Search a few known SKUs and confirm names, costs, dimensions, and previews.</li>
           </ol>
-          <p>Local package imports upsert existing rows by SKU and category. Valid existing items are updated instead of duplicated; invalid rows are skipped.</p>
+          <p>PFD imports upsert existing rows by SKU and category. Valid existing items are updated instead of duplicated; invalid rows are skipped.</p>
           <figure class="screenshot-frame">
             <img src="images/admin-catalog-import.png" alt="Admin workspace showing catalog import controls, catalog statistics, and searchable material results" width="1440" height="900">
             <figcaption>Planned screenshot: catalog import controls and the catalog snapshot.</figcaption>
@@ -74,7 +74,7 @@
           <h2>Pricing and manual corrections</h2>
           <ul>
             <li>Pricing Rules controls the saved tax rate and material markups used by quote calculation.</li>
-            <li>Manual Pricing controls service cost, markup, pricing basis, label, and active state.</li>
+            <li>Manual Pricing controls service cost, markup, pricing basis, label, and active state. Printing Options controls the selectable print sizes and fixed prices.</li>
             <li>Catalog Editor can create a missing material or correct an imported item without rerunning the full import.</li>
             <li>Use the cropped texture uploader to attach a better moulding strip preview to the selected moulding.</li>
             <li>Calculate a fresh quote after changing pricing; an already calculated on-screen quote may need to be recalculated.</li>

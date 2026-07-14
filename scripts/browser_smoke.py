@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 
 
@@ -77,7 +78,6 @@ def assert_moulding_orientation(page) -> None:
 
 
 def assert_orders_workspace(page) -> None:
-    print("Orders smoke: open workspace", flush=True)
     page.locator("[data-tab='orders']").first.click()
     page.wait_for_selector("#ordersList .job-row", timeout=10_000)
 
@@ -103,7 +103,6 @@ def assert_orders_workspace(page) -> None:
     row = page.locator("#ordersList .job-row").first
     row.click()
     page.wait_for_selector("#orderInspector.open", timeout=10_000)
-    print("Orders smoke: preview quote PDF", flush=True)
     page.locator("[data-inspector-tab='files']").click()
     page.get_by_role("button", name="Quote PDF", exact=True).click()
     pdf_src = page.locator("#documentPdfPreview").get_attribute("src") or ""
@@ -113,10 +112,8 @@ def assert_orders_workspace(page) -> None:
     if "disposition=attachment" not in save_href:
         raise AssertionError(f"Save File did not use an attachment URL: {save_href}")
 
-    print("Orders smoke: preview mockup JPG", flush=True)
     page.get_by_role("button", name="Mockup JPG", exact=True).click()
     page.wait_for_function("() => document.querySelector('#documentImagePreview')?.naturalWidth > 0")
-    print("Orders smoke: prepare handoff", flush=True)
     page.get_by_role("button", name="Send", exact=True).click()
     attachment_note = page.locator("#handoffAttachmentNote").inner_text()
     if "Mockup JPG" not in attachment_note:
@@ -133,15 +130,71 @@ def assert_orders_workspace(page) -> None:
     if page.locator("#handoffSubject").input_value() == "Edited handoff subject":
         raise AssertionError("Reset Draft did not restore the generated handoff subject")
 
-    print("Orders smoke: close inspector", flush=True)
     page.keyboard.press("Escape")
     page.wait_for_function("() => document.querySelector('#orderInspector')?.getAttribute('aria-hidden') === 'true'")
+
+
+def assert_printing_options_and_line_discounts(page) -> None:
+    label = "Browser Smoke Print 5x7"
+    page.locator("[data-tab='admin']").first.click()
+    page.locator("button[data-admin-view='services']").click()
+    page.wait_for_selector("#printingOptionsAdmin")
+    row_id = page.locator("#printingOptionsAdmin .printing-option-row").evaluate_all(
+        """(rows, label) => {
+            const match = rows.find(row => row.querySelector('[data-field="label"]')?.value === label);
+            return match?.dataset.printingOptionId || null;
+        }""",
+        label,
+    )
+    if not row_id:
+        initial_count = page.locator("#printingOptionsAdmin .printing-option-row").count()
+        page.locator("#addPrintingOptionButton").click()
+        page.wait_for_function(
+            "count => document.querySelectorAll('#printingOptionsAdmin .printing-option-row').length > count",
+            arg=initial_count,
+        )
+        row_id = page.locator("#printingOptionsAdmin .printing-option-row").last.get_attribute("data-printing-option-id")
+    row = page.locator(f'#printingOptionsAdmin .printing-option-row[data-printing-option-id="{row_id}"]')
+    row.locator('[data-field="label"]').fill(label)
+    row.locator('[data-field="unit-price"]').fill("10.00")
+    row.locator('[data-field="active"]').check()
+    row.get_by_role("button", name="Save", exact=True).click()
+    page.wait_for_function(
+        "label => [...document.querySelector('#optionPrinting').options].some(option => option.textContent.includes(label))",
+        arg=label,
+    )
+
+    page.locator("[data-tab='design']").first.click()
+    page.locator("#globalDiscount").fill("30")
+    page.locator("#globalDiscount").press("Tab")
+    values = page.evaluate(
+        "() => [...document.querySelectorAll('.quote-service-grid input[id^=discount], .quote-extra-grid input[id$=Discount]')].map(input => input.value)"
+    )
+    if not values or any(value != "30" for value in values):
+        raise AssertionError(f"Global discount did not fill every line: {values}")
+    page.locator("#discountMoulding").fill("80")
+    if page.locator("#discountPrinting").input_value() != "30":
+        raise AssertionError("Individual moulding discount changed printing discount")
+
+    page.locator("#optionPrinting").select_option(label=label + " · $10.00")
+    page.locator("#countPrinting").fill("2")
+    page.locator("button", has_text="Calculate Quote").click()
+    page.wait_for_function("() => document.querySelector('#pricePrinting')?.textContent === '$14.00'")
+    page.locator("#optionPrinting").select_option("custom")
+    page.wait_for_function("() => document.activeElement?.id === 'otherLineLabel'")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Smoke-test the critical framing quote flow in a real browser.")
     parser.add_argument("--url", default="http://127.0.0.1:8000", help="Running app URL")
+    parser.add_argument("--login", default=os.getenv("PRINTERY_SMOKE_USER", "admin"), help="Studio login username/email")
+    parser.add_argument("--password", default=os.getenv("PRINTERY_SMOKE_PASSWORD", "admin"), help="Studio login password")
     parser.add_argument("--headed", action="store_true", help="Run with a visible browser window")
+    parser.add_argument(
+        "--browser-executable",
+        default=os.getenv("PLAYWRIGHT_CHROMIUM_EXECUTABLE"),
+        help="Optional Chromium/Chrome executable path for systems without Playwright-managed browsers",
+    )
     parser.add_argument("--save", action="store_true", help="Also save a test quote into the local database")
     args = parser.parse_args()
 
@@ -153,17 +206,24 @@ def main() -> int:
         return 2
 
     console_errors: list[str] = []
-    step = "launch browser"
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=not args.headed)
+        launch_options = {"headless": not args.headed}
+        if args.browser_executable:
+            launch_options["executable_path"] = args.browser_executable
+        browser = p.chromium.launch(**launch_options)
         page = browser.new_page(viewport={"width": 1440, "height": 1000})
         page.on("console", lambda msg: console_errors.append(msg.text) if msg.type == "error" else None)
 
         try:
-            step = "load Design workspace"
             page.goto(args.url, wait_until="networkidle")
+            if page.locator("input[name='email']").count() and page.locator("input[name='password']").count():
+                page.locator("input[name='email']").fill(args.login)
+                page.locator("input[name='password']").fill(args.password)
+                page.get_by_role("button", name="Log in").click()
+                page.wait_for_load_state("networkidle")
             page.wait_for_selector("#mockupCanvas", timeout=10_000)
             assert_moulding_orientation(page)
+            assert_printing_options_and_line_discounts(page)
             if page.locator("#customerSelect").count():
                 raise AssertionError("Legacy customer dropdown is still present in Design")
             first_customer = page.evaluate(
@@ -203,9 +263,49 @@ def main() -> int:
                 raise AssertionError(f"Mat fields are too narrow to read: {mat_layout['fields']}")
             page.locator("#useThirdMat").uncheck()
             page.locator("#useSecondMat").uncheck()
+
+            page.locator("#overallMatWidth").fill("10")
+            page.locator("#overallMatHeight").fill("15")
+            page.wait_for_function(
+                "() => document.querySelector('#selectionOverallSize')?.textContent.includes('10 x 15')"
+            )
+            centered_borders = {
+                side: page.locator(f"#matBorder{side}").input_value()
+                for side in ("Top", "Right", "Bottom", "Left")
+            }
+            expected_centered = {"Top": "2.5", "Right": "1", "Bottom": "2.5", "Left": "1"}
+            if centered_borders != expected_centered:
+                raise AssertionError(f"Explicit mat size did not center the opening: {centered_borders}")
+
+            page.locator("#matBorderTop").fill("3")
+            page.locator("#matBorderTop").press("Tab")
+            if page.locator("#overallMatHeight").input_value() != "15.5":
+                raise AssertionError("Editing the top border did not update the finished mat height")
+            page.locator("#overallMatHeight").fill("15")
+
+            page.evaluate(
+                """() => {
+                    const input = document.querySelector('#openingOffsetX');
+                    input.value = '0.5';
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }"""
+            )
+            moved_left = page.locator("#matBorderLeft").input_value()
+            moved_right = page.locator("#matBorderRight").input_value()
+            if moved_left != "1.5" or moved_right != "0.5":
+                raise AssertionError(f"Opening movement did not redistribute side borders: {moved_left}, {moved_right}")
+            if "10 x 15" not in page.locator("#selectionOverallSize").inner_text():
+                raise AssertionError("Opening movement changed the explicit overall mat size")
+
+            page.locator("#overallMatWidth").fill("")
+            page.wait_for_function(
+                "() => document.querySelector('#overallMatHeight')?.value === ''"
+                " && document.querySelector('#selectionOverallSize')?.textContent.includes('12 x 14')"
+            )
+            page.locator("#overallMatWidth").fill("10")
+            page.locator("#overallMatHeight").fill("15")
             before_canvas = page.locator("#mockupCanvas").evaluate("node => node.toDataURL()")
 
-            step = "select a mat"
             page.locator("button", has_text="Browse Mats").first.click()
             page.wait_for_selector("#catalogDrawer.visible .catalog-result", timeout=10_000)
             page.locator("#catalogDrawer .catalog-result").first.click()
@@ -213,7 +313,6 @@ def main() -> int:
             if top_mat == "None":
                 raise AssertionError("Top mat was not selected")
 
-            step = "select a moulding"
             page.locator("button", has_text="Browse Frame").first.click()
             page.wait_for_selector("#catalogDrawer.visible .catalog-result", timeout=10_000)
             priced_mouldings = page.locator("#catalogDrawer .catalog-result:not(.sample)")
@@ -229,7 +328,6 @@ def main() -> int:
             if before_canvas == after_canvas:
                 raise AssertionError("Mockup canvas did not change after material selection")
 
-            step = "calculate quote"
             page.locator("button", has_text="Calculate Quote").click()
             page.wait_for_function(
                 "() => document.querySelector('#quoteTotal')?.textContent !== '$0.00'",
@@ -237,14 +335,13 @@ def main() -> int:
             )
             total = page.locator("#quoteTotal").inner_text()
 
-            step = "verify Orders workspace"
             assert_orders_workspace(page)
             page.locator("[data-tab='design']").first.click()
 
             saved = ""
             if args.save:
                 page.locator("#customerName").fill("Browser Smoke Test")
-                page.locator("#customerContact").fill("555-010-0199")
+                page.locator("#customerContact").fill("606-555-0199")
                 page.locator("button", has_text="Save Quote").click()
                 page.wait_for_function(
                     "() => document.querySelector('#notice')?.textContent.includes('Quote Q')",
@@ -258,6 +355,14 @@ def main() -> int:
                 page.locator("[data-tab='orders']").first.click()
                 page.wait_for_selector(f"#ordersList:has-text('{quote_num}')", timeout=10_000)
                 page.locator("#orderPrimaryAction").wait_for(timeout=10_000)
+                page.locator("[data-inspector-tab='files']").click()
+                page.get_by_role("button", name="Edit Quote", exact=True).click()
+                page.wait_for_function("() => document.body.dataset.workspace === 'design'")
+                if page.locator("#overallMatWidth").input_value() != "10" or page.locator("#overallMatHeight").input_value() != "15":
+                    raise AssertionError("Saved quote did not restore the explicit overall mat dimensions")
+                page.locator("[data-tab='orders']").first.click()
+                page.locator(f"#ordersList .job-row:has-text('{quote_num}')").click()
+                page.wait_for_selector("#orderInspector.open", timeout=10_000)
                 primary_label = page.locator("#orderPrimaryAction").inner_text()
                 if "Approve" not in primary_label:
                     raise AssertionError(f"Expected Approve primary action, saw {primary_label!r}")
@@ -275,7 +380,7 @@ def main() -> int:
             print(f"Browser smoke passed: top mat {top_mat}, moulding {moulding}, total {total}{saved}")
             return 0
         except PlaywrightTimeoutError as exc:
-            print(f"Browser smoke timed out during {step}: {exc}", file=sys.stderr)
+            print(f"Browser smoke timed out: {exc}", file=sys.stderr)
             return 1
         except AssertionError as exc:
             print(f"Browser smoke failed: {exc}", file=sys.stderr)

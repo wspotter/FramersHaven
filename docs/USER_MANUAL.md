@@ -1,16 +1,12 @@
-# FramersHaven User Manual
+# Printery Framing Studio User Manual
 
 ## Purpose
 
-FramersHaven is a local-first workstation app for intake, framing design, quoting, production tracking, and customer handoff.
+Printery Framing Studio is a local-first workstation app for intake, framing design, quoting, production tracking, and customer handoff.
 
 The app is organized into separate workspaces so operators do not have to manage the whole workflow on one screen.
 
 ## Starting the App
-
-On Windows, double-click `run_windows.bat`.
-
-On macOS or Linux:
 
 1. Activate the virtual environment if needed.
 2. Run `./scripts/run.sh`.
@@ -29,7 +25,7 @@ On macOS or Linux:
 
 ## Workspace Overview
 
-- The top bar includes a `Theme` selector. `Studio` applies the shop palette with pink as the main color, teal as the secondary color, and black/white neutrals.
+- The top bar includes a `Theme` selector. `Printery` applies the shop palette with pink as the main color, teal as the secondary color, and black/white neutrals.
 - The top bar switches between the main workspaces. The catalog sidebar is visible only in Design; other workspaces expand to the full window. Returning to Design restores the previous drawer and search state.
 
 ### Design
@@ -82,7 +78,7 @@ On macOS or Linux:
 - Use the left utility rail for Import, Pricing, Services, Backups, and Diagnostics instead of scrolling through every tool at once.
 - Pricing settings affect future quote calculations.
 - Service pricing controls the retail quote rows for backing, mounting, frame mounting, printing, various, assembly, and royalties.
-- `Import Mat Package` and `Import Moulding Package` read operator-supplied files from the local `catalog_imports/` folder and attach matching preview images when the zip is present.
+- `Import PFD Mats` and `Import PFD Mouldings` read the shop’s dropped vendor files from the local `pfd/` folder and attach matching preview images when the zip is present.
 - Use the cropped texture uploader after selecting a moulding in the catalog editor when a good moulding strip needs to be attached manually.
 - Backups create a zip containing the database, uploads, exports, and catalog snapshot files.
 
@@ -158,12 +154,17 @@ node -c app/static/app.js
 - The current builder supports one, two, or three mats.
 - The builder is intentionally compact: short labels, smaller fields, and a tighter picker layout are expected.
 - Mat pricing uses the outside mat size rather than the internal opening size.
-- Imported mats can include user-supplied preview thumbnails, so the picker may show an image instead of a generic color dot.
+- `Mat Border` defaults to 2 inches on every side. Leave `Overall Mat W` and `Overall Mat H` blank to keep that equal-border behavior.
+- To make a specific finished mat, enter both overall dimensions. For example, an 8 × 10 opening in a 10 × 15 mat starts centered with 1-inch side borders and 2.5-inch top/bottom borders.
+- You can also type directly into the `Top`, `Right`, `Bottom`, and `Left` border fields. The app keeps the other three borders unchanged and recalculates the finished mat size and opening position.
+- After entering an exact size, use `Adjust Opening`, the position sliders, or direct dragging in the mockup to redistribute the borders without changing the finished mat size.
+- Both overall dimensions are required, and each must be larger than the opening. Clearing either overall field clears the pair and returns to equal-border mode.
+- Imported mats can include real preview thumbnails from the PFD package, so the picker may show an image instead of a generic color dot.
 
 ### Quote Options
-- The right-side worksheet includes compact service rows for backing, subject mounting, frame mounting, printing, various, assembly, and royalties.
-- Each option row supports an optional discount percentage.
-- `Global %` applies across the quote after any row-level discounts.
+- The right-side worksheet has Item, Qty, Discount %, and Price columns for materials, labor, services, and custom lines.
+- Entering `Global %` fills every line discount. Then change any individual box for a targeted sale; the line discount replaces the global discount rather than stacking with it.
+- In Admin → Services, add print sizes with their fixed price and activate the ones that should appear in the Printing dropdown. Quantity handles multiple copies of one selected size. For mixed or uncommon sizes, choose `Custom — use Other row` and use an Other row for the label and price.
 - Two `Other` rows are available for manual charges that are not in the catalog.
 - Service rows are priced from the `Admin` tab, not from the materials catalog.
 - Option rows are stored with the quote payload and appear in line items/exports after pricing is calculated.
@@ -192,7 +193,7 @@ node -c app/static/app.js
 
 1. Stop the app.
 2. Copy the current `studio.db`, `uploads/`, `exports/`, and `catalog_previews/` somewhere safe if they still exist.
-3. Unzip the chosen `backups/framershaven_backup_*.zip` into a temporary folder.
+3. Unzip the chosen `backups/printery_backup_*.zip` into a temporary folder.
 4. Replace `studio.db` with the backed-up database file.
 5. Restore backed-up `uploads/` and `exports/` files into their matching project folders.
 6. Start the app with `./scripts/run.sh`.

@@ -33,6 +33,17 @@
     - `assembly`
     - `royalties`
 
+## Printing Options
+- `GET /api/printing-options`
+  - response: `{ printing_options: [] }`, including active and inactive options for Admin editing
+- `POST /api/printing-options`
+  - fields: `label`, `unit_price`, `active`, `sort_order`
+  - response: `{ printing_option, printing_options }`
+- `POST /api/printing-options/{option_id}`
+  - fields: `label`, `unit_price`, `active`, `sort_order`
+  - response: `{ printing_option, printing_options }`
+  - `label` is required; `unit_price` must be finite and between `0` and `999.99`
+
 ## Backups
 - `GET /api/backups`
   - response: `{ backups: [] }`
@@ -53,13 +64,13 @@
     - content must be UTF-8 encoded
     - service-like rows such as backing, mounting, printing, and assembly are skipped instead of being imported as catalog materials
   - response: `{ inserted, updated, skipped }`
-- `POST /api/catalog/import/package`
+- `POST /api/catalog/import/pfd`
   - form field: `source`
   - allowed values:
     - `mats`
     - `mouldings`
   - behavior:
-    - reads operator-supplied CSV/ZIP files from the local `catalog_imports/` folder
+    - reads the dropped PFD CSV/ZIP files from the local `pfd/` folder
     - normalizes rows into the shared catalog table
     - extracts preview assets into `/catalog-previews`
 - `GET /api/catalog/search?q=&category=&limit=`
@@ -154,13 +165,17 @@
       - `mounting_key`
       - `frame_mounting_key`
       - `printing_key`
+      - `printing_option_id` for an active Admin-managed fixed-price print size
       - `various_key`
       - `assembly_key`
       - `royalties_key`
   - other fields:
     - `width_in`, `height_in`, `labor_flat`, `image_id`, `mat_border_in`
+    - optional exact finished mat override: `outside_width_in`, `outside_height_in`
     - `global_discount_pct`
     - per-row discount inputs:
+      - `moulding_discount_pct`, `top_mat_discount_pct`, `second_mat_discount_pct`, `third_mat_discount_pct`
+      - `glazing_discount_pct`, `labor_discount_pct`
       - `backing_discount_pct`
       - `mounting_discount_pct`
       - `frame_mounting_discount_pct`
@@ -173,14 +188,19 @@
       - `other2_label`, `other2_amount`, `other2_discount_pct`
   - validation:
     - dimensions must be positive
+    - `outside_width_in` and `outside_height_in` must be supplied together when used
+    - exact outside dimensions must each be larger than the corresponding opening dimension
     - cost/labor inputs must be non-negative
     - `image_id`, if supplied, must exist
     - `third_mat_id` requires `second_mat_id`
     - `second_mat_id` requires `top_mat_id`
   - behavior:
     - mat stack pricing uses the outside mat size instead of the internal opening
+    - when exact outside dimensions are supplied, they control mat/glazing area, moulding perimeter, and dimension-based service pricing; otherwise `mat_border_in` is used
     - response `selected.mats` includes the ordered mat layers and reveal values
     - response `selected.addons` includes chosen service rows and custom manual lines
+    - an omitted line discount inherits `global_discount_pct`; a supplied line discount replaces it and is applied once
+    - `selected.addons.printing` snapshots the selected printing option's id, label, unit price, count, and effective discount
 
 ## Orders
 - `POST /api/orders`
