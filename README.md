@@ -18,6 +18,19 @@ The included demo uses the fictional **FramersHaven** identity and generated sam
 - Customer history and local backup archives
 - Multi-page operator help served by the app
 
+## Demo Screens
+
+The screenshots below use only the included fictional demo workspace. They do
+not contain real customer, vendor, or shop data.
+
+### Framing design and live quote
+
+![FramersHaven framing design workspace with a selected artwork, mat, moulding, and calculated quote](docs/images/framing-mockup-demo.png)
+
+### Jobs and quote workflow
+
+![FramersHaven jobs workspace showing fictional quotes, work orders, invoices, balances, and next steps](docs/images/quote-workflow-demo.png)
+
 ## Editions
 
 FramersHaven operates in two editions:
@@ -37,17 +50,25 @@ No vendor catalogs, customer records, accounting credentials, or online billing 
 
 ## Quick Start
 
-Requires Python 3.11 or newer.
+Requires Python 3.11 or newer. The Windows installer below can install Python
+3.12 when no compatible Python is present.
 
 ### Windows
 
-Double-click `run_windows.bat`, or run:
+On a fresh Windows 10 or Windows 11 machine, open PowerShell and run:
 
 ```powershell
-.\run_windows.bat
+$installer="$env:TEMP\FramersHaven-install.ps1"; Invoke-WebRequest https://raw.githubusercontent.com/wspotter/FramersHaven/main/install_windows.ps1 -OutFile $installer; & ([scriptblock]::Create((Get-Content -Raw $installer)))
 ```
 
-The Windows launcher creates `venv/`, installs dependencies, creates demo data if needed, starts the local app, and opens `http://127.0.0.1:8000`.
+This installs FramersHaven under `%LOCALAPPDATA%\FramersHaven`, uses an existing
+Python 3.11 or newer installation, or installs Python 3.12 through `winget` only
+when one is missing. It preserves existing FramersHaven data, starts the local
+app, and opens `http://127.0.0.1:8000`.
+
+If the installer download fails, use the manual fallback: download the
+repository ZIP, unzip it, and double-click `run_windows.bat` in the extracted
+folder.
 
 See [Windows install](docs/WINDOWS_INSTALL.md) for details.
 
@@ -60,10 +81,12 @@ python3 -m venv venv
 ./scripts/run.sh
 ```
 
-Open `http://127.0.0.1:8000`. The launcher listens on `0.0.0.0:8000` by default for trusted LAN use. Set `HOST=127.0.0.1` to limit it to the local machine.
+Open `http://127.0.0.1:8000`. The launcher defaults to `127.0.0.1`, so it is
+available only on the local machine. To opt in to access from other computers
+on a trusted private LAN, bind it to all network interfaces:
 
 ```bash
-HOST=127.0.0.1 ./scripts/run.sh
+HOST=0.0.0.0 ./scripts/run.sh
 ```
 
 ## Development
@@ -89,13 +112,12 @@ Restart with `FRAMERSHAVEN_EDITION=workstation` and rerun the smoke test with
 
 ## Data Safety
 
-Runtime data is deliberately ignored by Git:
+Runtime data is deliberately ignored by Git. `catalog_previews/` runtime content is ignored except the three curated fictional demo assets included with the app:
 
 - `studio.db`
 - `uploads/`
 - `exports/`
 - `backups/`
-- `catalog_previews/`
 - `catalog_imports/`
 
 The app is intended for a trusted workstation or private LAN. It does not provide internet-facing authentication, TLS termination, payment processing, or automated message delivery. Do not expose it directly to the public internet.

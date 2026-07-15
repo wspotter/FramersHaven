@@ -50,7 +50,7 @@ def _make_demo_art(upload_dir: Path) -> None:
             fill=accent,
         )
         draw.ellipse(
-            (size[0] * 0.2, size[1] * 0.22, size[0] * 0.72, size[1] * 0.74),
+            (size[0] * 0.24, size[1] * 0.22, size[0] * 0.76, size[1] * 0.74),
             fill=(244, 236, 219),
         )
         draw.text((margin, size[1] - margin + 8), title, fill=(255, 255, 255))
@@ -89,6 +89,14 @@ def create_demo_data(db_path: Path, upload_dir: Path, force: bool = False) -> No
                 ("DEMO-MAT-4", "Gallery Cream", "mat", 14.00, "Sample Catalog", 32.0, 40.0, '{"color":"#ede2c8","core":"white"}'),
                 ("DEMO-MAT-5", "Charcoal", "mat", 14.00, "Sample Catalog", 32.0, 40.0, '{"color":"#34373a","core":"white"}'),
                 ("DEMO-GLZ-1", "Conservation Clear", "glazing", 2.25, "Sample Catalog", None, None, "{}"),
+            ],
+        )
+        conn.executemany(
+            "UPDATE catalog_items SET preview_filename = ? WHERE sku = ?",
+            [
+                ("mouldings/demo-black-tall-cap.jpg", "DEMO-M-101"),
+                ("mouldings/demo-dark-walnut-panel.jpg", "DEMO-M-103"),
+                ("mouldings/demo-gold-tall-cap.jpg", "DEMO-M-105"),
             ],
         )
         conn.executemany(

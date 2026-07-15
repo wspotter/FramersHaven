@@ -26,6 +26,7 @@ INCLUDE_FILES = [
     "requirements.txt",
     "requirements-dev.txt",
     "run_windows.bat",
+    "install_windows.ps1",
 ]
 
 EXCLUDED_NAMES = {
@@ -51,6 +52,12 @@ FORBIDDEN_DIRS = {
     "catalog_previews",
     "catalog_imports",
 }
+
+CURATED_CATALOG_PREVIEWS = (
+    Path("catalog_previews/mouldings/demo-black-tall-cap.jpg"),
+    Path("catalog_previews/mouldings/demo-dark-walnut-panel.jpg"),
+    Path("catalog_previews/mouldings/demo-gold-tall-cap.jpg"),
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -80,6 +87,9 @@ def validate_required_files(staging_dir: Path) -> bool:
     for name in INCLUDE_FILES:
         if not (staging_dir / name).exists():
             missing.append(name)
+    for path in CURATED_CATALOG_PREVIEWS:
+        if not (staging_dir / path).is_file():
+            missing.append(path.as_posix())
     if missing:
         print(f"Missing required files: {', '.join(missing)}", file=sys.stderr)
         return False
@@ -89,8 +99,18 @@ def validate_required_files(staging_dir: Path) -> bool:
 def validate_no_forbidden(staging_dir: Path) -> bool:
     issues: list[str] = []
     forbidden_names = EXCLUDED_NAMES | FORBIDDEN_FILES | FORBIDDEN_DIRS
+    allowed_preview_paths = {
+        "catalog_previews",
+        "catalog_previews/mouldings",
+        *(path.as_posix() for path in CURATED_CATALOG_PREVIEWS),
+    }
     for path in staging_dir.rglob("*"):
         relative = path.relative_to(staging_dir).as_posix()
+        if relative in allowed_preview_paths:
+            continue
+        if relative.startswith("catalog_previews/"):
+            issues.append(relative)
+            continue
         if path.name in forbidden_names or path.suffix in EXCLUDED_SUFFIXES:
             issues.append(relative)
     if issues:
@@ -134,6 +154,15 @@ def main() -> int:
                 shutil.copy2(src, dst)
             else:
                 print(f"Warning: {filename} not found, skipping", file=sys.stderr)
+
+        for relative in CURATED_CATALOG_PREVIEWS:
+            src = ROOT / relative
+            dst = staging_dir / relative
+            if src.is_file():
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, dst)
+            else:
+                print(f"Warning: {relative.as_posix()} not found, skipping", file=sys.stderr)
 
         if not validate_required_files(staging_dir):
             return 1

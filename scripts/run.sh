@@ -7,7 +7,7 @@ if [[ ! -x "${PYTHON_BIN}" ]]; then
   PYTHON_BIN="${PYTHON:-python3}"
 fi
 
-HOST="${HOST:-0.0.0.0}"
+HOST="${HOST:-127.0.0.1}"
 PORT="${PORT:-8000}"
 ARGS=(-m uvicorn app.main:app --host "${HOST}" --port "${PORT}")
 if [[ "${RELOAD:-0}" == "1" ]]; then

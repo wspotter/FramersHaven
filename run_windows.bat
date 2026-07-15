@@ -6,16 +6,38 @@ cd /d "%~dp0"
 if "%HOST%"=="" set "HOST=127.0.0.1"
 if "%PORT%"=="" set "PORT=8000"
 
-where py >nul 2>nul
-if %ERRORLEVEL%==0 (
-    set "PYTHON_CMD=py -3"
+if defined PYTHON_EXE (
+    set PYTHON_CMD="%PYTHON_EXE%"
 ) else (
-    where python >nul 2>nul
-    if %ERRORLEVEL%==0 (
-        set "PYTHON_CMD=python"
+    where py >nul 2>nul
+    if not errorlevel 1 (
+        set "PYTHON_CMD=py -3"
     ) else (
-        echo Python 3.11 or newer is required.
-        echo Install Python from https://www.python.org/downloads/windows/ and enable "Add python.exe to PATH".
+        where python >nul 2>nul
+        if not errorlevel 1 (
+            set "PYTHON_CMD=python"
+        ) else (
+            echo Python 3.11 or newer is required.
+            echo Install Python from https://www.python.org/downloads/windows/ and enable "Add python.exe to PATH".
+            pause
+            exit /b 1
+        )
+    )
+)
+
+%PYTHON_CMD% -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)"
+if errorlevel 1 (
+    echo Python 3.11 or newer is required.
+    echo Run the installer again or install Python from https://www.python.org/downloads/windows/.
+    pause
+    exit /b 1
+)
+
+if exist "venv\Scripts\python.exe" (
+    "venv\Scripts\python.exe" -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)"
+    if errorlevel 1 (
+        echo The existing virtual environment uses Python older than 3.11.
+        echo Rename or remove the venv folder manually, then run this launcher again.
         pause
         exit /b 1
     )

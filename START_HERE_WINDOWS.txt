@@ -12,7 +12,7 @@ Requirements
 - Windows 10 or Windows 11
 - Python 3.11 or newer (enable "Add python.exe to PATH" during install)
 
-Quick Start
+Already Downloaded ZIP - Quick Start
 1. Unzip this package into a folder on the workstation.
 2. Double-click run_windows.bat.
 3. The launcher will:
@@ -22,6 +22,12 @@ Quick Start
    - start the local app
    - open http://127.0.0.1:8000 in your browser
 4. Open http://127.0.0.1:8000/help/ for the operator guide.
+
+run_windows.bat handles this already-downloaded ZIP or folder. For a fresh
+Windows machine that does not have the app files yet, use the one-line
+PowerShell installer in README.md. That installer places FramersHaven under
+%LOCALAPPDATA%\FramersHaven and installs Python 3.12 through winget only if
+Python 3.11 or newer is missing. If that download fails, use this ZIP workflow.
 
 Stopping
 - Press Ctrl-C in the terminal running the app.
@@ -46,4 +52,4 @@ Data Location
 Support
 - This is a local-first release candidate.
 - See docs/WINDOWS_INSTALL.md and docs/USER_MANUAL.md for details.
-- See CHANGELOG.md for release notes and docs/release/ for validation records.
+- See CHANGELOG.md for release notes.

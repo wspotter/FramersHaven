@@ -4,7 +4,9 @@ import unittest
 import json
 from pathlib import Path
 
-from scripts.seed_demo import create_demo_data
+from PIL import Image
+
+from scripts.seed_demo import ROOT, create_demo_data
 
 
 class DemoSeedTests(unittest.TestCase):
@@ -47,6 +49,42 @@ class DemoSeedTests(unittest.TestCase):
 
         with self.assertRaisesRegex(RuntimeError, "Refusing to overwrite non-demo database"):
             create_demo_data(self.db_path, self.upload_dir)
+
+    def test_seed_links_the_three_curated_moulding_preview_samples(self):
+        create_demo_data(self.db_path, self.upload_dir)
+
+        conn = sqlite3.connect(self.db_path)
+        previews = dict(
+            conn.execute(
+                "SELECT sku, preview_filename FROM catalog_items WHERE sku IN (?, ?, ?)",
+                ("DEMO-M-101", "DEMO-M-103", "DEMO-M-105"),
+            )
+        )
+        conn.close()
+
+        expected = {
+            "DEMO-M-101": "mouldings/demo-black-tall-cap.jpg",
+            "DEMO-M-103": "mouldings/demo-dark-walnut-panel.jpg",
+            "DEMO-M-105": "mouldings/demo-gold-tall-cap.jpg",
+        }
+        self.assertEqual(previews, expected)
+        for preview_filename in expected.values():
+            self.assertTrue((ROOT / "catalog_previews" / preview_filename).is_file())
+
+    def test_primary_demo_art_centers_the_oval_horizontally(self):
+        create_demo_data(self.db_path, self.upload_dir)
+
+        with Image.open(self.upload_dir / "demo-art-1.png") as image:
+            cream_pixels = [
+                (x, y)
+                for y in range(image.height)
+                for x in range(image.width)
+                if image.getpixel((x, y)) == (244, 236, 219)
+            ]
+
+        left = min(x for x, _ in cream_pixels)
+        right = max(x for x, _ in cream_pixels)
+        self.assertAlmostEqual((left + right) / 2, image.width / 2, delta=1)
 
 
 if __name__ == "__main__":
