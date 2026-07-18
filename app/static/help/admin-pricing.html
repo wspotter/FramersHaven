@@ -38,16 +38,11 @@
         </header>
 
         <section class="doc-section">
-          <h2>Edition limits</h2>
-          <p>The edition status panel in the Admin rail shows current usage against the active local limits.</p>
-          <ul>
-            <li><strong>Community Edition</strong>: 50 active catalog items, 25 saved quotes/orders, and 1 successful local catalog package import.</li>
-            <li><strong>Workstation Edition</strong>: the catalog, saved quote/order, and package-import counters are unlimited.</li>
-          </ul>
-          <p>Set <code>FRAMERSHAVEN_EDITION=workstation</code> before starting the app to run in Workstation mode.</p>
+          <h2>Community Edition</h2>
+          <p>The edition status panel in the Admin rail shows current local usage. Catalog items, saved quotes/orders, package imports, backups, and accounting CSV export are available without artificial edition limits.</p>
           <div class="callout">
             <strong>Existing data remains accessible.</strong>
-            <p>Community limits prevent new records at the boundary. Existing catalog items, orders, previews, and exports remain available.</p>
+            <p>Runtime data stays on the workstation or trusted private LAN unless the operator moves it manually.</p>
           </div>
         </section>
 
@@ -114,8 +109,8 @@
         </section>
 
         <section class="doc-section">
-          <h2>Accounting export for Workstation</h2>
-          <p>Workstation Edition can generate a local ZIP of CSV files for accounting review. It does not connect to an online accounting service, sync records, or send data outside the workstation. No accounting credentials or API tokens are included.</p>
+          <h2>Accounting export</h2>
+          <p>Community Edition can generate a local ZIP of CSV files for accounting review. It does not connect to an online accounting service, sync records, or send data outside the workstation. No accounting credentials or API tokens are included.</p>
           <ul>
             <li>Export customer, invoice, and invoice-line CSV files from saved local orders.</li>
             <li>Review the CSV files before importing them into any accounting workflow.</li>

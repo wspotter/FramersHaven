@@ -233,10 +233,20 @@
 
 ## Export
 - `GET /api/accounting/export.zip`
-  - Workstation Edition only; Community returns HTTP `403` without generating files
+  - available in Community Edition
   - returns a ZIP containing `accounting_customers.csv`, `accounting_invoices.csv`, and `accounting_invoice_lines.csv`
   - writes the same local handoff files under `exports/accounting/`
   - does not connect to an accounting service or expose local filesystem paths
+- `GET /api/framewise/config`
+  - returns the optional local assistant provider configuration with API keys masked
+- `POST /api/framewise/config`
+  - fields: `enabled`, `assistant_name`, `provider_type`, `base_url`, `model`, `api_key`, `context_tokens`, `temperature`
+  - stores provider settings in the local SQLite database
+- `GET /api/framewise/status`
+  - checks whether the configured provider is enabled and reachable
+- `POST /api/framewise/chat`
+  - sends an advisory chat turn to the configured local/OpenAI-compatible provider
+  - disabled by default and does not include built-in model weights
 - `GET /api/orders/export.csv`
 - `GET /api/orders/{order_id}/export?format=pdf|jpg&document=quote|work_order|invoice`
   - optional `disposition=inline|attachment`; defaults to `attachment`

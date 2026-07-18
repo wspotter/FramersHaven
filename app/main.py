@@ -35,6 +35,7 @@ from .edition import (
     increment_catalog_imports_count,
     require_accounting_csv_export,
 )
+from .framewise import router as framewise_router
 from .pricing import QuoteRequest, calculate_quote
 
 ROOT = Path(__file__).resolve().parent
@@ -59,6 +60,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="FramersHaven", lifespan=lifespan)
+app.include_router(framewise_router)
 
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
 app.mount("/help", StaticFiles(directory=HELP_DIR, html=True), name="help")

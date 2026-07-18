@@ -58,17 +58,17 @@ class AccountingExportTests(unittest.TestCase):
             self.assertEqual(set(archive.namelist()), EXPECTED_FILES)
             return {name: archive.read(name).decode("utf-8") for name in EXPECTED_FILES}
 
-    def test_community_accounting_export_is_blocked_without_writing_files(self):
+    def test_community_accounting_export_writes_header_only_bundle(self):
         os.environ.pop("FRAMERSHAVEN_EDITION", None)
 
         response = self.client.get("/api/accounting/export.zip")
 
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(
-            response.json()["detail"],
-            "Accounting CSV export is available in Workstation Edition. Community data remains unchanged.",
-        )
-        self.assertFalse((main_module.EXPORT_DIR / "accounting").exists())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["content-type"], "application/zip")
+        files = self._read_bundle(response)
+        for name in EXPECTED_FILES:
+            self.assertTrue((main_module.EXPORT_DIR / "accounting" / name).is_file())
+            self.assertIn("\n", files[name])
 
     def test_workstation_exports_header_only_bundle_for_empty_database(self):
         os.environ["FRAMERSHAVEN_EDITION"] = "workstation"

@@ -14,7 +14,8 @@ The included demo uses the fictional **FramersHaven** identity and generated sam
 - Configurable pricing, services, tax, and studio branding
 - Quote, work-order, and invoice workflow
 - PDF/JPG preview before save or customer handoff
-- Workstation accounting CSV handoff bundle
+- Accounting CSV handoff bundle
+- Optional Framewise local assistant provider settings for small local LLMs
 - Customer history and local backup archives
 - Multi-page operator help served by the app
 
@@ -31,20 +32,16 @@ not contain real customer, vendor, or shop data.
 
 ![FramersHaven jobs workspace showing fictional quotes, work orders, invoices, balances, and next steps](docs/images/quote-workflow-demo.png)
 
-## Editions
+## Community Edition
 
-FramersHaven operates in two editions:
+FramersHaven Community Edition is the full free local workstation. There are no
+artificial catalog, quote/order, local package-import, backup, or accounting CSV
+limits in the public app.
 
-- **Community Edition** is the default local-first workstation. It includes:
-  - 1 studio profile
-  - Up to 50 active catalog items
-  - Up to 25 saved quotes/orders
-  - Up to 1 successful local catalog package import
-  - Manual quote, work order, and invoice workflow
-
-- **Workstation Edition** removes the currently enforced catalog, saved order/quote, and local package-import limits and includes local accounting CSV export. Expanded document branding remains planned.
-
-To use Workstation Edition, set the environment variable `FRAMERSHAVEN_EDITION=workstation` before starting the app.
+The optional **Framewise** assistant can be enabled from Admin and pointed at a
+local or OpenAI-compatible provider such as Ollama, llama.cpp, LM Studio, or a
+shop-managed endpoint. It defaults to a small local-model profile and remains
+off until the operator enables it. The app does not ship model weights.
 
 No vendor catalogs, customer records, accounting credentials, or online billing flow are included in the repository. This is a local-first app. Accounting support is a local CSV handoff only; it does not provide accounting API sync. The app does not process payments or send email/SMS. Do not expose it directly to the public internet.
 
@@ -107,9 +104,6 @@ With the app running against demo data:
 ./venv/bin/python scripts/generate_screenshots.py
 ```
 
-Restart with `FRAMERSHAVEN_EDITION=workstation` and rerun the smoke test with
-`--expected-edition workstation` before releasing Workstation features.
-
 ## Data Safety
 
 Runtime data is deliberately ignored by Git. `catalog_previews/` runtime content is ignored except the three curated fictional demo assets included with the app:
@@ -134,4 +128,7 @@ The app is intended for a trusted workstation or private LAN. It does not provid
 
 ## License
 
-The current public snapshot is source-available under the terms in [LICENSE](LICENSE). No open-source license has been granted yet.
+FramersHaven Community Edition is free to use under the
+[FramersHaven Community License](LICENSE). Copyright and official project
+identity are retained. Third-party dependencies and operator-supplied vendor
+data remain under their own terms.

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 
 
@@ -145,7 +146,7 @@ def main() -> int:
     parser.add_argument("--save", action="store_true", help="Also save a test quote into the local database")
     parser.add_argument(
         "--expected-edition",
-        choices=("community", "workstation"),
+        choices=("community",),
         help="Fail unless the running app uses this edition",
     )
     args = parser.parse_args()
@@ -160,7 +161,11 @@ def main() -> int:
     console_errors: list[str] = []
     step = "launch browser"
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=not args.headed)
+        launch_options = {"headless": not args.headed}
+        executable_path = os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE")
+        if executable_path:
+            launch_options["executable_path"] = executable_path
+        browser = p.chromium.launch(**launch_options)
         page = browser.new_page(viewport={"width": 1440, "height": 1000})
         page.on("console", lambda msg: console_errors.append(msg.text) if msg.type == "error" else None)
 
@@ -175,14 +180,12 @@ def main() -> int:
             page.wait_for_function(
                 """() => {
                     const text = document.querySelector('#editionName')?.textContent || '';
-                    return text.includes('Community Edition') || text.includes('Workstation Edition');
+                    return text.includes('Community Edition');
                 }""",
                 timeout=5000,
             )
             edition_text = page.locator("#editionName").inner_text()
-            if "Workstation Edition" in edition_text:
-                active_edition = "workstation"
-            elif "Community Edition" in edition_text:
+            if "Community Edition" in edition_text:
                 active_edition = "community"
             else:
                 raise AssertionError(f"Edition status did not load properly: {edition_text}")
@@ -203,25 +206,16 @@ def main() -> int:
             page.locator("[data-admin-view='accounting']").click()
             accounting_message = page.locator("#accountingExportMessage")
             accounting_button = page.locator("#accountingExportButton")
-            if "Workstation Edition" in edition_text:
-                if accounting_button.is_hidden():
-                    raise AssertionError("Workstation accounting export button is hidden")
-                with page.expect_download(timeout=10_000) as download_info:
-                    accounting_button.click()
-                if download_info.value.suggested_filename != "accounting_csv_export.zip":
-                    raise AssertionError(
-                        f"Unexpected accounting download name: {download_info.value.suggested_filename}"
-                    )
-            else:
-                if accounting_button.is_visible():
-                    raise AssertionError("Community accounting export button is visible")
-                if "Workstation Edition" not in accounting_message.inner_text():
-                    raise AssertionError("Community accounting export message is missing")
-                blocked_status = page.request.get(f"{args.url.rstrip('/')}/api/accounting/export.zip").status
-                if blocked_status != 403:
-                    raise AssertionError(
-                        f"Community accounting export returned HTTP {blocked_status}, expected 403"
-                    )
+            if accounting_button.is_hidden():
+                raise AssertionError("Community accounting export button is hidden")
+            if "local ZIP" not in accounting_message.inner_text():
+                raise AssertionError("Community accounting export message is missing")
+            with page.expect_download(timeout=10_000) as download_info:
+                accounting_button.click()
+            if download_info.value.suggested_filename != "accounting_csv_export.zip":
+                raise AssertionError(
+                    f"Unexpected accounting download name: {download_info.value.suggested_filename}"
+                )
             page.locator("[data-tab='design']").first.click()
             page.wait_for_selector("#tab-design.active", timeout=5000)
             if page.locator("#customerSelect").count():

@@ -2578,7 +2578,7 @@ function closeCatalogEditor() {
 }
 
 function setAdminView(view, trigger = null) {
-  const allowed = new Set(['catalog', 'import', 'pricing', 'services', 'studio', 'accounting', 'backups', 'diagnostics']);
+  const allowed = new Set(['catalog', 'import', 'pricing', 'services', 'studio', 'assistant', 'accounting', 'backups', 'diagnostics']);
   if (!allowed.has(view)) return;
   document.querySelectorAll('.admin-view-button').forEach((button) => {
     const active = button.dataset.adminView === view;
@@ -2592,6 +2592,7 @@ function setAdminView(view, trigger = null) {
   });
   if (view === 'catalog') renderAdminCatalogTable();
   if (view === 'studio') loadStudioProfile();
+  if (view === 'assistant') loadFramewiseConfig();
   trigger?.blur();
 }
 
@@ -2651,7 +2652,68 @@ function renderAccountingExportState() {
   if (!message) return;
   message.textContent = available
     ? 'Generate a local ZIP containing customer, invoice, and invoice-line CSV files for accounting review.'
-    : 'Accounting CSV export is available in Workstation Edition. Community data remains unchanged.';
+    : 'Accounting CSV export is unavailable in this build.';
+}
+
+function applyFramewiseConfig(config) {
+  const values = {
+    framewiseEnabled: Boolean(config.enabled),
+    framewiseAssistantName: config.assistant_name || 'Framewise',
+    framewiseProviderType: config.provider_type || 'ollama',
+    framewiseBaseUrl: config.base_url || 'http://127.0.0.1:11434/v1',
+    framewiseModel: config.model || 'llama3.2:3b',
+    framewiseContextTokens: config.context_tokens || 4096,
+    framewiseTemperature: config.temperature ?? 0.35,
+  };
+  Object.entries(values).forEach(([id, value]) => {
+    const node = document.getElementById(id);
+    if (!node) return;
+    if (node.type === 'checkbox') node.checked = Boolean(value);
+    else node.value = value;
+  });
+  const key = document.getElementById('framewiseApiKey');
+  if (key) key.placeholder = config.api_key_present ? 'Saved; leave blank to keep current key' : 'Optional; saved only in this local database';
+  const status = document.getElementById('framewiseStatus');
+  if (status) status.textContent = config.enabled ? 'Framewise is configured. Test the provider before using it on the counter.' : 'Framewise is off. The app works normally without AI.';
+}
+
+async function loadFramewiseConfig() {
+  try {
+    const data = await fetchJson('/api/framewise/config');
+    applyFramewiseConfig(data.config);
+  } catch (error) {
+    setNotice(error.message, 'error');
+  }
+}
+
+async function saveFramewiseConfig(event) {
+  event?.preventDefault();
+  const form = document.getElementById('framewiseConfigForm');
+  if (!form) return;
+  const fd = new FormData(form);
+  const keyInput = document.getElementById('framewiseApiKey');
+  if (keyInput && !keyInput.value) fd.delete('api_key');
+  try {
+    const data = await fetchJson('/api/framewise/config', { method: 'POST', body: fd });
+    applyFramewiseConfig(data.config);
+    if (keyInput) keyInput.value = '';
+    setNotice('Framewise assistant settings saved locally.', 'success');
+  } catch (error) {
+    setNotice(error.message, 'error');
+  }
+}
+
+async function testFramewiseProvider() {
+  const status = document.getElementById('framewiseStatus');
+  if (status) status.textContent = 'Checking Framewise provider...';
+  try {
+    const data = await fetchJson('/api/framewise/status');
+    if (status) status.textContent = data.message || 'Framewise status checked.';
+    setNotice(data.message || 'Framewise status checked.', data.available ? 'success' : 'error');
+  } catch (error) {
+    if (status) status.textContent = error.message;
+    setNotice(error.message, 'error');
+  }
 }
 
 async function downloadAccountingExport() {

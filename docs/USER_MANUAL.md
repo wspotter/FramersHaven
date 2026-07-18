@@ -6,21 +6,16 @@ FramersHaven is a local-first workstation app for intake, framing design, quotin
 
 The app is organized into separate workspaces so operators do not have to manage the whole workflow on one screen.
 
-## Editions and Local Limits
+## Community Edition
 
-FramersHaven uses two local editions:
+FramersHaven Community Edition is the full free local workstation. Catalog
+items, saved orders/quotes, local package imports, backups, PDF/JPG exports, and
+accounting CSV export are available without artificial edition limits.
 
-- **Community Edition** is for trying the app, inspecting the source, and running a small shop trial. It keeps the core local workflow: manual catalog entry, local quotes/orders/customers, PDF/JPG exports, and manual backups.
-- **Workstation Edition** is the daily-use mode with unlimited catalog, saved order/quote, and package-import limits plus local CSV export for accounting review. Paid Windows distribution and expanded document branding remain planned.
-
-Community limits are intentionally scale-based rather than feature-breaking:
-
-- 1 studio profile
-- Up to 50 active catalog items
-- Up to 25 saved orders/quotes
-- Up to 1 successful local catalog package import
-- No accounting CSV export
-- No paid Windows package entitlement
+The optional Framewise assistant is configured from Admin. It can point at
+Ollama, llama.cpp, LM Studio, or another OpenAI-compatible provider running on
+the workstation or trusted private LAN. Framewise stays off until the operator
+enables it, and the app does not ship model weights.
 
 The app is local-first. Operator-supplied catalog files, customer records, exports, backups, and previews stay on the workstation or trusted private LAN unless the operator moves them manually.
 
@@ -99,11 +94,12 @@ On macOS or Linux:
 ### Admin
 - Admin opens on a catalog-first table. Search across SKU, name, vendor, or category, use the material quick filters, and click a column heading to switch ascending/descending sort.
 - Select a material row to open its editor drawer; use `New Item` for a missing material. Close the drawer with `Close`, the backdrop, or `Escape`.
-- The edition status in the Admin rail shows current catalog, saved order/quote, and package-import usage against the active edition limits.
+- The edition status in the Admin rail shows current catalog, saved order/quote, and package-import usage.
 - Use the left utility rail for Import, Pricing, Services, Backups, and Diagnostics instead of scrolling through every tool at once.
 - Pricing settings affect future quote calculations.
 - Service pricing controls the retail quote rows for backing, mounting, frame mounting, printing, various, assembly, and royalties.
-- Accounting generates a local ZIP containing customer, invoice, and invoice-line CSV files in Workstation Edition. Review those files before using them in any accounting workflow.
+- Accounting generates a local ZIP containing customer, invoice, and invoice-line CSV files. Review those files before using them in any accounting workflow.
+- Assistant settings configure Framewise, the optional local AI helper for framing suggestions and quote explanations.
 - `Import Mat Package` and `Import Moulding Package` read operator-supplied files from the local `catalog_imports/` folder and attach matching preview images when the zip is present.
 - Use the cropped texture uploader after selecting a moulding in the catalog editor when a good moulding strip needs to be attached manually.
 - Backups create a zip containing the database, uploads, exports, and catalog snapshot files.

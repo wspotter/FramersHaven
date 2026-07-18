@@ -4943,6 +4943,7 @@
               <button type="button" class="admin-view-button" data-admin-view="pricing" aria-pressed="false" onclick="setAdminView('pricing', this)">Pricing</button>
               <button type="button" class="admin-view-button" data-admin-view="services" aria-pressed="false" onclick="setAdminView('services', this)">Services</button>
               <button type="button" class="admin-view-button" data-admin-view="studio" aria-pressed="false" onclick="setAdminView('studio', this)">Studio</button>
+              <button type="button" class="admin-view-button" data-admin-view="assistant" aria-pressed="false" onclick="setAdminView('assistant', this)">Assistant</button>
               <button type="button" class="admin-view-button" data-admin-view="accounting" aria-pressed="false" onclick="setAdminView('accounting', this)">Accounting</button>
               <button type="button" class="admin-view-button" data-admin-view="backups" aria-pressed="false" onclick="setAdminView('backups', this)">Backups</button>
               <button type="button" class="admin-view-button" data-admin-view="diagnostics" aria-pressed="false" onclick="setAdminView('diagnostics', this)">Diagnostics</button>
@@ -5241,6 +5242,54 @@
                 <img id="studioLogoPreview" class="brand-logo" alt="Current studio logo" hidden />
                 <input id="studioLogoFile" type="file" accept="image/png,image/webp" />
                 <div class="inline-actions"><button type="button" onclick="uploadStudioLogo()">Upload Logo</button><button type="button" class="secondary" onclick="removeStudioLogo()">Remove Logo</button></div>
+              </div>
+              <div class="card admin-utility-panel" data-admin-panel="assistant">
+                <h3>Framewise Assistant</h3>
+                <p>Optional local AI help for framing suggestions and quote explanations. It stays off until this workstation is pointed at a local or OpenAI-compatible provider.</p>
+                <form id="framewiseConfigForm" data-config-endpoint="/api/framewise/config" onsubmit="saveFramewiseConfig(event)">
+                  <div class="ops-form-grid two">
+                    <label class="check-row"><input id="framewiseEnabled" name="enabled" type="checkbox" /> Enable Framewise</label>
+                    <div>
+                      <label for="framewiseAssistantName">Assistant Name</label>
+                      <input id="framewiseAssistantName" name="assistant_name" maxlength="40" placeholder="Framewise" />
+                    </div>
+                    <div>
+                      <label for="framewiseProviderType">Provider</label>
+                      <select id="framewiseProviderType" name="provider_type">
+                        <option value="ollama">Ollama</option>
+                        <option value="llama.cpp">llama.cpp</option>
+                        <option value="lm-studio">LM Studio</option>
+                        <option value="openai-compatible">OpenAI-compatible</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label for="framewiseModel">Model</label>
+                      <input id="framewiseModel" name="model" placeholder="llama3.2:3b" />
+                    </div>
+                    <div class="span-all">
+                      <label for="framewiseBaseUrl">Base URL</label>
+                      <input id="framewiseBaseUrl" name="base_url" placeholder="http://127.0.0.1:11434/v1" />
+                    </div>
+                    <div>
+                      <label for="framewiseContextTokens">Context Tokens</label>
+                      <input id="framewiseContextTokens" name="context_tokens" type="number" min="1024" max="65536" step="1024" />
+                    </div>
+                    <div>
+                      <label for="framewiseTemperature">Temperature</label>
+                      <input id="framewiseTemperature" name="temperature" type="number" min="0" max="2" step="0.05" />
+                    </div>
+                    <div class="span-all">
+                      <label for="framewiseApiKey">API Key</label>
+                      <input id="framewiseApiKey" name="api_key" type="password" autocomplete="off" placeholder="Optional; saved only in this local database" />
+                    </div>
+                  </div>
+                  <div id="framewiseStatus" class="detail-box" aria-live="polite">Framewise status has not been checked yet.</div>
+                  <div class="inline-actions">
+                    <button type="submit">Save Assistant Settings</button>
+                    <button type="button" class="secondary" onclick="loadFramewiseConfig()">Reload</button>
+                    <button type="button" class="secondary" onclick="testFramewiseProvider()">Test Provider</button>
+                  </div>
+                </form>
               </div>
               <div class="card admin-utility-panel" data-admin-panel="accounting">
                 <h3>Accounting CSV Export</h3>

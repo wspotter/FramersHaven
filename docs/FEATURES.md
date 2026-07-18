@@ -70,10 +70,11 @@ This file is the source of truth for implemented behavior so sprint work does no
 ### Admin
 - Admin uses a catalog-first command center with one searchable material table, category quick filters, sortable columns, and incremental result loading.
 - Selecting a material opens a right-side editor drawer for item fields and moulding texture cropping.
-- Import, pricing, service rows, backups, and diagnostics live in a compact utility rail instead of one long stacked page.
+- Import, pricing, service rows, assistant settings, backups, and diagnostics live in a compact utility rail instead of one long stacked page.
 - Pricing rules are editable from the admin workspace instead of being hardcoded only in code.
 - Tax rate plus moulding/mat/glazing markups are stored in local settings and used by quote calculation.
 - Shop service rows for backing, mounting, frame mounting, printing, various, assembly, and royalties now use admin-managed retail prices instead of catalog items.
+- Framewise assistant settings support optional local or OpenAI-compatible providers with model, base URL, context, temperature, and local API-key storage.
 
 ### Quote Engine
 - Uses perimeter + area calculations.
@@ -109,7 +110,7 @@ This file is the source of truth for implemented behavior so sprint work does no
 
 ### Export
 - Orders CSV export endpoint for quotes/work orders/invoices.
-- Workstation Edition accounting handoff ZIP containing customer, invoice, and invoice-line CSV files.
+- Community Edition accounting handoff ZIP containing customer, invoice, and invoice-line CSV files.
 - Separate PDF form export for quotes, work orders, and invoices.
 - Mockup JPG export.
 - PDF/JPG exports show the stored tax-rate label from the quote payload.
