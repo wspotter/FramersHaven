@@ -52,6 +52,8 @@ This file is the source of truth for implemented behavior so sprint work does no
 - Mockup rendering shows stacked mat reveals with white-core cut lines instead of a single flat mat only.
 - Material summary shows human-readable SKU/name selections instead of raw IDs.
 - Quote panel shows line items alongside subtotal, tax, and total.
+- Framewise can suggest three customer-facing framing looks from the Design workspace.
+- Framewise suggestions are grounded to local catalog IDs/SKUs and can be applied directly to the current design before quote calculation.
 
 ### Catalog
 - Import catalog data from CSV (`sku,name,category,cost,width_in`).
@@ -75,6 +77,7 @@ This file is the source of truth for implemented behavior so sprint work does no
 - Tax rate plus moulding/mat/glazing markups are stored in local settings and used by quote calculation.
 - Shop service rows for backing, mounting, frame mounting, printing, various, assembly, and royalties now use admin-managed retail prices instead of catalog items.
 - Framewise assistant settings support optional local or OpenAI-compatible providers with model, base URL, context, temperature, and local API-key storage.
+- Framewise remains useful without a configured provider by falling back to local starter looks from active moulding and mat catalog rows.
 
 ### Quote Engine
 - Uses perimeter + area calculations.

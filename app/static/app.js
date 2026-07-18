@@ -30,6 +30,7 @@ let adminCatalogEditorReturnFocus = null;
 let pricingSettings = null;
 let serviceOptionsCache = [];
 let editionStatusCache = null;
+let framewiseDesignIdeas = [];
 let customerSearchTimer = null;
 let orderSearchTimer = null;
 let designSearchTimer = null;
@@ -424,6 +425,119 @@ function updatePricingInputs(settings) {
 
 function getSelectedMaterial(type) {
   return catalogCache.find((item) => item.id === selectedMaterials[type]) || null;
+}
+
+function buildFramewiseQuoteContext() {
+  const selectedImage = imagesCache.find((img) => img.id === selectedImageId);
+  const moulding = getSelectedMaterial('moulding');
+  const mats = getSelectedMatLayers();
+  return {
+    width_in: Number(document.getElementById('qw')?.value || 0),
+    height_in: Number(document.getElementById('qh')?.value || 0),
+    mat_border_in: Number(document.getElementById('matBorder')?.value || 0),
+    opening_layout: document.getElementById('openingLayout')?.value || 'single',
+    selected_image: selectedImage ? { id: selectedImage.id, filename: selectedImage.filename, ratio_label: selectedImage.ratio_label } : null,
+    selected_moulding: moulding ? { id: moulding.id, sku: moulding.sku, name: moulding.name } : null,
+    selected_mats: mats.map((layer) => ({
+      slot: layer.slot,
+      reveal_in: layer.reveal_in,
+      item: { id: layer.item.id, sku: layer.item.sku, name: layer.item.name },
+    })),
+    quote_total: lastQuote?.total || null,
+  };
+}
+
+function renderFramewiseIdeas(payload = null) {
+  const root = document.getElementById('framewiseDesignSuggestions');
+  const status = document.getElementById('framewiseDesignStatus');
+  if (!root) return;
+  root.innerHTML = '';
+  if (!framewiseDesignIdeas.length) {
+    if (status && payload?.provider_error) status.textContent = payload.provider_error;
+    return;
+  }
+  if (status) {
+    const source = payload?.source === 'provider-guided' ? 'Model-guided' : 'Local starter';
+    const counts = payload?.catalog_counts || {};
+    status.textContent = `${source} looks using ${counts.mouldings || 0} mouldings and ${counts.mats || 0} mats from this workstation.`;
+  }
+  framewiseDesignIdeas.forEach((idea, index) => {
+    const selections = idea.selections || {};
+    const moulding = selections.moulding;
+    const topMat = selections.top_mat;
+    const secondMat = selections.second_mat;
+    const row = document.createElement('div');
+    row.className = 'framewise-suggestion';
+    row.innerHTML = `
+      <strong>${escapeHtml(idea.title || `Look ${index + 1}`)}</strong>
+      <span>${escapeHtml(idea.summary || '')}</span>
+      <small>${escapeHtml(idea.why || '')}</small>
+      <div class="framewise-items">
+        <code>${escapeHtml(moulding ? `${moulding.sku} frame` : 'No frame')}</code>
+        <code>${escapeHtml(topMat ? `${topMat.sku} mat` : 'No mat')}</code>
+        ${secondMat ? `<code>${escapeHtml(`${secondMat.sku} 2nd`)}</code>` : ''}
+        <code>${escapeHtml(`${Number(selections.mat_border_in || 2).toFixed(2)} in border`)}</code>
+      </div>
+      <small>${escapeHtml(idea.conversation_tip || '')}</small>
+      <button type="button" class="secondary mini-button">Use this look</button>
+    `;
+    row.querySelector('button').onclick = () => applyFramewiseIdea(index);
+    root.appendChild(row);
+  });
+}
+
+async function askFramewiseForIdeas() {
+  const status = document.getElementById('framewiseDesignStatus');
+  if (status) status.textContent = 'Asking Framewise for catalog-grounded looks...';
+  try {
+    await ensureCatalogCache();
+    const data = await fetchJson('/api/framewise/design-ideas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subject: document.getElementById('framewiseSubjectPrompt')?.value || '',
+        goal: 'Give the frame counter three concise framing looks. Use real local catalog selections when possible.',
+        quote_context: buildFramewiseQuoteContext(),
+      }),
+    });
+    framewiseDesignIdeas = data.suggestions || [];
+    renderFramewiseIdeas(data);
+    setNotice(framewiseDesignIdeas.length ? 'Framewise suggestions ready.' : 'Framewise had no suggestions.', framewiseDesignIdeas.length ? 'success' : 'error');
+  } catch (error) {
+    framewiseDesignIdeas = [];
+    renderFramewiseIdeas();
+    if (status) status.textContent = error.message;
+    setNotice(error.message, 'error');
+  }
+}
+
+async function applyFramewiseIdea(index) {
+  const idea = framewiseDesignIdeas[index];
+  if (!idea) {
+    setNotice('Framewise suggestion not found.', 'error');
+    return;
+  }
+  await ensureCatalogCache();
+  const selections = idea.selections || {};
+  selectedMaterials.moulding = selections.moulding?.id || null;
+  selectedMaterials.topMat = selections.top_mat?.id || null;
+  selectedMaterials.secondMat = selections.second_mat?.id || null;
+  selectedMaterials.thirdMat = null;
+  const secondToggle = document.getElementById('useSecondMat');
+  const thirdToggle = document.getElementById('useThirdMat');
+  if (secondToggle) secondToggle.checked = Boolean(selectedMaterials.secondMat);
+  if (thirdToggle) thirdToggle.checked = false;
+  const border = Number(selections.mat_border_in || 0);
+  if (border > 0) document.getElementById('matBorder').value = border.toFixed(2);
+  const secondReveal = Number(selections.second_mat_reveal_in || 0);
+  if (secondReveal > 0) document.getElementById('secondMatReveal').value = secondReveal.toFixed(3);
+  activeMatSlot = 'topMat';
+  syncMatLayerUI();
+  updateSelectionSummary();
+  renderCatalogDrawer();
+  renderMockup();
+  await calcQuote();
+  setNotice(`${idea.title || 'Framewise look'} applied to the design.`, 'success');
 }
 
 function setActiveMatSlot(type) {

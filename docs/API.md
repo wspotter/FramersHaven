@@ -4,6 +4,31 @@
 - `GET /api/health` -> `{ status }`
 - `GET /api/config` -> branding + allowed statuses + active pricing rules
 
+## Framewise
+- `GET /api/framewise/config`
+  - response: `{ config }`
+  - public config hides any stored API key value and reports only `api_key_present`
+- `POST /api/framewise/config`
+  - fields:
+    - `enabled`
+    - `assistant_name`
+    - `provider_type`
+    - `base_url`
+    - `model`
+    - `api_key`
+    - `context_tokens`
+    - `temperature`
+  - supported provider types: `ollama`, `llama.cpp`, `lm-studio`, `openai-compatible`
+- `GET /api/framewise/status`
+  - checks whether the configured provider `/models` endpoint is reachable
+- `POST /api/framewise/chat`
+  - JSON body: `{ message, conversation_id, workspace, quote_context }`
+  - sends an advisory chat turn to the configured local/OpenAI-compatible provider
+- `POST /api/framewise/design-ideas`
+  - JSON body: `{ subject, goal, quote_context }`
+  - response includes three framing suggestions with real local catalog IDs/SKUs where available
+  - if the provider is disabled or unreachable, returns local starter looks instead of blocking the design workflow
+
 ## Settings
 - `GET /api/settings`
   - response: `{ pricing }`
@@ -237,16 +262,6 @@
   - returns a ZIP containing `accounting_customers.csv`, `accounting_invoices.csv`, and `accounting_invoice_lines.csv`
   - writes the same local handoff files under `exports/accounting/`
   - does not connect to an accounting service or expose local filesystem paths
-- `GET /api/framewise/config`
-  - returns the optional local assistant provider configuration with API keys masked
-- `POST /api/framewise/config`
-  - fields: `enabled`, `assistant_name`, `provider_type`, `base_url`, `model`, `api_key`, `context_tokens`, `temperature`
-  - stores provider settings in the local SQLite database
-- `GET /api/framewise/status`
-  - checks whether the configured provider is enabled and reachable
-- `POST /api/framewise/chat`
-  - sends an advisory chat turn to the configured local/OpenAI-compatible provider
-  - disabled by default and does not include built-in model weights
 - `GET /api/orders/export.csv`
 - `GET /api/orders/{order_id}/export?format=pdf|jpg&document=quote|work_order|invoice`
   - optional `disposition=inline|attachment`; defaults to `attachment`

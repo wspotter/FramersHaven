@@ -45,6 +45,12 @@ class FramewiseChatRequest(BaseModel):
     quote_context: dict[str, Any] = Field(default_factory=dict)
 
 
+class FramewiseDesignRequest(BaseModel):
+    subject: str = Field("", max_length=1200)
+    goal: str = Field("", max_length=1200)
+    quote_context: dict[str, Any] = Field(default_factory=dict)
+
+
 def _truthy(value: Any) -> bool:
     return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
 
@@ -128,6 +134,196 @@ def _chat_url(base_url: str) -> str:
     return f"{base}/chat/completions"
 
 
+def _catalog_rows(category_keyword: str, limit: int = 12) -> list[dict[str, Any]]:
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT id, sku, name, category, cost, vendor, width_in, height_in, rabbet_in, metadata_json
+            FROM catalog_items
+            WHERE active = 1 AND lower(category) LIKE '%' || ? || '%'
+            ORDER BY
+              CASE WHEN cost > 0 THEN 0 ELSE 1 END,
+              CASE WHEN vendor IS NULL OR vendor = '' THEN 1 ELSE 0 END,
+              sku COLLATE NOCASE
+            LIMIT ?
+            """,
+            (category_keyword.lower(), limit),
+        )
+        return [dict(row) for row in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+def _catalog_label(item: dict[str, Any] | None) -> str:
+    if not item:
+        return "No catalog item selected"
+    vendor = f" · {item['vendor']}" if item.get("vendor") else ""
+    return f"{item['sku']} · {item['name']}{vendor}"
+
+
+def _compact_item(item: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not item:
+        return None
+    return {
+        "id": item["id"],
+        "sku": item["sku"],
+        "name": item["name"],
+        "category": item["category"],
+        "vendor": item.get("vendor") or "",
+        "width_in": item.get("width_in"),
+        "height_in": item.get("height_in"),
+        "rabbet_in": item.get("rabbet_in"),
+        "cost": item.get("cost"),
+    }
+
+
+def _parse_provider_json(text: str) -> dict[str, Any]:
+    clean = text.strip()
+    if clean.startswith("```"):
+        clean = clean.strip("`")
+        clean = clean.removeprefix("json").strip()
+    try:
+        return json.loads(clean)
+    except json.JSONDecodeError:
+        start = clean.find("{")
+        end = clean.rfind("}")
+        if start >= 0 and end > start:
+            return json.loads(clean[start : end + 1])
+        raise
+
+
+def _starter_suggestions(
+    subject: str,
+    goal: str,
+    mouldings: list[dict[str, Any]],
+    mats: list[dict[str, Any]],
+    provider_directions: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    templates = [
+        {
+            "title": "Quiet Gallery Contrast",
+            "summary": "A clean presentation that lets the art do most of the talking.",
+            "why": "Use a restrained frame and a light top mat so the customer's eye lands on the image first.",
+            "conversation_tip": "This is the safest counter option when the customer wants it polished but not loud.",
+            "mat_border_in": 2.5,
+        },
+        {
+            "title": "Warm Natural Depth",
+            "summary": "A warmer frame direction for travel, family, landscape, and memory pieces.",
+            "why": "Wood tones and a soft mat usually make photographs feel more personal without getting busy.",
+            "conversation_tip": "Good when the customer says the piece is sentimental or wants it to feel inviting.",
+            "mat_border_in": 3.0,
+        },
+        {
+            "title": "Crisp Modern Edge",
+            "summary": "A sharper contemporary treatment with stronger contrast.",
+            "why": "A darker frame and neutral mat can make color photographs and graphic pieces feel intentional.",
+            "conversation_tip": "Offer this when the customer likes clean rooms, black fixtures, or modern decor.",
+            "mat_border_in": 2.25,
+        },
+    ]
+    if provider_directions:
+        for index, direction in enumerate(provider_directions[:3]):
+            templates[index].update(
+                {
+                    "title": str(direction.get("title") or templates[index]["title"])[:80],
+                    "summary": str(direction.get("summary") or templates[index]["summary"])[:260],
+                    "why": str(direction.get("why") or templates[index]["why"])[:420],
+                    "conversation_tip": str(direction.get("conversation_tip") or templates[index]["conversation_tip"])[:260],
+                }
+            )
+
+    suggestions: list[dict[str, Any]] = []
+    for index, template in enumerate(templates):
+        moulding = mouldings[index % len(mouldings)] if mouldings else None
+        top_mat = mats[index % len(mats)] if mats else None
+        second_mat = mats[(index + 1) % len(mats)] if len(mats) > 1 and index != 0 else None
+        subject_note = f" Subject: {subject.strip()}" if subject.strip() else ""
+        goal_note = f" Goal: {goal.strip()}" if goal.strip() else ""
+        suggestions.append(
+            {
+                "id": f"look-{index + 1}",
+                "title": template["title"],
+                "summary": template["summary"],
+                "why": f"{template['why']}{subject_note}{goal_note}",
+                "conversation_tip": template["conversation_tip"],
+                "selections": {
+                    "moulding": _compact_item(moulding),
+                    "top_mat": _compact_item(top_mat),
+                    "second_mat": _compact_item(second_mat),
+                    "mat_border_in": template["mat_border_in"],
+                    "second_mat_reveal_in": 0.25 if second_mat else 0,
+                },
+                "catalog_summary": {
+                    "moulding": _catalog_label(moulding),
+                    "top_mat": _catalog_label(top_mat),
+                    "second_mat": _catalog_label(second_mat) if second_mat else "",
+                },
+            }
+        )
+    return suggestions
+
+
+async def _provider_design_directions(
+    config: dict[str, Any],
+    req: FramewiseDesignRequest,
+    mouldings: list[dict[str, Any]],
+    mats: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    if not config["enabled"]:
+        return []
+    catalog_sample = {
+        "mouldings": [_compact_item(item) for item in mouldings[:8]],
+        "mats": [_compact_item(item) for item in mats[:8]],
+    }
+    prompt = {
+        "task": "Suggest three framing directions for a retail frame counter.",
+        "rules": [
+            "Return JSON only.",
+            "Do not invent catalog item numbers.",
+            "Use plain shop-floor language a customer can understand.",
+        ],
+        "subject": req.subject,
+        "goal": req.goal,
+        "current_quote_context": req.quote_context,
+        "available_catalog_sample": catalog_sample,
+        "schema": {
+            "suggestions": [
+                {
+                    "title": "short display title",
+                    "summary": "one sentence",
+                    "why": "why this works",
+                    "conversation_tip": "what the employee can say",
+                }
+            ]
+        },
+    }
+    payload = {
+        "model": config["model"],
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": json.dumps(prompt, indent=2)},
+        ],
+        "max_tokens": 700,
+        "temperature": config["temperature"],
+        "response_format": {"type": "json_object"},
+    }
+    headers = {
+        "Content-Type": "application/json",
+        **({"Authorization": f"Bearer {config['api_key']}"} if config.get("api_key") else {}),
+    }
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.post(_chat_url(config["base_url"]), json=payload, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+    content = data["choices"][0]["message"]["content"]
+    parsed = _parse_provider_json(content)
+    suggestions = parsed.get("suggestions") or []
+    return [item for item in suggestions if isinstance(item, dict)]
+
+
 @router.get("/config")
 def get_framewise_config() -> dict[str, Any]:
     return {"config": _stored_config()}
@@ -205,3 +401,30 @@ async def framewise_chat(req: FramewiseChatRequest) -> dict[str, Any]:
         logger.warning("Framewise provider error: %s", exc)
         answer = "Framewise could not reach the configured local model. The rest of FramersHaven is still working."
     return {"answer": answer, "conversation_id": conversation_id, "mode": "advisory"}
+
+
+@router.post("/design-ideas")
+async def framewise_design_ideas(req: FramewiseDesignRequest) -> dict[str, Any]:
+    config = _stored_config(include_secret=True)
+    mouldings = _catalog_rows("mould", 18)
+    mats = _catalog_rows("mat", 18)
+    provider_directions: list[dict[str, Any]] = []
+    source = "local-starter"
+    provider_error = ""
+    if config["enabled"]:
+        try:
+            provider_directions = await _provider_design_directions(config, req, mouldings, mats)
+            if provider_directions:
+                source = "provider-guided"
+        except Exception as exc:
+            logger.warning("Framewise design provider error: %s", exc)
+            provider_error = "Framewise could not reach the configured model, so local starter looks were used."
+    suggestions = _starter_suggestions(req.subject, req.goal, mouldings, mats, provider_directions)
+    return {
+        "assistant_name": config["assistant_name"],
+        "enabled": config["enabled"],
+        "source": source,
+        "provider_error": provider_error,
+        "catalog_counts": {"mouldings": len(mouldings), "mats": len(mats)},
+        "suggestions": suggestions,
+    }

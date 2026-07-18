@@ -85,8 +85,99 @@ class FramewiseTests(unittest.TestCase):
         self.assertEqual(home.status_code, 200)
         self.assertIn("Framewise Assistant", home.text)
         self.assertIn('id="framewiseProviderType"', home.text)
+        self.assertIn('id="framewiseSubjectPrompt"', home.text)
+        self.assertIn("Suggest Looks", home.text)
         self.assertIn("/api/framewise/config", home.text)
         self.assertNotIn("Ask Ollie", home.text)
+
+    def test_framewise_design_ideas_use_local_catalog_when_provider_is_off(self):
+        self.client.post(
+            "/api/catalog/import",
+            files={
+                "file": (
+                    "catalog.csv",
+                    (
+                        "sku,name,category,cost,width_in,vendor\n"
+                        "F1,Walnut Gallery,moulding,12,1.5,Demo Vendor\n"
+                        "F2,Black Cube,moulding,10,1.25,Demo Vendor\n"
+                        "F3,Maple Soft,moulding,9,1.75,Demo Vendor\n"
+                        "M1,Warm White,mat,4,0,Demo Vendor\n"
+                        "M2,Charcoal,mat,4,0,Demo Vendor\n"
+                        "M3,Sage,mat,4,0,Demo Vendor\n"
+                    ),
+                    "text/csv",
+                )
+            },
+        )
+
+        response = self.client.post(
+            "/api/framewise/design-ideas",
+            json={
+                "subject": "African safari photograph with warm grasses and blue sky",
+                "goal": "Give the customer three options before building one.",
+                "quote_context": {"width_in": 11, "height_in": 14},
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["source"], "local-starter")
+        self.assertEqual(len(payload["suggestions"]), 3)
+        first = payload["suggestions"][0]
+        self.assertEqual(first["selections"]["moulding"]["sku"], "F1")
+        self.assertEqual(first["selections"]["top_mat"]["sku"], "M1")
+        self.assertIn("conversation_tip", first)
+        self.assertNotIn("Ollie", str(payload))
+        self.assertNotIn("Printery", str(payload))
+
+    @patch("httpx.AsyncClient.post")
+    def test_framewise_design_ideas_can_use_provider_wording_with_catalog_ids(self, mocked_post):
+        class FakeResponse:
+            def raise_for_status(self):
+                return None
+
+            def json(self):
+                return {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": '{"suggestions":[{"title":"Museum Calm","summary":"Soft and formal.","why":"Balances the subject.","conversation_tip":"Start here."}]}'
+                            }
+                        }
+                    ]
+                }
+
+        mocked_post.return_value = FakeResponse()
+        self.client.post(
+            "/api/catalog/import",
+            files={
+                "file": (
+                    "catalog.csv",
+                    "sku,name,category,cost,width_in\nF1,Frame One,moulding,12,1.5\nM1,Mat One,mat,4,0\n",
+                    "text/csv",
+                )
+            },
+        )
+        self.client.post(
+            "/api/framewise/config",
+            data={
+                "enabled": "on",
+                "assistant_name": "Framewise",
+                "provider_type": "ollama",
+                "base_url": "http://127.0.0.1:11434/v1",
+                "model": "llama3.2:3b",
+                "context_tokens": "4096",
+                "temperature": "0.35",
+            },
+        )
+
+        response = self.client.post("/api/framewise/design-ideas", json={"subject": "portrait"})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["source"], "provider-guided")
+        self.assertEqual(payload["suggestions"][0]["title"], "Museum Calm")
+        self.assertEqual(payload["suggestions"][0]["selections"]["moulding"]["sku"], "F1")
 
 
 if __name__ == "__main__":

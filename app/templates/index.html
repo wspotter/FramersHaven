@@ -2032,6 +2032,78 @@
       margin-bottom: 1px;
     }
 
+    .framewise-panel {
+      display: grid;
+      gap: 6px;
+    }
+
+    .framewise-prompt-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 5px;
+      align-items: start;
+    }
+
+    .framewise-prompt-row textarea {
+      min-height: 44px;
+      resize: vertical;
+    }
+
+    .framewise-status {
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.25;
+    }
+
+    .framewise-suggestions {
+      display: grid;
+      gap: 5px;
+    }
+
+    .framewise-suggestion {
+      display: grid;
+      gap: 4px;
+      padding: 6px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--field-bg);
+      text-align: left;
+    }
+
+    .framewise-suggestion strong,
+    .framewise-suggestion span,
+    .framewise-suggestion small {
+      display: block;
+    }
+
+    .framewise-suggestion span {
+      color: var(--ink);
+      font-size: 10px;
+      line-height: 1.25;
+    }
+
+    .framewise-suggestion small {
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+
+    .framewise-suggestion .framewise-items {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 3px;
+    }
+
+    .framewise-suggestion .framewise-items code {
+      padding: 2px 4px;
+      border-radius: 5px;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      font-size: 9px;
+      overflow-wrap: anywhere;
+    }
+
     .position-slider input[type="range"] {
       padding-left: 0;
       padding-right: 0;
@@ -4321,6 +4393,21 @@
                       <input id="qh" type="number" value="10" step="0.01" min="0.01" max="999" />
                     </div>
                   </div>
+                </div>
+
+                <div class="builder-section framewise-panel">
+                  <div class="section-head">
+                    <div>
+                      <h3>Framewise</h3>
+                    </div>
+                    <button type="button" class="secondary mini-button" onclick="askFramewiseForIdeas()" title="Ask Framewise for three catalog-grounded framing directions.">Suggest Looks</button>
+                  </div>
+                  <div class="framewise-prompt-row">
+                    <textarea id="framewiseSubjectPrompt" maxlength="1200" placeholder="Describe the art or customer direction, e.g. African safari photo, warm grasses, wants polished but not flashy."></textarea>
+                    <button type="button" class="secondary mini-button" onclick="askFramewiseForIdeas()">Ask</button>
+                  </div>
+                  <div id="framewiseDesignStatus" class="framewise-status" aria-live="polite">Optional local assistant. Suggestions stay grounded to catalog items.</div>
+                  <div id="framewiseDesignSuggestions" class="framewise-suggestions" aria-label="Framewise framing suggestions"></div>
                 </div>
 
                 <div class="builder-section">
