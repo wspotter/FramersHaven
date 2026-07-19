@@ -45,7 +45,7 @@ class FramewiseTests(unittest.TestCase):
         self.assertEqual(config["assistant_name"], "Framewise")
         self.assertEqual(config["provider_type"], "ollama")
         self.assertEqual(config["base_url"], "http://127.0.0.1:11434/v1")
-        self.assertEqual(config["model"], "llama3.2:3b")
+        self.assertEqual(config["model"], "hf.co/ggml-org/SmolVLM2-2.2B-Instruct-GGUF:Q4_K_M")
         self.assertNotIn("Ollie", str(config))
         self.assertNotIn("Printery", str(config))
 
@@ -87,6 +87,7 @@ class FramewiseTests(unittest.TestCase):
         self.assertEqual(home.status_code, 200)
         self.assertIn("Framewise Assistant", home.text)
         self.assertIn('id="framewiseProviderType"', home.text)
+        self.assertIn("SmolVLM2", home.text)
         self.assertIn('id="framewiseSubjectPrompt"', home.text)
         self.assertIn("Suggest Looks", home.text)
         self.assertIn("/api/framewise/config", home.text)

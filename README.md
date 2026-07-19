@@ -46,6 +46,12 @@ workspace sends the selected artwork image for visual analysis before suggesting
 catalog-grounded looks. When no model is configured, it still produces local
 starter looks from the workstation catalog. The app does not ship model weights.
 
+Recommended local AI starter:
+
+```bash
+ollama run hf.co/ggml-org/SmolVLM2-2.2B-Instruct-GGUF:Q4_K_M
+```
+
 No vendor catalogs, customer records, accounting credentials, or online billing flow are included in the repository. This is a local-first app. Accounting support is a local CSV handoff only; it does not provide accounting API sync. The app does not process payments or send email/SMS. Do not expose it directly to the public internet.
 
 ## Quick Start

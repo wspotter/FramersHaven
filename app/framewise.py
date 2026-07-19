@@ -19,12 +19,14 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/framewise", tags=["framewise"])
 
+RECOMMENDED_FRAMEWISE_MODEL = "hf.co/ggml-org/SmolVLM2-2.2B-Instruct-GGUF:Q4_K_M"
+
 FRAMEWISE_DEFAULTS: dict[str, str] = {
     "enabled": "0",
     "assistant_name": "Framewise",
     "provider_type": "ollama",
     "base_url": "http://127.0.0.1:11434/v1",
-    "model": "llama3.2:3b",
+    "model": RECOMMENDED_FRAMEWISE_MODEL,
     "api_key": "",
     "context_tokens": "4096",
     "temperature": "0.35",

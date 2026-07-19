@@ -77,6 +77,7 @@ This file is the source of truth for implemented behavior so sprint work does no
 - Tax rate plus moulding/mat/glazing markups are stored in local settings and used by quote calculation.
 - Shop service rows for backing, mounting, frame mounting, printing, various, assembly, and royalties now use admin-managed retail prices instead of catalog items.
 - Framewise assistant settings support optional local or OpenAI-compatible providers with model, base URL, context, temperature, and local API-key storage.
+- Framewise defaults to the local Ollama-compatible SmolVLM2 GGUF model profile while remaining disabled until the operator turns it on.
 - Framewise remains useful without a configured provider by falling back to local starter looks from active moulding and mat catalog rows.
 
 ### Quote Engine

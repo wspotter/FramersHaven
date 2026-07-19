@@ -22,6 +22,12 @@ look can be applied to the live mockup before the operator calculates the quote.
 If no model provider is enabled, Framewise uses local starter looks instead of
 blocking the workflow.
 
+The recommended local starter is SmolVLM2 through Ollama:
+
+```bash
+ollama run hf.co/ggml-org/SmolVLM2-2.2B-Instruct-GGUF:Q4_K_M
+```
+
 The app is local-first. Operator-supplied catalog files, customer records, exports, backups, and previews stay on the workstation or trusted private LAN unless the operator moves them manually.
 
 This is a local-first app. It does not provide payment processing, email/SMS sending, or accounting API sync. Do not expose it directly to the public internet.

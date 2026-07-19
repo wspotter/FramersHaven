@@ -5365,7 +5365,11 @@
               </div>
               <div class="card admin-utility-panel" data-admin-panel="assistant">
                 <h3>Framewise Assistant</h3>
-                <p>Optional local AI help for framing suggestions and quote explanations. It stays off until this workstation is pointed at a local or OpenAI-compatible provider.</p>
+                <p>Optional local AI help for image-aware framing suggestions and quote explanations. It stays off until this workstation is pointed at a local or OpenAI-compatible provider.</p>
+                <div class="detail-box">
+                  <h4>Recommended local vision model</h4>
+                  <p>For Ollama, install SmolVLM2 with: <code>ollama run hf.co/ggml-org/SmolVLM2-2.2B-Instruct-GGUF:Q4_K_M</code></p>
+                </div>
                 <form id="framewiseConfigForm" data-config-endpoint="/api/framewise/config" onsubmit="saveFramewiseConfig(event)">
                   <div class="ops-form-grid two">
                     <label class="check-row"><input id="framewiseEnabled" name="enabled" type="checkbox" /> Enable Framewise</label>
@@ -5384,7 +5388,7 @@
                     </div>
                     <div>
                       <label for="framewiseModel">Model</label>
-                      <input id="framewiseModel" name="model" placeholder="llama3.2:3b" />
+                      <input id="framewiseModel" name="model" placeholder="hf.co/ggml-org/SmolVLM2-2.2B-Instruct-GGUF:Q4_K_M" />
                     </div>
                     <div class="span-all">
                       <label for="framewiseBaseUrl">Base URL</label>

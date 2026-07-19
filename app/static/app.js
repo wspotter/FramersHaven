@@ -179,6 +179,7 @@ const THEMES = {
 };
 const DRAWER_RESULT_LIMIT = 500;
 const GLAZING_SERVICE_KEYS = new Set(SERVICE_ADMIN_ROWS.slice(0, 4).map(([key]) => key));
+const FRAMEWISE_RECOMMENDED_MODEL = 'hf.co/ggml-org/SmolVLM2-2.2B-Instruct-GGUF:Q4_K_M';
 
 const cropState = { img: null, ratio: null };
 const adminTextureState = { img: null, bandHeight: 35, bandCenter: 50 };
@@ -2798,7 +2799,7 @@ function applyFramewiseConfig(config) {
     framewiseAssistantName: config.assistant_name || 'Framewise',
     framewiseProviderType: config.provider_type || 'ollama',
     framewiseBaseUrl: config.base_url || 'http://127.0.0.1:11434/v1',
-    framewiseModel: config.model || 'llama3.2:3b',
+    framewiseModel: config.model || FRAMEWISE_RECOMMENDED_MODEL,
     framewiseContextTokens: config.context_tokens || 4096,
     framewiseTemperature: config.temperature ?? 0.35,
   };

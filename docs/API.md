@@ -5,6 +5,7 @@
 - `GET /api/config` -> branding + allowed statuses + active pricing rules
 
 ## Framewise
+- Default provider profile is Ollama at `http://127.0.0.1:11434/v1` with model `hf.co/ggml-org/SmolVLM2-2.2B-Instruct-GGUF:Q4_K_M`; Framewise is still disabled until the operator enables it.
 - `GET /api/framewise/config`
   - response: `{ config }`
   - public config hides any stored API key value and reports only `api_key_present`
