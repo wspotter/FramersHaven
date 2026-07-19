@@ -227,6 +227,112 @@ class FramewiseTests(unittest.TestCase):
         self.assertEqual(first["selections"]["top_mat"]["sku"], "M1")
         self.assertIn("conversation_tip", first)
 
+    def test_framewise_design_ideas_score_warm_visual_cues_over_catalog_order(self):
+        self.client.post(
+            "/api/catalog/import",
+            files={
+                "file": (
+                    "catalog.csv",
+                    (
+                        "sku,name,category,cost,width_in,vendor\n"
+                        "F1,Polished Silver Metal,moulding,12,1.5,Demo Vendor\n"
+                        "F2,Black Cube Modern,moulding,12,1.5,Demo Vendor\n"
+                        "F3,Walnut Earth Gallery,moulding,12,1.5,Demo Vendor\n"
+                        "M1,Ice Blue,mat,4,0,Demo Vendor\n"
+                        "M2,Charcoal,mat,4,0,Demo Vendor\n"
+                        "M3,Warm Ivory White Core,mat,4,0,Demo Vendor\n"
+                    ),
+                    "text/csv",
+                )
+            },
+        )
+
+        response = self.client.post(
+            "/api/framewise/design-ideas",
+            json={
+                "subject": "African safari photograph with golden grass and olive trees",
+                "goal": "warm natural customer-friendly choices",
+                "quote_context": {"width_in": 11, "height_in": 14},
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        first = response.json()["suggestions"][0]
+        self.assertEqual(first["selections"]["moulding"]["sku"], "F3")
+        self.assertEqual(first["selections"]["top_mat"]["sku"], "M3")
+
+    @patch("httpx.AsyncClient.post")
+    def test_framewise_provider_cannot_invent_final_sku_selections(self, mocked_post):
+        class FakeResponse:
+            def raise_for_status(self):
+                return None
+
+            def json(self):
+                return {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": (
+                                    '{"visual_analysis":{"summary":"Warm travel photo.",'
+                                    '"dominant_colors":["gold","olive","brown"],'
+                                    '"temperature":"warm","contrast":"medium","style":"photograph"},'
+                                    '"suggestions":[{"title":"Imaginary Premium",'
+                                    '"summary":"Use the imaginary SKU.",'
+                                    '"why":"The model wants FAKE-999 and MAT-000.",'
+                                    '"conversation_tip":"Do not trust invented IDs.",'
+                                    '"selections":{"moulding":{"sku":"FAKE-999"},'
+                                    '"top_mat":{"sku":"MAT-000"}}}]}'
+                                )
+                            }
+                        }
+                    ]
+                }
+
+        mocked_post.return_value = FakeResponse()
+        self.client.post(
+            "/api/catalog/import",
+            files={
+                "file": (
+                    "catalog.csv",
+                    (
+                        "sku,name,category,cost,width_in\n"
+                        "F1,Black Cube,moulding,12,1.5\n"
+                        "F2,Walnut Gallery,moulding,12,1.5\n"
+                        "M1,Cool White,mat,4,0\n"
+                        "M2,Warm Ivory,mat,4,0\n"
+                    ),
+                    "text/csv",
+                )
+            },
+        )
+        self.client.post(
+            "/api/framewise/config",
+            data={
+                "enabled": "on",
+                "assistant_name": "Framewise",
+                "provider_type": "ollama",
+                "base_url": "http://127.0.0.1:11434/v1",
+                "model": "smolvlm2:2.2b",
+                "context_tokens": "4096",
+                "temperature": "0.1",
+            },
+        )
+
+        response = self.client.post("/api/framewise/design-ideas", json={"subject": "warm safari photo"})
+
+        self.assertEqual(response.status_code, 200)
+        first = response.json()["suggestions"][0]
+        self.assertEqual(first["title"], "Imaginary Premium")
+        self.assertEqual(first["selections"]["moulding"]["sku"], "F2")
+        self.assertEqual(first["selections"]["top_mat"]["sku"], "M2")
+        provider_prompt = json.dumps(mocked_post.await_args.kwargs["json"]["messages"][1]["content"])
+        self.assertNotIn("F1", provider_prompt)
+        self.assertNotIn("F2", provider_prompt)
+        self.assertNotIn("M1", provider_prompt)
+        self.assertNotIn("M2", provider_prompt)
+        self.assertIn("Walnut Gallery", provider_prompt)
+        self.assertIn("Warm Ivory", provider_prompt)
+
     @patch("httpx.AsyncClient.post")
     def test_framewise_design_ideas_can_use_provider_wording_with_catalog_ids(self, mocked_post):
         class FakeResponse:

@@ -22,6 +22,11 @@ look can be applied to the live mockup before the operator calculates the quote.
 If no model provider is enabled, Framewise uses local starter looks instead of
 blocking the workflow.
 
+Framewise does not let the AI model invent item numbers. The model can describe
+the artwork and suggest framing language, but the app chooses final mats and
+mouldings by scoring the local catalog for color temperature, contrast, style,
+and the operator's prompt.
+
 ### Reviewed Framewise Examples
 
 After reviewing and applying a Framewise look, the app can store an optional

@@ -54,6 +54,7 @@ This file is the source of truth for implemented behavior so sprint work does no
 - Quote panel shows line items alongside subtotal, tax, and total.
 - Framewise can analyze the selected artwork image with a vision-capable provider and suggest three customer-facing framing looks from the Design workspace.
 - Framewise suggestions are grounded to local catalog IDs/SKUs and can be applied directly to the current design before quote calculation.
+- Framewise uses the model for visual analysis and customer-friendly wording, then uses deterministic local color/style scoring to choose actual mats and mouldings so providers cannot invent item numbers.
 
 ### Catalog
 - Import catalog data from CSV (`sku,name,category,cost,width_in`).

@@ -29,6 +29,7 @@
   - JSON body: `{ subject, goal, image_id, quote_context }`
   - `image_id` is optional; when supplied and a vision-capable provider is enabled, the selected gallery image is sent as an image input
   - response includes three framing suggestions with real local catalog IDs/SKUs where available
+  - final catalog selections are deterministic: Framewise scores local mats and mouldings from inferred color/style tags plus visual analysis; provider output may shape wording, but does not supply final SKUs
   - response includes `image` and `visual_analysis` metadata so the UI can show whether the artwork was actually analyzed
   - if the provider is disabled or unreachable, returns local starter looks instead of blocking the design workflow
 - `POST /api/framewise/examples`

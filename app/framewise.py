@@ -58,6 +58,16 @@ data is missing, say what to search for or verify next. Stay focused on visible
 artwork qualities, framing design, and shop-floor sales language.
 """
 
+FRAMING_DESIGN_PRINCIPLES = [
+    "The mat and frame should complement the artwork and lead the eye inward, not compete with it.",
+    "A safe top mat is usually white, warm white, ivory, cream, or another quiet neutral.",
+    "A second mat reveal is usually 1/8 to 1/4 inch and can pick up a secondary accent color from the artwork.",
+    "Dark mats add depth for moody or high-contrast pieces; light mats feel more open and airy.",
+    "Black-and-white art usually wants a neutral gray, soft white, or black mat with a crisp white-core edge.",
+    "Modern or graphic artwork often works with flat black, white, silver, graphite, or natural wood frames.",
+    "Portraits, landscapes, travel, and sentimental photos often work with warm wood, walnut, mahogany, bronze, gold, ivory, sage, or earth tones.",
+]
+
 
 class FramewiseChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
@@ -209,6 +219,206 @@ def _compact_item(item: dict[str, Any] | None) -> dict[str, Any] | None:
         "height_in": item.get("height_in"),
         "rabbet_in": item.get("rabbet_in"),
         "cost": item.get("cost"),
+    }
+
+
+TAG_ALIASES: dict[str, set[str]] = {
+    "warm": {"warm", "ivory", "cream", "creme", "wheat", "sand", "tan", "beige", "buff", "linen", "oat", "natural", "maple", "walnut", "cherry", "mahogany", "brown", "bronze", "gold", "umber", "sepia", "rust", "copper"},
+    "cool": {"cool", "white", "snow", "ice", "blue", "navy", "teal", "aqua", "green", "sage", "mint", "gray", "grey", "silver", "pewter", "steel", "graphite", "slate"},
+    "neutral": {"white", "warm_white", "ivory", "cream", "black", "charcoal", "gray", "grey", "neutral", "linen", "mat", "gallery"},
+    "wood": {"wood", "walnut", "maple", "oak", "cherry", "mahogany", "natural", "rustic", "barnwood", "driftwood"},
+    "dark": {"black", "charcoal", "graphite", "espresso", "dark", "ebony", "walnut", "mahogany", "navy"},
+    "light": {"white", "warm_white", "ivory", "cream", "linen", "pale", "soft", "natural", "maple", "silver"},
+    "earth": {"earth", "sand", "tan", "beige", "brown", "walnut", "olive", "sage", "green", "gold", "bronze", "umber", "rust", "terracotta"},
+    "modern": {"black", "white", "silver", "graphite", "metal", "metallic", "cube", "flat", "modern", "gallery", "clean"},
+    "photo": {"photo", "photograph", "photography", "portrait", "landscape", "travel", "family", "memory", "wedding"},
+    "moody": {"moody", "dark", "deep", "dramatic", "noir", "shadow"},
+    "bright": {"bright", "pastel", "airy", "light", "soft", "delicate"},
+}
+
+LOOK_PROFILES: dict[str, dict[str, set[str]]] = {
+    "safe_classic": {
+        "moulding": {"neutral", "wood", "warm", "light"},
+        "mat": {"neutral", "light", "warm"},
+    },
+    "warm_natural": {
+        "moulding": {"warm", "wood", "earth"},
+        "mat": {"warm", "earth", "light"},
+    },
+    "crisp_modern": {
+        "moulding": {"modern", "dark", "cool", "neutral"},
+        "mat": {"neutral", "light", "cool"},
+    },
+}
+
+
+def _word_tokens(value: Any) -> set[str]:
+    if value is None:
+        return set()
+    if not isinstance(value, str):
+        value = json.dumps(value, default=str)
+    cleaned = "".join(ch.lower() if ch.isalnum() else " " for ch in value)
+    return {part for part in cleaned.split() if part}
+
+
+def _metadata_for_item(item: dict[str, Any] | None) -> dict[str, Any]:
+    if not item:
+        return {}
+    raw = item.get("metadata_json")
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+    except (TypeError, json.JSONDecodeError):
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _catalog_item_tags(item: dict[str, Any] | None, material_type: str) -> set[str]:
+    if not item:
+        return set()
+    meta = _metadata_for_item(item)
+    text = " ".join(
+        str(part or "")
+        for part in (
+            item.get("sku"),
+            item.get("name"),
+            item.get("category"),
+            item.get("vendor"),
+            meta.get("color"),
+            meta.get("finish"),
+            meta.get("style"),
+            meta.get("core"),
+            meta.get("description"),
+        )
+    )
+    tokens = _word_tokens(text)
+    tags = set(tokens)
+    joined = " ".join(tokens)
+    if "warm" in tokens and "white" in tokens:
+        tags.add("warm_white")
+    if "white" in tokens and "core" in tokens:
+        tags.add("white_core")
+    if material_type == "moulding":
+        width = float(item.get("width_in") or 0)
+        if width and width < 1.25:
+            tags.add("thin")
+        if width >= 2.5:
+            tags.add("wide")
+    for canonical, aliases in TAG_ALIASES.items():
+        if tokens & aliases:
+            tags.add(canonical)
+    if any(phrase in joined for phrase in ("warm white", "soft white", "antique white")):
+        tags.update({"warm_white", "warm", "light", "neutral"})
+    return tags
+
+
+def _visual_tokens(subject: str, goal: str, visual_analysis: dict[str, Any] | None) -> set[str]:
+    visual = visual_analysis or {}
+    pieces: list[Any] = [
+        subject,
+        goal,
+        visual.get("summary"),
+        visual.get("temperature"),
+        visual.get("contrast"),
+        visual.get("style"),
+        visual.get("dominant_colors"),
+        visual.get("framing_notes"),
+    ]
+    tokens: set[str] = set()
+    for piece in pieces:
+        tokens.update(_word_tokens(piece))
+    for canonical, aliases in TAG_ALIASES.items():
+        if tokens & aliases:
+            tokens.add(canonical)
+    return tokens
+
+
+def _score_catalog_item(
+    item: dict[str, Any] | None,
+    material_type: str,
+    look_key: str,
+    subject: str,
+    goal: str,
+    visual_analysis: dict[str, Any] | None,
+) -> int:
+    if not item:
+        return -10_000
+    item_tags = _catalog_item_tags(item, material_type)
+    visual_tags = _visual_tokens(subject, goal, visual_analysis)
+    profile_tags = LOOK_PROFILES[look_key][material_type]
+    score = 0
+    score += 12 * len(item_tags & profile_tags)
+    score += 8 * len(item_tags & visual_tags)
+    if "warm" in visual_tags and "cool" in item_tags and look_key != "crisp_modern":
+        score -= 8
+    if "cool" in visual_tags and "warm" in item_tags and look_key == "crisp_modern":
+        score -= 5
+    if "high" in visual_tags and item_tags & {"dark", "black", "charcoal"}:
+        score += 5
+    if "low" in visual_tags and item_tags & {"light", "soft", "warm_white", "ivory"}:
+        score += 4
+    if "moody" in visual_tags and material_type == "mat" and item_tags & {"dark", "black", "charcoal", "gray"}:
+        score += 7
+    if "bright" in visual_tags and material_type == "mat" and item_tags & {"light", "warm_white", "ivory", "cream"}:
+        score += 7
+    if "photo" in visual_tags and item_tags & {"neutral", "wood", "warm", "black", "white"}:
+        score += 4
+    if "safari" in visual_tags or "african" in visual_tags or "travel" in visual_tags:
+        score += 7 * len(item_tags & {"warm", "earth", "wood", "sage", "olive", "gold", "brown"})
+    if item.get("vendor"):
+        score += 1
+    return score
+
+
+def _rank_catalog_items(
+    rows: list[dict[str, Any]],
+    material_type: str,
+    look_key: str,
+    subject: str,
+    goal: str,
+    visual_analysis: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    return sorted(
+        rows,
+        key=lambda item: (
+            -_score_catalog_item(item, material_type, look_key, subject, goal, visual_analysis),
+            str(item.get("sku") or "").casefold(),
+            int(item.get("id") or 0),
+        ),
+    )
+
+
+def _pick_ranked(
+    ranked: list[dict[str, Any]],
+    used_ids: set[int],
+    *,
+    allow_reuse: bool = False,
+) -> dict[str, Any] | None:
+    for item in ranked:
+        item_id = int(item.get("id") or 0)
+        if allow_reuse or item_id not in used_ids:
+            if item_id:
+                used_ids.add(item_id)
+            return item
+    return ranked[0] if ranked else None
+
+
+def _provider_catalog_item(item: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not item:
+        return None
+    meta = _metadata_for_item(item)
+    return {
+        "name": item.get("name"),
+        "category": item.get("category"),
+        "vendor": item.get("vendor") or "",
+        "width_in": item.get("width_in"),
+        "height_in": item.get("height_in"),
+        "rabbet_in": item.get("rabbet_in"),
+        "color": meta.get("color") or "",
+        "finish": meta.get("finish") or "",
+        "style": meta.get("style") or "",
+        "core": meta.get("core") or "",
     }
 
 
@@ -417,6 +627,7 @@ def _starter_suggestions(
     color_summary = ", ".join(str(color) for color in (visual.get("dominant_colors") or [])[:4])
     templates = [
         {
+            "look_key": "safe_classic",
             "title": "Quiet Gallery Contrast",
             "summary": "A clean presentation that lets the art do most of the talking.",
             "why": "Use a restrained frame and a light top mat so the customer's eye lands on the image first.",
@@ -424,6 +635,7 @@ def _starter_suggestions(
             "mat_border_in": 2.5,
         },
         {
+            "look_key": "warm_natural",
             "title": "Warm Natural Depth",
             "summary": "A warmer frame direction for travel, family, landscape, and memory pieces.",
             "why": "Wood tones and a soft mat usually make photographs feel more personal without getting busy.",
@@ -431,6 +643,7 @@ def _starter_suggestions(
             "mat_border_in": 3.0,
         },
         {
+            "look_key": "crisp_modern",
             "title": "Crisp Modern Edge",
             "summary": "A sharper contemporary treatment with stronger contrast.",
             "why": "A darker frame and neutral mat can make color photographs and graphic pieces feel intentional.",
@@ -450,10 +663,17 @@ def _starter_suggestions(
             )
 
     suggestions: list[dict[str, Any]] = []
+    used_moulding_ids: set[int] = set()
+    used_mat_ids: set[int] = set()
     for index, template in enumerate(templates):
-        moulding = mouldings[index % len(mouldings)] if mouldings else None
-        top_mat = mats[index % len(mats)] if mats else None
-        second_mat = mats[(index + 1) % len(mats)] if len(mats) > 1 and index != 0 else None
+        look_key = str(template["look_key"])
+        ranked_mouldings = _rank_catalog_items(mouldings, "moulding", look_key, subject, goal, visual_analysis)
+        ranked_mats = _rank_catalog_items(mats, "mat", look_key, subject, goal, visual_analysis)
+        moulding = _pick_ranked(ranked_mouldings, used_moulding_ids, allow_reuse=len(mouldings) < 3)
+        top_mat = _pick_ranked(ranked_mats, used_mat_ids, allow_reuse=len(mats) < 3)
+        second_mat = None
+        if len(ranked_mats) > 1 and index != 0:
+            second_mat = _pick_ranked(ranked_mats, used_mat_ids, allow_reuse=len(mats) < 4)
         subject_note = " Extra detail considered." if subject.strip() else ""
         goal_note = ""
         vision_note = f" Visual cue: {visual_summary[:140]}" if visual_summary else ""
@@ -492,15 +712,15 @@ async def _provider_design_directions(
         return [], _default_visual_analysis({})
     image_payload = _framewise_image_payload(_image_id_from_request(req))
     catalog_sample = {
-        "mouldings": [_compact_item(item) for item in mouldings[:8]],
-        "mats": [_compact_item(item) for item in mats[:8]],
+        "mouldings": [_provider_catalog_item(item) for item in mouldings[:8]],
+        "mats": [_provider_catalog_item(item) for item in mats[:8]],
     }
     prompt = {
         "task": "Suggest three framing directions for a retail frame counter.",
         "rules": [
             "Return one valid JSON object only.",
             "Put visual_analysis and suggestions at the top level.",
-            "Do not invent catalog item numbers.",
+            "Return prose only; do not return sku, id, selections, item numbers, prices, or availability claims.",
             "Analyze the artwork image when one is attached.",
             "Use plain shop-floor language a customer can understand.",
             "Keep every visual_analysis.summary, suggestion summary, why, and conversation_tip under 160 characters.",
@@ -509,6 +729,7 @@ async def _provider_design_directions(
         "subject": req.subject,
         "goal": req.goal,
         "current_quote_context": req.quote_context,
+        "framing_design_principles": FRAMING_DESIGN_PRINCIPLES,
         "selected_image": {
             key: image_payload.get(key)
             for key in ["available", "image_id", "filename", "width_in", "height_in", "ratio_label", "reason"]
