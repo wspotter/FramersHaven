@@ -32,6 +32,7 @@ from app.main import app
 DEFAULT_MODEL = "hf.co/ggml-org/SmolVLM2-2.2B-Instruct-GGUF:Q4_K_M"
 DEFAULT_BASE_URL = "http://127.0.0.1:11434/v1"
 PHOTO_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+PRIVATE_REPORT_TERMS = ["Ollie", "Printery", "Katherine", "Stacy"]
 
 
 SCENARIOS: list[dict[str, Any]] = [
@@ -109,6 +110,31 @@ def load_photo_bytes(path: Path, max_side: int = 1600) -> tuple[bytes, tuple[int
         return output.getvalue(), original_size
 
 
+def looks_document_like(path: Path) -> bool:
+    try:
+        with Image.open(path) as image:
+            image = ImageOps.exif_transpose(image).convert("RGB")
+            image.thumbnail((96, 96), Image.Resampling.BILINEAR)
+            pixel_data = image.get_flattened_data() if hasattr(image, "get_flattened_data") else image.getdata()
+            pixels = list(pixel_data)
+    except (OSError, UnidentifiedImageError):
+        return False
+    if not pixels:
+        return False
+    pale_neutral = 0
+    dark_marks = 0
+    for red, green, blue in pixels:
+        high = max(red, green, blue)
+        low = min(red, green, blue)
+        saturation = high - low
+        if high >= 210 and saturation <= 32:
+            pale_neutral += 1
+        if high <= 95 and saturation <= 60:
+            dark_marks += 1
+    total = len(pixels)
+    return pale_neutral / total >= 0.58 and dark_marks / total >= 0.015
+
+
 def build_photo_scenario(path: Path) -> dict[str, Any] | None:
     try:
         with Image.open(path) as image:
@@ -116,6 +142,8 @@ def build_photo_scenario(path: Path) -> dict[str, Any] | None:
     except (OSError, UnidentifiedImageError):
         return None
     if width < 400 or height < 300:
+        return None
+    if looks_document_like(path):
         return None
     label = safe_photo_label(path)
     ratio_width = 14
@@ -245,12 +273,26 @@ def score_case(payload: dict[str, Any], provider_expected: bool) -> tuple[bool, 
         if not suggestion.get("conversation_tip"):
             issues.append(f"look {index} missing conversation tip")
     text = json.dumps(payload)
-    for private_name in ["Ollie", "Printery", "Katherine", "Stacy"]:
+    for private_name in PRIVATE_REPORT_TERMS:
         if private_name in text:
             issues.append(f"private name leaked: {private_name}")
     if provider_expected and payload.get("source") != "vision-guided":
         issues.append(f"expected vision-guided source, got {payload.get('source')}")
     return not issues, issues
+
+
+def redact_report_value(value: Any) -> Any:
+    if isinstance(value, str):
+        redacted = value
+        for term in PRIVATE_REPORT_TERMS:
+            redacted = redacted.replace(term, "[redacted]")
+            redacted = redacted.replace(term.lower(), "[redacted]")
+        return redacted
+    if isinstance(value, list):
+        return [redact_report_value(item) for item in value]
+    if isinstance(value, dict):
+        return {key: redact_report_value(item) for key, item in value.items()}
+    return value
 
 
 def run_eval(args: argparse.Namespace) -> dict[str, Any]:
@@ -298,6 +340,7 @@ def run_eval(args: argparse.Namespace) -> dict[str, Any]:
                 response.raise_for_status()
                 payload = response.json()
                 ok, issues = score_case(payload, args.provider)
+                report_payload = redact_report_value(payload)
                 cases.append(
                     {
                         "name": scenario["name"],
@@ -305,9 +348,10 @@ def run_eval(args: argparse.Namespace) -> dict[str, Any]:
                         "dimensions": scenario.get("dimensions"),
                         "ok": ok,
                         "issues": issues,
-                        "source": payload.get("source"),
-                        "image_available": (payload.get("image") or {}).get("available"),
-                        "visual_analysis": payload.get("visual_analysis"),
+                        "source": report_payload.get("source"),
+                        "provider_error": report_payload.get("provider_error"),
+                        "image_available": (report_payload.get("image") or {}).get("available"),
+                        "visual_analysis": report_payload.get("visual_analysis"),
                         "suggestions": [
                             {
                                 "title": item.get("title"),

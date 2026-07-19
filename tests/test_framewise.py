@@ -183,6 +183,180 @@ class FramewiseTests(unittest.TestCase):
         self.assertEqual(payload["suggestions"][0]["selections"]["moulding"]["sku"], "F1")
 
     @patch("httpx.AsyncClient.post")
+    def test_framewise_design_ideas_recovers_nested_small_model_suggestions(self, mocked_post):
+        class FakeResponse:
+            def raise_for_status(self):
+                return None
+
+            def json(self):
+                return {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": (
+                                    '{"visual_analysis":{"summary":"Soft warm portrait.",'
+                                    '"dominant_colors":["cream","brown"],'
+                                    '"temperature":"warm","contrast":"low","style":"photograph",'
+                                    '"framing_notes":["Keep it gentle."],'
+                                    '"suggestions":[{"title":"Soft Walnut","summary":"Warm and simple.",'
+                                    '"why":"Works with the portrait.","conversation_tip":"A safe first option."}]}}'
+                                )
+                            }
+                        }
+                    ]
+                }
+
+        mocked_post.return_value = FakeResponse()
+        self.client.post(
+            "/api/catalog/import",
+            files={
+                "file": (
+                    "catalog.csv",
+                    "sku,name,category,cost,width_in\nF1,Walnut,moulding,12,1.5\nM1,Warm White,mat,4,0\n",
+                    "text/csv",
+                )
+            },
+        )
+        self.client.post(
+            "/api/framewise/config",
+            data={
+                "enabled": "on",
+                "assistant_name": "Framewise",
+                "provider_type": "ollama",
+                "base_url": "http://127.0.0.1:11434/v1",
+                "model": "smolvlm2:2.2b",
+                "context_tokens": "4096",
+                "temperature": "0.1",
+            },
+        )
+
+        response = self.client.post("/api/framewise/design-ideas", json={"subject": "portrait"})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["source"], "provider-guided")
+        self.assertEqual(payload["suggestions"][0]["title"], "Soft Walnut")
+
+    @patch("httpx.AsyncClient.post")
+    def test_framewise_design_ideas_uses_vision_analysis_even_without_provider_suggestions(self, mocked_post):
+        class FakeResponse:
+            def raise_for_status(self):
+                return None
+
+            def json(self):
+                return {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": (
+                                    '{"visual_analysis":{"summary":"Warm sunset safari image.",'
+                                    '"dominant_colors":["gold","sky blue"],'
+                                    '"temperature":"warm","contrast":"medium","style":"photograph",'
+                                    '"framing_notes":["Use warm neutrals."]}}'
+                                )
+                            }
+                        }
+                    ]
+                }
+
+        mocked_post.return_value = FakeResponse()
+        self.client.post(
+            "/api/catalog/import",
+            files={
+                "file": (
+                    "catalog.csv",
+                    "sku,name,category,cost,width_in\nF1,Walnut,moulding,12,1.5\nM1,Warm White,mat,4,0\n",
+                    "text/csv",
+                )
+            },
+        )
+        image_bytes = io.BytesIO()
+        Image.new("RGB", (120, 80), "#c99a4a").save(image_bytes, format="PNG")
+        uploaded = self.client.post(
+            "/api/images/upload",
+            data={"width_in": "12", "height_in": "8", "ratio_label": "3:2", "crop_json": "{}"},
+            files={"file": ("safari.png", image_bytes.getvalue(), "image/png")},
+        )
+        image_id = uploaded.json()["id"]
+        self.client.post(
+            "/api/framewise/config",
+            data={
+                "enabled": "on",
+                "assistant_name": "Framewise",
+                "provider_type": "ollama",
+                "base_url": "http://127.0.0.1:11434/v1",
+                "model": "smolvlm2:2.2b",
+                "context_tokens": "4096",
+                "temperature": "0.1",
+            },
+        )
+
+        response = self.client.post("/api/framewise/design-ideas", json={"subject": "safari photo", "image_id": image_id})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["source"], "vision-guided")
+        self.assertEqual(payload["visual_analysis"]["dominant_colors"], ["gold", "sky blue"])
+        self.assertEqual(payload["suggestions"][0]["selections"]["moulding"]["sku"], "F1")
+
+    @patch("httpx.AsyncClient.post")
+    def test_framewise_design_ideas_recovers_prose_vision_output(self, mocked_post):
+        class FakeResponse:
+            def raise_for_status(self):
+                return None
+
+            def json(self):
+                return {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": "This appears to be a warm wedding photograph with soft whites and dark formal clothing."
+                            }
+                        }
+                    ]
+                }
+
+        mocked_post.return_value = FakeResponse()
+        self.client.post(
+            "/api/catalog/import",
+            files={
+                "file": (
+                    "catalog.csv",
+                    "sku,name,category,cost,width_in\nF1,Black Frame,moulding,12,1.5\nM1,Warm White,mat,4,0\n",
+                    "text/csv",
+                )
+            },
+        )
+        image_bytes = io.BytesIO()
+        Image.new("RGB", (120, 80), "#ddd0c0").save(image_bytes, format="PNG")
+        uploaded = self.client.post(
+            "/api/images/upload",
+            data={"width_in": "12", "height_in": "8", "ratio_label": "3:2", "crop_json": "{}"},
+            files={"file": ("wedding.png", image_bytes.getvalue(), "image/png")},
+        )
+        image_id = uploaded.json()["id"]
+        self.client.post(
+            "/api/framewise/config",
+            data={
+                "enabled": "on",
+                "assistant_name": "Framewise",
+                "provider_type": "ollama",
+                "base_url": "http://127.0.0.1:11434/v1",
+                "model": "smolvlm2:2.2b",
+                "context_tokens": "4096",
+                "temperature": "0.1",
+            },
+        )
+
+        response = self.client.post("/api/framewise/design-ideas", json={"subject": "wedding photo", "image_id": image_id})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["source"], "vision-guided")
+        self.assertIn("warm wedding", payload["visual_analysis"]["summary"])
+        self.assertEqual(payload["suggestions"][0]["selections"]["moulding"]["sku"], "F1")
+
+    @patch("httpx.AsyncClient.post")
     def test_framewise_design_ideas_send_selected_image_to_vision_provider(self, mocked_post):
         class FakeResponse:
             def raise_for_status(self):

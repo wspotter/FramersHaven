@@ -34,6 +34,7 @@ FRAMEWISE_DEFAULTS: dict[str, str] = {
 
 FRAMEWISE_SETTING_KEYS = {f"framewise_{key}": key for key in FRAMEWISE_DEFAULTS}
 ALLOWED_PROVIDER_TYPES = {"ollama", "llama.cpp", "lm-studio", "openai-compatible"}
+DESIGN_PROVIDER_TIMEOUT_SECONDS = 90
 
 SYSTEM_PROMPT = """\
 You are Framewise, a concise framing-studio assistant built into FramersHaven.
@@ -277,6 +278,21 @@ def _clean_visual_analysis(value: Any, image_payload: dict[str, Any]) -> dict[st
     }
 
 
+def _provider_text_visual_analysis(text: str, image_payload: dict[str, Any]) -> dict[str, Any]:
+    clean = " ".join(str(text or "").split())
+    if not clean:
+        return _default_visual_analysis(image_payload)
+    return {
+        "source": "vision-model" if image_payload.get("available") else "text-only-model",
+        "summary": clean[:500],
+        "dominant_colors": [],
+        "temperature": "unknown",
+        "contrast": "unknown",
+        "style": "unknown",
+        "framing_notes": [],
+    }
+
+
 def _parse_provider_json(text: str) -> dict[str, Any]:
     clean = text.strip()
     if clean.startswith("```"):
@@ -290,6 +306,15 @@ def _parse_provider_json(text: str) -> dict[str, Any]:
         if start >= 0 and end > start:
             return json.loads(clean[start : end + 1])
         raise
+
+
+def _provider_suggestions(parsed: dict[str, Any]) -> list[dict[str, Any]]:
+    suggestions = parsed.get("suggestions")
+    if not suggestions and isinstance(parsed.get("visual_analysis"), dict):
+        suggestions = parsed["visual_analysis"].get("suggestions")
+    if not suggestions and isinstance(parsed.get("framing_suggestions"), list):
+        suggestions = parsed.get("framing_suggestions")
+    return [item for item in (suggestions or []) if isinstance(item, dict)]
 
 
 def _starter_suggestions(
@@ -386,7 +411,8 @@ async def _provider_design_directions(
     prompt = {
         "task": "Suggest three framing directions for a retail frame counter.",
         "rules": [
-            "Return JSON only.",
+            "Return one valid JSON object only.",
+            "Put visual_analysis and suggestions at the top level.",
             "Do not invent catalog item numbers.",
             "Analyze the artwork image when one is attached.",
             "Use plain shop-floor language a customer can understand.",
@@ -441,15 +467,19 @@ async def _provider_design_directions(
         "Content-Type": "application/json",
         **({"Authorization": f"Bearer {config['api_key']}"} if config.get("api_key") else {}),
     }
-    async with httpx.AsyncClient(timeout=30) as client:
+    timeout = httpx.Timeout(DESIGN_PROVIDER_TIMEOUT_SECONDS, connect=5)
+    async with httpx.AsyncClient(timeout=timeout) as client:
         response = await client.post(_chat_url(config["base_url"]), json=payload, headers=headers)
         response.raise_for_status()
         data = response.json()
     content = data["choices"][0]["message"]["content"]
-    parsed = _parse_provider_json(content)
-    suggestions = parsed.get("suggestions") or []
+    try:
+        parsed = _parse_provider_json(content)
+    except json.JSONDecodeError:
+        return [], _provider_text_visual_analysis(content, image_payload)
+    suggestions = _provider_suggestions(parsed)
     visual_analysis = _clean_visual_analysis(parsed.get("visual_analysis"), image_payload)
-    return [item for item in suggestions if isinstance(item, dict)], visual_analysis
+    return suggestions, visual_analysis
 
 
 @router.get("/config")
@@ -544,8 +574,10 @@ async def framewise_design_ideas(req: FramewiseDesignRequest) -> dict[str, Any]:
     if config["enabled"]:
         try:
             provider_directions, visual_analysis = await _provider_design_directions(config, req, mouldings, mats)
-            if provider_directions:
-                source = "vision-guided" if visual_analysis.get("source") == "vision-model" else "provider-guided"
+            if visual_analysis.get("source") == "vision-model":
+                source = "vision-guided"
+            elif provider_directions:
+                source = "provider-guided"
         except Exception as exc:
             logger.warning("Framewise design provider error: %s", exc)
             provider_error = "Framewise could not reach the configured model, so local starter looks were used."
