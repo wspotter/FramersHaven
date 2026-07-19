@@ -26,15 +26,13 @@ uploads/
 exports/
 backups/
 catalog_previews/
-# The public demo intentionally includes only these three curated moulding
-# previews. Keep every other catalog preview out of source control.
+# The public demo intentionally includes only sanitized demo moulding previews.
+# Keep private/full vendor catalog preview dumps out of source control.
 !catalog_previews/
 catalog_previews/*
 !catalog_previews/mouldings/
 catalog_previews/mouldings/*
-!catalog_previews/mouldings/demo-black-tall-cap.jpg
-!catalog_previews/mouldings/demo-dark-walnut-panel.jpg
-!catalog_previews/mouldings/demo-gold-tall-cap.jpg
+!catalog_previews/mouldings/demo-*.jpg
 catalog_imports/
 dist/
 tmp/

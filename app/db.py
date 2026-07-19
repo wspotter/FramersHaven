@@ -118,6 +118,13 @@ def init_db() -> None:
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(image_id) REFERENCES images(id)
         );
+
+        CREATE INDEX IF NOT EXISTS idx_orders_status_id ON orders(status, id DESC);
+        CREATE INDEX IF NOT EXISTS idx_orders_updated_id ON orders(updated_at DESC, id DESC);
+        CREATE INDEX IF NOT EXISTS idx_orders_customer_name ON orders(customer_name COLLATE NOCASE);
+        CREATE INDEX IF NOT EXISTS idx_customers_updated_id ON customers(updated_at DESC, id DESC);
+        CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(name COLLATE NOCASE);
+        CREATE INDEX IF NOT EXISTS idx_catalog_category_id ON catalog_items(category, id DESC);
         """
     )
 

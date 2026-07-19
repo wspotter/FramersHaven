@@ -13,7 +13,7 @@ class WindowsPackageContentsTests(unittest.TestCase):
     def test_installer_is_a_required_package_file(self):
         self.assertIn("install_windows.ps1", build_windows_package.INCLUDE_FILES)
 
-    def test_archive_contains_exactly_the_three_curated_catalog_previews(self):
+    def test_archive_contains_only_public_demo_catalog_previews(self):
         with tempfile.TemporaryDirectory() as tempdir:
             root = Path(tempdir) / "repo"
             output = Path(tempdir) / "dist"

@@ -172,6 +172,11 @@ def main() -> int:
         try:
             step = "load Design workspace"
             page.goto(args.url, wait_until="networkidle")
+            if page.locator("input[name='username']").count():
+                page.locator("input[name='username']").fill(os.environ.get("FRAMERSHAVEN_SMOKE_USERNAME", "admin"))
+                page.locator("input[name='password']").fill(os.environ.get("FRAMERSHAVEN_SMOKE_PASSWORD", "admin"))
+                page.get_by_role("button", name="Sign In").click()
+                page.wait_for_url("**/", timeout=5000)
             page.wait_for_selector("#mockupCanvas", timeout=10_000)
             assert_moulding_orientation(page)
             step = "verify Admin edition status"

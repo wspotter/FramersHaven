@@ -27,8 +27,8 @@ class DemoSeedTests(unittest.TestCase):
         self.assertEqual(conn.execute("SELECT COUNT(*) FROM customers").fetchone()[0], 4)
         self.assertEqual(conn.execute("SELECT COUNT(*) FROM orders").fetchone()[0], 3)
         self.assertEqual(conn.execute("SELECT COUNT(*) FROM images").fetchone()[0], 2)
-        self.assertEqual(conn.execute("SELECT COUNT(*) FROM catalog_items WHERE category = 'moulding'").fetchone()[0], 5)
-        self.assertEqual(conn.execute("SELECT COUNT(*) FROM catalog_items WHERE category = 'mat'").fetchone()[0], 5)
+        self.assertEqual(conn.execute("SELECT COUNT(*) FROM catalog_items WHERE category = 'moulding'").fetchone()[0], 50)
+        self.assertEqual(conn.execute("SELECT COUNT(*) FROM catalog_items WHERE category = 'mat'").fetchone()[0], 50)
         self.assertEqual(
             {row[0] for row in conn.execute("SELECT status FROM orders")},
             {"quote", "work_order", "invoice"},
@@ -50,25 +50,16 @@ class DemoSeedTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "Refusing to overwrite non-demo database"):
             create_demo_data(self.db_path, self.upload_dir)
 
-    def test_seed_links_the_three_curated_moulding_preview_samples(self):
+    def test_seed_links_the_public_demo_moulding_preview_samples(self):
         create_demo_data(self.db_path, self.upload_dir)
 
         conn = sqlite3.connect(self.db_path)
-        previews = dict(
-            conn.execute(
-                "SELECT sku, preview_filename FROM catalog_items WHERE sku IN (?, ?, ?)",
-                ("DEMO-M-101", "DEMO-M-103", "DEMO-M-105"),
-            )
-        )
+        previews = dict(conn.execute("SELECT sku, preview_filename FROM catalog_items WHERE category = 'moulding'"))
         conn.close()
 
-        expected = {
-            "DEMO-M-101": "mouldings/demo-black-tall-cap.jpg",
-            "DEMO-M-103": "mouldings/demo-dark-walnut-panel.jpg",
-            "DEMO-M-105": "mouldings/demo-gold-tall-cap.jpg",
-        }
-        self.assertEqual(previews, expected)
-        for preview_filename in expected.values():
+        self.assertEqual(len(previews), 50)
+        self.assertTrue(all(filename.startswith("mouldings/demo-") for filename in previews.values()))
+        for preview_filename in previews.values():
             self.assertTrue((ROOT / "catalog_previews" / preview_filename).is_file())
 
     def test_primary_demo_art_centers_the_oval_horizontally(self):

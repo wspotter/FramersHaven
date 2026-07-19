@@ -75,7 +75,7 @@ CSV_FILENAMES = {
 
 MATERIAL_LINE_KEYS = {"moulding", "mat", "glazing"}
 LABOR_LINE_KEYS = {"labor", "assembly"}
-_EXPORT_LOCK = threading.Lock()
+_EXPORT_LOCK = threading.RLock()
 
 
 @dataclass(frozen=True)

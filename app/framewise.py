@@ -54,7 +54,8 @@ You are Framewise, a concise framing-studio assistant built into FramersHaven.
 Help shop staff choose framing directions, explain quote details, and work with
 the local catalog data they provide. Do not invent item numbers, prices,
 vendor availability, customer data, or completed actions. If exact catalog
-data is missing, say what to search for or verify next.
+data is missing, say what to search for or verify next. Stay focused on visible
+artwork qualities, framing design, and shop-floor sales language.
 """
 
 
@@ -295,7 +296,7 @@ def _clean_visual_analysis(value: Any, image_payload: dict[str, Any]) -> dict[st
     notes = value.get("framing_notes") or []
     return {
         "source": "vision-model" if image_payload.get("available") else "text-only-model",
-        "summary": str(value.get("summary") or "")[:500],
+        "summary": str(value.get("summary") or "")[:220],
         "dominant_colors": [str(color)[:40] for color in colors[:6] if str(color).strip()],
         "temperature": str(value.get("temperature") or "unknown")[:40],
         "contrast": str(value.get("contrast") or "unknown")[:40],
@@ -310,7 +311,7 @@ def _provider_text_visual_analysis(text: str, image_payload: dict[str, Any]) -> 
         return _default_visual_analysis(image_payload)
     return {
         "source": "vision-model" if image_payload.get("available") else "text-only-model",
-        "summary": clean[:500],
+        "summary": clean[:220],
         "dominant_colors": [],
         "temperature": "unknown",
         "contrast": "unknown",
@@ -453,9 +454,9 @@ def _starter_suggestions(
         moulding = mouldings[index % len(mouldings)] if mouldings else None
         top_mat = mats[index % len(mats)] if mats else None
         second_mat = mats[(index + 1) % len(mats)] if len(mats) > 1 and index != 0 else None
-        subject_note = f" Subject: {subject.strip()}" if subject.strip() else ""
-        goal_note = f" Goal: {goal.strip()}" if goal.strip() else ""
-        vision_note = f" Visual read: {visual_summary}" if visual_summary else ""
+        subject_note = " Extra detail considered." if subject.strip() else ""
+        goal_note = ""
+        vision_note = f" Visual cue: {visual_summary[:140]}" if visual_summary else ""
         color_note = f" Dominant colors: {color_summary}." if color_summary else ""
         suggestions.append(
             {
@@ -502,6 +503,8 @@ async def _provider_design_directions(
             "Do not invent catalog item numbers.",
             "Analyze the artwork image when one is attached.",
             "Use plain shop-floor language a customer can understand.",
+            "Keep every visual_analysis.summary, suggestion summary, why, and conversation_tip under 160 characters.",
+            "Do not mention identity, politics, legal issues, medical issues, or unsupported background context.",
         ],
         "subject": req.subject,
         "goal": req.goal,
@@ -650,8 +653,8 @@ async def framewise_chat(req: FramewiseChatRequest) -> dict[str, Any]:
 @router.post("/design-ideas")
 async def framewise_design_ideas(req: FramewiseDesignRequest) -> dict[str, Any]:
     config = _stored_config(include_secret=True)
-    mouldings = _catalog_rows("mould", 18)
-    mats = _catalog_rows("mat", 18)
+    mouldings = _catalog_rows("mould", 50)
+    mats = _catalog_rows("mat", 50)
     provider_directions: list[dict[str, Any]] = []
     image_payload = _framewise_image_payload(_image_id_from_request(req))
     visual_analysis = _default_visual_analysis(image_payload)

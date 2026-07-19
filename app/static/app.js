@@ -187,6 +187,7 @@ const THEMES = {
 const DRAWER_RESULT_LIMIT = 500;
 const GLAZING_SERVICE_KEYS = new Set(SERVICE_ADMIN_ROWS.slice(0, 4).map(([key]) => key));
 const FRAMEWISE_RECOMMENDED_MODEL = 'hf.co/ggml-org/SmolVLM2-2.2B-Instruct-GGUF:Q4_K_M';
+const CURRENT_USER_ROLE = document.body?.dataset.userRole || 'operator';
 
 const cropState = { img: null, ratio: null };
 const adminTextureState = { img: null, bandHeight: 35, bandCenter: 50 };
@@ -215,7 +216,8 @@ const tabMeta = {
 };
 
 function show(data) {
-  document.getElementById('out').textContent = JSON.stringify(data, null, 2);
+  const out = document.getElementById('out');
+  if (out) out.textContent = JSON.stringify(data, null, 2);
 }
 
 function setNotice(message, tone = 'success') {
@@ -247,6 +249,10 @@ async function fetchJson(url, options = {}) {
 
 function switchTab(tab, button) {
   if (!tabMeta[tab]) return;
+  if (tab === 'admin' && CURRENT_USER_ROLE !== 'admin') {
+    setNotice('Admin access is required for catalog and pricing controls.', 'error');
+    return;
+  }
   if (tab !== 'orders') closeOrderInspector({ restoreFocus: false });
   const showSidebar = window.WorkspaceUI?.shouldShowDesignSidebar(tab) ?? tab === 'design';
   document.body.dataset.workspace = tab;
@@ -466,7 +472,7 @@ function renderFramewiseIdeas(payload = null) {
     const image = payload?.image || null;
     if (analysis) {
       const colors = (analysis.dominant_colors || []).join(', ');
-      const source = analysis.source === 'vision-model' ? 'Image analyzed' : image?.available ? 'Image attached' : 'No image analyzed';
+      const source = analysis.source === 'vision-model' ? 'Image read' : image?.available ? 'Image attached' : 'No image attached';
       analysisRoot.hidden = false;
       analysisRoot.innerHTML = `
         <strong>${escapeHtml(source)}</strong>
@@ -4009,7 +4015,11 @@ function renderOrdersTable() {
     ? visibleOrdersCache.map((order) => renderOrderRow(order)).join('')
     : '<div class="orders-empty-state">No jobs match this filter.</div>';
   const summary = document.getElementById('ordersResultSummary');
-  if (summary) summary.textContent = `Showing ${visibleOrdersCache.length} of ${ordersCache.length} jobs`;
+  if (summary) {
+    const total = ordersCache.total ?? ordersCache.length;
+    const capped = total > ordersCache.length ? ` · showing latest ${ordersCache.length}; search to narrow older jobs` : '';
+    summary.textContent = `Showing ${visibleOrdersCache.length} of ${total} jobs${capped}`;
+  }
   updateOrderSortHeaders();
   if (selectedOrderId && !visibleOrdersCache.some((order) => order.id === selectedOrderId)) {
     closeOrderInspector({ restoreFocus: false, clearSelection: true });
@@ -4752,6 +4762,8 @@ async function listOrders(forceRefresh = false) {
   try {
     const data = await fetchJson('/api/orders');
     ordersCache = data.orders;
+    ordersCache.total = data.total ?? data.orders.length;
+    ordersCache.limit = data.limit ?? data.orders.length;
     updateOrderCounts();
     renderOrdersTable();
     if (forceRefresh) setNotice('Orders refreshed.', 'success');
@@ -5416,6 +5428,8 @@ async function listCustomers() {
     const q = encodeURIComponent(document.getElementById('customerSearch')?.value || '');
     const data = await fetchJson(`/api/customers?q=${q}`);
     customersCache = data.customers;
+    customersCache.total = data.total ?? data.customers.length;
+    customersCache.limit = data.limit ?? data.customers.length;
     populateCustomerSelect();
 
     renderList('customerList', data.customers, {
@@ -5423,6 +5437,12 @@ async function listCustomers() {
       render: (customer) => renderCustomerRow(customer),
       onClick: (customer) => selectCustomer(customer.id),
     });
+    const summary = document.getElementById('customerResultSummary');
+    if (summary) {
+      const total = customersCache.total ?? data.customers.length;
+      const capped = total > data.customers.length ? ` · showing latest ${data.customers.length}; search to narrow older records` : '';
+      summary.textContent = `Showing ${data.customers.length} of ${total} customers${capped}`;
+    }
 
     if (selectedCustomerId && customersCache.some((customer) => customer.id === selectedCustomerId)) {
       await selectCustomer(selectedCustomerId);
@@ -5464,7 +5484,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   updateGalleryDetails(null);
   updateQuoteSummary(null);
   renderMockup();
-  await Promise.all([listImages(), listOrders(), listCustomers(), searchCatalog(true), loadPricingSettings(), loadServiceOptions(), listBackups()]);
+  const startupTasks = [listImages(), listOrders(), listCustomers(), searchCatalog(true), loadPricingSettings(), loadServiceOptions()];
+  if (CURRENT_USER_ROLE === 'admin') startupTasks.push(listBackups());
+  await Promise.all(startupTasks);
   const lastImport = window.localStorage.getItem('studio-last-import');
   if (lastImport) {
     const stats = document.getElementById('catalogStats');

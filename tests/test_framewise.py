@@ -186,6 +186,7 @@ class FramewiseTests(unittest.TestCase):
         self.assertIn("SmolVLM2", home.text)
         self.assertIn('id="framewiseSubjectPrompt"', home.text)
         self.assertIn("Suggest Looks", home.text)
+        self.assertIn("Extra details or questions", home.text)
         self.assertIn("/api/framewise/config", home.text)
 
     def test_framewise_design_ideas_use_local_catalog_when_provider_is_off(self):

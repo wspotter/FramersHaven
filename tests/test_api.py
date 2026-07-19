@@ -1130,10 +1130,10 @@ class ApiTests(unittest.TestCase):
         self.assertIsNone(row["completed_at"])
         self.assertIsNone(row["invoiced_at"])
 
-    def test_order_list_returns_all_local_jobs_for_table_counts_and_sorting(self):
+    def test_order_list_caps_large_local_histories_and_reports_total(self):
         conn = db.get_connection()
         cur = conn.cursor()
-        for index in range(151):
+        for index in range(650):
             cur.execute(
                 """
                 INSERT INTO orders (customer_name, customer_contact, status, payload_json, subtotal, tax, total)
@@ -1146,7 +1146,10 @@ class ApiTests(unittest.TestCase):
 
         listed = self.client.get("/api/orders")
         self.assertEqual(listed.status_code, 200)
-        self.assertEqual(len(listed.json()["orders"]), 151)
+        payload = listed.json()
+        self.assertEqual(len(payload["orders"]), 500)
+        self.assertEqual(payload["total"], 650)
+        self.assertEqual(payload["limit"], 500)
 
     def test_catalog_items_can_be_created_and_updated_manually(self):
         created = self.client.post(
@@ -1685,6 +1688,27 @@ class ApiTests(unittest.TestCase):
 
         not_found = self.client.get("/api/customers", params={"q": "Zzz"})
         self.assertEqual(len(not_found.json()["customers"]), 0)
+
+    def test_customer_list_caps_large_local_histories_and_reports_total(self):
+        conn = db.get_connection()
+        cur = conn.cursor()
+        for index in range(650):
+            cur.execute(
+                """
+                INSERT INTO customers (name, contact, customer_email, notes, updated_at)
+                VALUES (?, '555-010-0200', '', '', CURRENT_TIMESTAMP)
+                """,
+                (f"Bulk Customer {index:03d}",),
+            )
+        conn.commit()
+        conn.close()
+
+        listed = self.client.get("/api/customers")
+        self.assertEqual(listed.status_code, 200)
+        payload = listed.json()
+        self.assertEqual(len(payload["customers"]), 500)
+        self.assertEqual(payload["total"], 650)
+        self.assertEqual(payload["limit"], 500)
 
     def test_order_status_history_preserves_notes(self):
         """Verify each status transition records its note."""

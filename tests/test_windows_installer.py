@@ -82,8 +82,8 @@ def test_readme_publishes_the_one_command_installer():
 def test_readme_documents_the_curated_catalog_preview_exception():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert (
-        "`catalog_previews/` runtime content is ignored except the three curated "
-        "fictional demo assets"
+        "`catalog_previews/` runtime content is ignored except sanitized "
+        "`demo-*.jpg` fictional demo preview assets"
     ) in readme
 
 

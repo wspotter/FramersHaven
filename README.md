@@ -130,9 +130,36 @@ With the app running against demo data:
 ./venv/bin/python scripts/generate_screenshots.py
 ```
 
+## Login And Roles
+
+FramersHaven includes a simple local workstation login so a shop can keep admin
+tools away from normal counter use. First-run demo accounts are:
+
+- `admin` / `admin` for catalog imports, pricing, backups, studio settings, and assistant setup
+- `operator` / `operator` for design, gallery, customers, quotes, orders, and day-to-day counter work
+
+Set `FRAMERSHAVEN_ADMIN_PASSWORD` and `FRAMERSHAVEN_OPERATOR_PASSWORD` before
+first launch to seed different defaults. This is intended for a trusted
+workstation or private LAN, not public internet hosting.
+
+## Practical Capacity
+
+The included SQLite backend is aimed at a single workstation or small private
+LAN install. With the indexed list views in this release, it is expected to be
+comfortable for thousands of customers and orders on ordinary shop hardware.
+Orders and customers load in bounded result sets, so a shop with a long history
+can search without forcing the browser to render every saved record at once.
+
+Reasonable expectations:
+
+- Demo/home shop: hundreds of quotes, customers, and catalog rows
+- Busy independent shop: several thousand customers and orders
+- Larger history: tens of thousands of records should still be searchable, but backups, exports, and full-history reports may take noticeably longer
+- Multi-register concurrent shop: plan a future server database/backend instead of treating the local SQLite file as a shared enterprise system
+
 ## Data Safety
 
-Runtime data is deliberately ignored by Git. `catalog_previews/` runtime content is ignored except the three curated fictional demo assets included with the app:
+Runtime data is deliberately ignored by Git. `catalog_previews/` runtime content is ignored except sanitized `demo-*.jpg` fictional demo preview assets included with the app:
 
 - `studio.db`
 - `uploads/`
@@ -140,7 +167,7 @@ Runtime data is deliberately ignored by Git. `catalog_previews/` runtime content
 - `backups/`
 - `catalog_imports/`
 
-The app is intended for a trusted workstation or private LAN. It does not provide internet-facing authentication, TLS termination, payment processing, or automated message delivery. Do not expose it directly to the public internet.
+The app is intended for a trusted workstation or private LAN. It includes simple local login, but does not provide internet-facing authentication hardening, TLS termination, payment processing, or automated message delivery. Do not expose it directly to the public internet.
 
 ## Documentation
 

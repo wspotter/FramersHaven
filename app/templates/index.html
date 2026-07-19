@@ -394,6 +394,30 @@
       text-decoration: none;
     }
 
+    .auth-chip {
+      display: grid;
+      gap: 2px;
+      min-width: 92px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.2;
+      text-align: right;
+    }
+
+    .auth-chip strong {
+      color: var(--ink);
+      font-size: 11px;
+      overflow-wrap: anywhere;
+    }
+
+    .logout-button {
+      min-height: 30px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      line-height: 1.1;
+    }
+
     .actions {
       display: flex;
       justify-content: flex-end;
@@ -2034,7 +2058,21 @@
 
     .framewise-panel {
       display: grid;
-      gap: 6px;
+      gap: 8px;
+      border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--line));
+      background: var(--accent-soft);
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+
+    .framewise-panel .section-head h3 {
+      font-size: 13px;
+    }
+
+    .framewise-panel .section-head p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.25;
     }
 
     .framewise-prompt-row {
@@ -2045,7 +2083,7 @@
     }
 
     .framewise-prompt-row textarea {
-      min-height: 44px;
+      min-height: 58px;
       resize: vertical;
     }
 
@@ -2094,8 +2132,8 @@
 
     .framewise-suggestion {
       display: grid;
-      gap: 4px;
-      padding: 6px;
+      gap: 5px;
+      padding: 7px;
       border: 1px solid var(--line);
       border-radius: 7px;
       background: var(--field-bg);
@@ -4162,7 +4200,7 @@
     }
   </style>
 </head>
-<body data-theme="gallery" data-workspace="design">
+<body data-theme="gallery" data-workspace="design" data-user-role="{{ current_user.role }}">
   <div class="shell">
     <aside class="sidebar drawer-active">
       <div class="brand">
@@ -4259,10 +4297,19 @@
           <button type="button" class="topbar-nav-button" data-tab="gallery" onclick="switchTab('gallery', this)" title="Gallery: Intake, crop, and saved artwork.">Gallery</button>
           <button type="button" class="topbar-nav-button" data-tab="orders" onclick="switchTab('orders', this)" title="Orders / Quotes: Timeline, status flow, and exports.">Orders / Quotes</button>
           <button type="button" class="topbar-nav-button" data-tab="customers" onclick="switchTab('customers', this)" title="Customers: Contacts and repeat jobs.">Customers</button>
+          {% if current_user.role == 'admin' %}
           <button type="button" class="topbar-nav-button" data-tab="admin" onclick="switchTab('admin', this)" title="Admin: Catalog import and pricing controls.">Admin</button>
+          {% endif %}
         </div>
         <div class="actions">
           <a class="topbar-nav-button topbar-help-link" href="/help/" target="_blank" rel="noopener" title="Open the FramersHaven operator guide.">Help</a>
+          <form method="post" action="/api/auth/logout">
+            <button type="submit" class="secondary logout-button" title="Sign out of this workstation.">Sign Out</button>
+          </form>
+          <div class="auth-chip" aria-label="Signed-in user">
+            <strong>{{ current_user.display_name }}</strong>
+            <span>{{ current_user.role|title }}</span>
+          </div>
           <div class="theme-picker">
             <label for="themeSelect">Theme</label>
             <select id="themeSelect" onchange="onThemeChange(this.value)" title="Switch the workstation theme.">
@@ -4431,12 +4478,13 @@
                   <div class="section-head">
                     <div>
                       <h3>Framewise</h3>
+                      <p>Customer-ready framing recommendations.</p>
                     </div>
                     <button type="button" class="secondary mini-button" onclick="askFramewiseForIdeas()" title="Ask Framewise for three catalog-grounded framing directions.">Suggest Looks</button>
                   </div>
                   <div class="framewise-prompt-row">
-                    <textarea id="framewiseSubjectPrompt" maxlength="1200" placeholder="Describe the art or customer direction, e.g. African safari photo, warm grasses, wants polished but not flashy."></textarea>
-                    <button type="button" class="secondary mini-button" onclick="askFramewiseForIdeas()">Ask</button>
+                    <textarea id="framewiseSubjectPrompt" maxlength="1200" aria-label="Extra details or questions for Framewise" placeholder="Extra details or questions, e.g. customer wants warm, polished, not flashy."></textarea>
+                    <button type="button" class="secondary mini-button" onclick="askFramewiseForIdeas()">Get Looks</button>
                   </div>
                   <div id="framewiseDesignStatus" class="framewise-status" aria-live="polite">Optional local assistant. Suggestions stay grounded to catalog items.</div>
                   <div id="framewiseVisualAnalysis" class="framewise-visual-analysis" hidden></div>
@@ -4997,6 +5045,7 @@
                   <span>Updated</span>
                 </div>
                 <div id="customerList" class="list"></div>
+                <p id="customerResultSummary" class="orders-result-summary" role="status"></p>
               </div>
             </div>
             <div class="ops-detail-stack">
@@ -5042,6 +5091,7 @@
           </div>
         </section>
 
+        {% if current_user.role == 'admin' %}
         <section id="tab-admin" class="tab-panel ops-workspace">
           <div class="admin-command-center">
             <nav class="admin-utility-rail" aria-label="Admin tools">
@@ -5469,6 +5519,7 @@
             <button id="adminEditorBackdrop" type="button" class="admin-editor-backdrop" aria-label="Close catalog editor" onclick="closeCatalogEditor()"></button>
           </div>
         </section>
+        {% endif %}
       </div>
     </main>
   </div>

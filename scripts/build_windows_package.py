@@ -53,11 +53,15 @@ FORBIDDEN_DIRS = {
     "catalog_imports",
 }
 
-CURATED_CATALOG_PREVIEWS = (
-    Path("catalog_previews/mouldings/demo-black-tall-cap.jpg"),
-    Path("catalog_previews/mouldings/demo-dark-walnut-panel.jpg"),
-    Path("catalog_previews/mouldings/demo-gold-tall-cap.jpg"),
-)
+CURATED_CATALOG_PREVIEW_GLOBS = ("catalog_previews/mouldings/demo-*.jpg",)
+
+
+def curated_catalog_previews(root: Path | None = None) -> tuple[Path, ...]:
+    source_root = root or ROOT
+    previews: list[Path] = []
+    for pattern in CURATED_CATALOG_PREVIEW_GLOBS:
+        previews.extend(path.relative_to(source_root) for path in source_root.glob(pattern))
+    return tuple(sorted(previews, key=lambda path: path.as_posix()))
 
 
 def parse_args() -> argparse.Namespace:
@@ -87,7 +91,7 @@ def validate_required_files(staging_dir: Path) -> bool:
     for name in INCLUDE_FILES:
         if not (staging_dir / name).exists():
             missing.append(name)
-    for path in CURATED_CATALOG_PREVIEWS:
+    for path in curated_catalog_previews(staging_dir):
         if not (staging_dir / path).is_file():
             missing.append(path.as_posix())
     if missing:
@@ -102,7 +106,7 @@ def validate_no_forbidden(staging_dir: Path) -> bool:
     allowed_preview_paths = {
         "catalog_previews",
         "catalog_previews/mouldings",
-        *(path.as_posix() for path in CURATED_CATALOG_PREVIEWS),
+        *(path.as_posix() for path in curated_catalog_previews(staging_dir)),
     }
     for path in staging_dir.rglob("*"):
         relative = path.relative_to(staging_dir).as_posix()
@@ -155,7 +159,7 @@ def main() -> int:
             else:
                 print(f"Warning: {filename} not found, skipping", file=sys.stderr)
 
-        for relative in CURATED_CATALOG_PREVIEWS:
+        for relative in curated_catalog_previews(ROOT):
             src = ROOT / relative
             dst = staging_dir / relative
             if src.is_file():
