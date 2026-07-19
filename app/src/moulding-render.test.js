@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import '../static/moulding-render.js';
 
 const { getStripCropRect, getTileOverlap } = globalThis.MouldingRender;
+const appSource = readFileSync(new URL('../static/app.js', import.meta.url), 'utf8');
 
 test('crops the raw cut end from long moulding reference photos', () => {
   const crop = getStripCropRect(1229, 220, { prepared: false });
@@ -29,4 +31,9 @@ test('uses a small bounded overlap to feather repeated strip tiles', () => {
   assert.equal(getTileOverlap(80, 340), 6);
   assert.equal(getTileOverlap(20, 30), 2);
   assert.equal(getTileOverlap(240, 1000), 10);
+});
+
+test('transitions directly from the frame to flat matboard', () => {
+  const artificialInnerLipReferences = appSource.match(/\bdrawFrameInnerLip\b/g) || [];
+  assert.equal(artificialInnerLipReferences.length, 0);
 });

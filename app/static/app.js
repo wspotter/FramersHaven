@@ -2059,34 +2059,6 @@ function drawFrameMiters(ctx, outerX, outerY, outerW, outerH, profile, photoScal
   ctx.restore();
 }
 
-function drawFrameInnerLip(ctx, matX, matY, matW, matH, profile) {
-  const inset = Math.max(2, Math.round(profile.lipPx * 0.18));
-  const shadowInset = Math.max(inset + 1, Math.round(profile.lipPx * 0.48));
-  const edgeWidth = Math.max(1.5, Math.round(profile.facePx * 0.045));
-  const innerShadow = ctx.createLinearGradient(matX, matY, matX, matY + matH);
-  innerShadow.addColorStop(0, 'rgba(255,255,255,0.18)');
-  innerShadow.addColorStop(0.45, 'rgba(255,255,255,0.04)');
-  innerShadow.addColorStop(1, 'rgba(0,0,0,0.18)');
-
-  ctx.save();
-  ctx.strokeStyle = 'rgba(255,255,255,0.16)';
-  ctx.lineWidth = edgeWidth;
-  ctx.shadowColor = 'rgba(0,0,0,0.24)';
-  ctx.shadowBlur = Math.max(4, profile.lipPx * 0.55);
-  ctx.strokeRect(matX + inset, matY + inset, matW - (inset * 2), matH - (inset * 2));
-  ctx.shadowColor = 'transparent';
-  ctx.strokeStyle = 'rgba(32, 20, 12, 0.24)';
-  ctx.lineWidth = Math.max(1, edgeWidth * 0.62);
-  ctx.strokeRect(matX + shadowInset, matY + shadowInset, matW - (shadowInset * 2), matH - (shadowInset * 2));
-  ctx.globalAlpha = 0.34;
-  ctx.fillStyle = innerShadow;
-  ctx.fillRect(matX + inset, matY + inset, matW - (inset * 2), Math.max(1, shadowInset - inset));
-  ctx.fillRect(matX + inset, matY + matH - shadowInset, matW - (inset * 2), Math.max(1, shadowInset - inset));
-  ctx.fillRect(matX + inset, matY + inset, Math.max(1, shadowInset - inset), matH - (inset * 2));
-  ctx.fillRect(matX + matW - shadowInset, matY + inset, Math.max(1, shadowInset - inset), matH - (inset * 2));
-  ctx.restore();
-}
-
 function paintMatSurface(ctx, x, y, w, h, baseColor, item = null) {
   const preview = getPreviewImage(item?.preview_url || '');
   if (preview) {
@@ -3532,7 +3504,6 @@ function renderMockup() {
     if (!mouldingPreview) {
       drawFrameMiters(ctx, outerX, outerY, outerW, outerH, frameProfile, 1);
     }
-    drawFrameInnerLip(ctx, matX, matY, matW, matH, frameProfile);
   }
 
   if (showMockupGuides && mockupInteraction.positionBox) {
