@@ -1596,23 +1596,35 @@ function isLikelyMouldingStrip(preview, item = null) {
   return url.includes('-strip.') || aspect >= 2.2;
 }
 
-function extractMouldingStripRun(preview) {
+function extractMouldingStripRun(preview, item = null) {
   const srcW = preview?.naturalWidth || preview?.width || 0;
   const srcH = preview?.naturalHeight || preview?.height || 0;
   if (!srcW || !srcH) return preview;
 
-  const aspect = srcW / srcH;
-  if (aspect < 4) return preview;
+  const prepared = String(item?.preview_url || '').toLowerCase().includes('-strip.');
+  const crop = window.MouldingRender?.getStripCropRect(srcW, srcH, { prepared })
+    || { x: 0, y: 0, width: srcW, height: srcH };
+  if (crop.x === 0 && crop.y === 0 && crop.width === srcW && crop.height === srcH) {
+    return preview;
+  }
 
-  const cropX = Math.round(srcW * 0.08);
-  const cropW = Math.max(1, Math.round(srcW * 0.76));
   const strip = document.createElement('canvas');
-  strip.width = cropW;
-  strip.height = srcH;
+  strip.width = crop.width;
+  strip.height = crop.height;
   const sctx = strip.getContext('2d');
   sctx.imageSmoothingEnabled = true;
   sctx.imageSmoothingQuality = 'high';
-  sctx.drawImage(preview, cropX, 0, cropW, srcH, 0, 0, cropW, srcH);
+  sctx.drawImage(
+    preview,
+    crop.x,
+    crop.y,
+    crop.width,
+    crop.height,
+    0,
+    0,
+    crop.width,
+    crop.height,
+  );
   return strip;
 }
 
@@ -1676,10 +1688,30 @@ function paintMouldingStripRail(ctx, position, x, y, w, h, stripSource) {
       ctx.drawImage(stripSource, -(tileW - railLength) / 2, 0, tileW, facePx);
       return;
     }
-    let offset = 0;
+
+    const overlap = window.MouldingRender?.getTileOverlap(facePx, tileW) || 0;
+    const step = Math.max(1, tileW - overlap);
+    const blendedTile = document.createElement('canvas');
+    blendedTile.width = Math.max(1, Math.ceil(tileW));
+    blendedTile.height = Math.max(1, Math.ceil(facePx));
+    const blendCtx = blendedTile.getContext('2d');
+    blendCtx.imageSmoothingEnabled = true;
+    blendCtx.imageSmoothingQuality = 'high';
+    blendCtx.drawImage(stripSource, 0, 0, blendedTile.width, blendedTile.height);
+    if (overlap > 0) {
+      blendCtx.globalCompositeOperation = 'destination-in';
+      const feather = blendCtx.createLinearGradient(0, 0, overlap, 0);
+      feather.addColorStop(0, 'rgba(0,0,0,0)');
+      feather.addColorStop(1, 'rgba(0,0,0,1)');
+      blendCtx.fillStyle = feather;
+      blendCtx.fillRect(0, 0, blendedTile.width, blendedTile.height);
+    }
+
+    ctx.drawImage(stripSource, 0, 0, tileW, facePx);
+    let offset = step;
     while (offset < railLength) {
-      ctx.drawImage(stripSource, offset, 0, tileW, facePx);
-      offset += tileW;
+      ctx.drawImage(blendedTile, offset, 0, tileW, facePx);
+      offset += step;
     }
   };
 
@@ -1771,7 +1803,7 @@ function createMouldingTexture(item, position, profile, preview) {
   if (preview) {
     const isPreCroppedStrip = isLikelyMouldingStrip(preview, item);
     const stripSource = isPreCroppedStrip
-      ? extractMouldingStripRun(preview)
+      ? extractMouldingStripRun(preview, item)
       : (extractCornerStrip(preview, profile) || extractMouldingSlice(preview, profile));
     const srcW = stripSource?.width || 0;
     const srcH = stripSource?.height || 0;
@@ -1927,6 +1959,39 @@ function _drawProceduralTexture(ctx, canvas, item, orientation, profile) {
   ctx.restore();
 }
 
+function strokeMouldingRailEdges(ctx, position, x, y, w, h) {
+  ctx.beginPath();
+  switch (position) {
+    case 'top':
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + w, y);
+      ctx.moveTo(x + h, y + h);
+      ctx.lineTo(x + w - h, y + h);
+      break;
+    case 'bottom':
+      ctx.moveTo(x, y + h);
+      ctx.lineTo(x + w, y + h);
+      ctx.moveTo(x + h, y);
+      ctx.lineTo(x + w - h, y);
+      break;
+    case 'left':
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y + h);
+      ctx.moveTo(x + w, y + w);
+      ctx.lineTo(x + w, y + h - w);
+      break;
+    case 'right':
+      ctx.moveTo(x + w, y);
+      ctx.lineTo(x + w, y + h);
+      ctx.moveTo(x, y + w);
+      ctx.lineTo(x, y + h - w);
+      break;
+    default:
+      return;
+  }
+  ctx.stroke();
+}
+
 function paintMouldingRail(ctx, position, x, y, w, h, item, profile) {
   const preview = getPreviewImage(item?.preview_url || '');
   const points = getRailPoints(position, x, y, w, h, profile);
@@ -1938,17 +2003,16 @@ function paintMouldingRail(ctx, position, x, y, w, h, item, profile) {
   let paintedFromPreview = false;
   if (preview) {
     const stripSource = isLikelyMouldingStrip(preview, item)
-      ? extractMouldingStripRun(preview)
+      ? extractMouldingStripRun(preview, item)
       : (extractCornerStrip(preview, profile) || extractMouldingSlice(preview, profile));
     paintedFromPreview = paintMouldingStripRail(ctx, position, x, y, w, h, stripSource);
   }
 
   if (paintedFromPreview) {
     ctx.save();
-    drawPathPoints(ctx, points);
     ctx.strokeStyle = 'rgba(24, 15, 10, 0.18)';
     ctx.lineWidth = Math.max(0.8, profile.facePx * 0.018);
-    ctx.stroke();
+    strokeMouldingRailEdges(ctx, position, x, y, w, h);
     ctx.restore();
     ctx.restore();
     return;

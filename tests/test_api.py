@@ -77,6 +77,14 @@ class ApiTests(unittest.TestCase):
         self.assertIn("text/css", stylesheet.headers["content-type"])
         self.assertIn("--studio-pink", stylesheet.text)
 
+    def test_render_scripts_use_a_shared_cache_busting_version(self):
+        home = self.client.get("/")
+
+        self.assertEqual(home.status_code, 200)
+        self.assertIn('/static/moulding-render.js?v=', home.text)
+        self.assertIn('/static/app.js?v=', home.text)
+        self.assertEqual(home.text.count(f'?v={main_module.STATIC_ASSET_VERSION}'), 2)
+
     def test_studio_profile_updates_branding_used_by_the_app_and_handoffs(self):
         saved = self.client.post(
             "/api/studio-profile",

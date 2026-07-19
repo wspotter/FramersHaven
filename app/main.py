@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import csv
+import hashlib
 import io
 import json
 import re
@@ -49,6 +50,16 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 EXPORT_DIR.mkdir(exist_ok=True)
 BACKUP_DIR.mkdir(exist_ok=True)
 PREVIEW_DIR.mkdir(exist_ok=True)
+
+
+def _static_asset_version(*relative_paths: str) -> str:
+    digest = hashlib.sha256()
+    for relative_path in relative_paths:
+        digest.update((ROOT / "static" / relative_path).read_bytes())
+    return digest.hexdigest()[:12]
+
+
+STATIC_ASSET_VERSION = _static_asset_version("moulding-render.js", "app.js")
 
 
 @asynccontextmanager
@@ -225,6 +236,7 @@ async def index(request: Request) -> HTMLResponse:
         "index.html",
         {
             "auth_enabled": False,
+            "asset_version": STATIC_ASSET_VERSION,
             "brand": _get_studio_profile(),
             "current_user": PUBLIC_WORKSTATION_USER,
         },
