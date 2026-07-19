@@ -52,6 +52,17 @@ Recommended local AI starter:
 ollama run hf.co/ggml-org/SmolVLM2-2.2B-Instruct-GGUF:Q4_K_M
 ```
 
+Development evals can sample real photo folders without adding those photos to
+the repository:
+
+```bash
+venv/bin/python scripts/framewise_eval.py --image-dir /path/to/photos --count 24
+```
+
+The sampler spreads picks across folders first so one customer job or event
+folder does not dominate the run. Add `--provider` when a local vision provider
+is running to test model-guided suggestions instead of the built-in fallback.
+
 No vendor catalogs, customer records, accounting credentials, or online billing flow are included in the repository. This is a local-first app. Accounting support is a local CSV handoff only; it does not provide accounting API sync. The app does not process payments or send email/SMS. Do not expose it directly to the public internet.
 
 ## Quick Start
