@@ -51,16 +51,15 @@ This is a local-first app. It does not provide payment processing, email/SMS sen
 
 ## Starting the App
 
-On Windows, double-click `run_windows.bat`.
+On Windows, double-click the FramersHaven Desktop shortcut or
+`run_windows.bat`. On macOS, double-click `Start FramersHaven.command`. On
+Linux, open FramersHaven from the application menu or run
+`~/.local/bin/framershaven`.
 
-On macOS or Linux:
-
-1. Activate the virtual environment if needed.
-2. Run `./scripts/run.sh`.
-3. Open `http://127.0.0.1:8000` in a browser on the workstation.
-4. Open `http://127.0.0.1:8000/help/` for the multi-page operator guide.
-
-`./scripts/run.sh` listens on `0.0.0.0:8000`, so another shop computer can open the app using this workstation's LAN IP address.
+Keep the launcher terminal open while using the app. The browser opens
+automatically; `/help/` on the printed local URL opens the multi-page operator
+guide. Launchers bind to `127.0.0.1` by default. A shop must explicitly set
+`HOST=0.0.0.0` to allow access from another computer on a trusted private LAN.
 
 ## Operator Help Site
 
@@ -136,10 +135,14 @@ On macOS or Linux:
 
 ### Install Or Refresh
 
-1. From the repo root, create a virtual environment if one does not exist: `python -m venv venv`.
-2. Install runtime dependencies: `./venv/bin/pip install -r requirements.txt`.
-3. For browser smoke testing, install dev tools: `./venv/bin/pip install -r requirements-dev.txt`.
-4. Install Chromium for Playwright smoke tests: `./venv/bin/python -m playwright install chromium`.
+1. Use the platform installer in the repository README for an ordinary
+   workstation install.
+2. The launcher creates or refreshes its isolated Python environment when
+   `requirements.txt` changes.
+3. For browser smoke testing, install dev tools with
+   `./venv/bin/pip install -r requirements-dev.txt`.
+4. Install Chromium for Playwright smoke tests with
+   `./venv/bin/python -m playwright install chromium`.
 
 ### Start
 

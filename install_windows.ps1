@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [string]$InstallRoot = (Join-Path $env:LOCALAPPDATA "FramersHaven"),
-    [switch]$NoLaunch
+    [switch]$NoLaunch,
+    [switch]$SetupAI
 )
 
 Set-StrictMode -Version Latest
@@ -54,6 +55,27 @@ function Install-Python312 {
     }
 }
 
+function New-FramersHavenShortcut {
+    param([string]$Launcher, [string]$WorkingDirectory)
+    try {
+        $desktop = [Environment]::GetFolderPath("Desktop")
+        if (-not $desktop) {
+            Write-Warning "Windows did not report a Desktop folder, so no shortcut was created."
+            return
+        }
+        $shortcutPath = Join-Path $desktop "FramersHaven.lnk"
+        $shell = New-Object -ComObject WScript.Shell
+        $shortcut = $shell.CreateShortcut($shortcutPath)
+        $shortcut.TargetPath = $Launcher
+        $shortcut.WorkingDirectory = $WorkingDirectory
+        $shortcut.Description = "Start FramersHaven"
+        $shortcut.Save()
+        Write-Host "Desktop shortcut created: $shortcutPath"
+    } catch {
+        Write-Warning "FramersHaven installed, but the Desktop shortcut could not be created: $($_.Exception.Message)"
+    }
+}
+
 $python = Find-CompatiblePython
 if (-not $python) {
     Install-Python312
@@ -88,10 +110,21 @@ if (Test-Path $InstallRoot) {
     }
 }
 
+New-FramersHavenShortcut -Launcher $launcher -WorkingDirectory $InstallRoot
+
+if ($SetupAI) {
+    $aiSetup = Join-Path $InstallRoot "setup_ai_windows.ps1"
+    if (-not (Test-Path $aiSetup)) {
+        throw "The optional AI setup script is missing: $aiSetup"
+    }
+    & $aiSetup
+}
+
 if (-not $NoLaunch) {
     $env:PYTHON_EXE = $python
     Write-Host "Starting FramersHaven from $InstallRoot"
     & $launcher
 } else {
     Write-Host "FramersHaven installed at $InstallRoot"
+    Write-Host "Run setup_ai_windows.ps1 later if you want optional local Framewise AI."
 }

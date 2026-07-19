@@ -20,21 +20,27 @@ Already Downloaded ZIP - Quick Start
    - install dependencies
    - create fictional demo data if studio.db does not exist
    - start the local app
-   - open http://127.0.0.1:8000 in your browser
+   - open FramersHaven in your browser
 4. Open http://127.0.0.1:8000/help/ for the operator guide.
 
 run_windows.bat handles this already-downloaded ZIP or folder. For a fresh
 Windows machine that does not have the app files yet, use the one-line
 PowerShell installer in README.md. That installer places FramersHaven under
 %LOCALAPPDATA%\FramersHaven and installs Python 3.12 through winget only if
-Python 3.11 or newer is missing. If that download fails, use this ZIP workflow.
+Python 3.11 or newer is missing. It also creates a FramersHaven Desktop
+shortcut. If that download fails, use this ZIP workflow.
 
 Stopping
 - Press Ctrl-C in the terminal running the app.
 
 Restarting
-- Run run_windows.bat again.
+- Double-click the FramersHaven Desktop shortcut, or run run_windows.bat again.
 - Existing studio.db is preserved and not overwritten.
+
+Optional Local AI
+- The basic app works without Ollama or a model.
+- To add Framewise vision, run setup_ai_windows.ps1 in PowerShell.
+- Then open Admin > Framewise in the app, enable it, and click Save and Test.
 
 LAN Use
 - By default the app listens on the local machine only.

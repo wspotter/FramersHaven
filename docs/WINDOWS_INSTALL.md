@@ -17,7 +17,8 @@ The installer:
 - installs Python 3.12 through `winget` only when Python 3.11 or newer is missing
 - creates the app's virtual environment and installs its dependencies
 - creates fictional demo data only when `studio.db` does not exist
-- starts the app and opens `http://127.0.0.1:8000`
+- creates a FramersHaven shortcut on the Windows Desktop
+- starts the app and opens it in the default browser
 
 If the installer cannot be downloaded, use the manual fallback below.
 
@@ -52,6 +53,20 @@ Runtime data stays local:
 
 Back up these files before moving the app to another workstation.
 
+## Optional Framewise AI
+
+FramersHaven works without Ollama or a model. To add the recommended local
+vision model after the basic install, open PowerShell and run:
+
+```powershell
+& "$env:LOCALAPPDATA\FramersHaven\setup_ai_windows.ps1"
+```
+
+This explicit AI setup installs Ollama from its official installer when it is
+missing and downloads the selected SmolVLM2 model. It does not upload shop data
+or change the basic FramersHaven installation. See [AI setup](AI_SETUP.md) for
+the final Framewise enable-and-test step.
+
 ## If Installation Stops
 
 - If Python was just installed but cannot be detected, close PowerShell, open a
@@ -66,6 +81,15 @@ Back up these files before moving the app to another workstation.
   rename or remove only the `venv` folder, then run the launcher again. This
   does not remove `studio.db` or the runtime-data folders listed above.
 - If the raw installer cannot be downloaded, use the manual ZIP fallback.
+- If Windows Defender or another security product blocks the downloaded script,
+  verify that the URL is the official `wspotter/FramersHaven` repository. Use
+  the manual ZIP fallback if your workstation policy does not allow PowerShell
+  bootstrap scripts. Do not disable antivirus protection.
+- If the browser does not open, leave the terminal running and open the local
+  address printed in that terminal.
+- If port 8000 is already in use, the launcher automatically tries ports
+  8001-8010. To choose one yourself, run `set PORT=8010` before
+  `run_windows.bat`.
 
 ## Trusted LAN Use
 

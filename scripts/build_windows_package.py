@@ -27,6 +27,10 @@ INCLUDE_FILES = [
     "requirements-dev.txt",
     "run_windows.bat",
     "install_windows.ps1",
+    "setup_ai_windows.ps1",
+    "install.sh",
+    "setup_ai.sh",
+    "Start FramersHaven.command",
 ]
 
 EXCLUDED_NAMES = {

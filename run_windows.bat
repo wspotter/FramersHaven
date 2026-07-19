@@ -3,9 +3,6 @@ setlocal
 
 cd /d "%~dp0"
 
-if "%HOST%"=="" set "HOST=127.0.0.1"
-if "%PORT%"=="" set "PORT=8000"
-
 if defined PYTHON_EXE (
     set PYTHON_CMD="%PYTHON_EXE%"
 ) else (
@@ -53,19 +50,30 @@ if not exist "venv\Scripts\python.exe" (
     )
 )
 
-echo Installing Python dependencies...
-"venv\Scripts\python.exe" -m pip install --upgrade pip
-if errorlevel 1 (
-    echo Could not upgrade pip.
-    pause
-    exit /b 1
+set "REQ_STAMP=venv\.framershaven-requirements.txt"
+set "INSTALL_DEPS=0"
+if not exist "%REQ_STAMP%" set "INSTALL_DEPS=1"
+if exist "%REQ_STAMP%" (
+    fc /b "requirements.txt" "%REQ_STAMP%" >nul 2>nul
+    if errorlevel 1 set "INSTALL_DEPS=1"
 )
 
-"venv\Scripts\python.exe" -m pip install -r requirements.txt
-if errorlevel 1 (
-    echo Could not install dependencies.
-    pause
-    exit /b 1
+if "%INSTALL_DEPS%"=="1" (
+    echo Installing Python dependencies...
+    "venv\Scripts\python.exe" -m pip install --upgrade pip
+    if errorlevel 1 (
+        echo Could not upgrade pip.
+        pause
+        exit /b 1
+    )
+
+    "venv\Scripts\python.exe" -m pip install -r requirements.txt
+    if errorlevel 1 (
+        echo Could not install dependencies.
+        pause
+        exit /b 1
+    )
+    copy /y "requirements.txt" "%REQ_STAMP%" >nul
 )
 
 if not exist "studio.db" (
@@ -78,9 +86,12 @@ if not exist "studio.db" (
     )
 )
 
-echo Starting FramersHaven at http://%HOST%:%PORT%
-echo Press Ctrl-C in this window to stop the app.
-start "" powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Sleep -Seconds 2; Start-Process 'http://127.0.0.1:%PORT%'"
-"venv\Scripts\python.exe" -m uvicorn app.main:app --host %HOST% --port %PORT%
+"venv\Scripts\python.exe" scripts\launch.py
+if errorlevel 1 (
+    echo.
+    echo FramersHaven stopped with an error. Review the message above.
+    pause
+    exit /b 1
+)
 
 endlocal

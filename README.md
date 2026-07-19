@@ -2,7 +2,7 @@
 
 FramersHaven is a local-first workstation for custom framing shops. It combines artwork intake, visual design, material selection, quoting, production tracking, customer records, document previews, and backups in one browser-based application.
 
-Current release candidate: **v0.2.0-rc1**. The application is ready for controlled evaluation. The packaged Windows workflow still requires a recorded test on a real Windows 10 or Windows 11 workstation before its final release.
+Current release candidate: **v0.2.0-rc1**. The application is ready for controlled evaluation. Installer scripts are covered by repository tests, but release sign-off still needs fresh-machine checks on the supported operating systems.
 
 The included demo uses the fictional **FramersHaven** identity and generated sample data. No customer records, vendor catalogs, or operational credentials are distributed with the repository.
 
@@ -73,8 +73,10 @@ No vendor catalogs, customer records, accounting credentials, or online billing 
 
 ## Quick Start
 
-Requires Python 3.11 or newer. The Windows installer below can install Python
-3.12 when no compatible Python is present.
+FramersHaven opens directly into the studio. The installers create an isolated
+Python environment, preserve existing workstation data, start the local app,
+and open it in the default browser. Framewise AI is optional and is not
+downloaded during the basic install.
 
 ### Windows
 
@@ -86,8 +88,8 @@ $installer="$env:TEMP\FramersHaven-install.ps1"; Invoke-WebRequest https://raw.g
 
 This installs FramersHaven under `%LOCALAPPDATA%\FramersHaven`, uses an existing
 Python 3.11 or newer installation, or installs Python 3.12 through `winget` only
-when one is missing. It preserves existing FramersHaven data, starts the local
-app, and opens `http://127.0.0.1:8000`.
+when one is missing. It creates a Desktop shortcut, preserves existing
+FramersHaven data, starts the local app, and opens it on localhost.
 
 If the installer download fails, use the manual fallback: download the
 repository ZIP, unzip it, and double-click `run_windows.bat` in the extracted
@@ -95,18 +97,34 @@ folder.
 
 See [Windows install](docs/WINDOWS_INSTALL.md) for details.
 
-### macOS / Linux
+### macOS and Linux
 
 ```bash
-python3 -m venv venv
-./venv/bin/pip install -r requirements.txt
-./venv/bin/python scripts/seed_demo.py
-./scripts/run.sh
+installer="$(mktemp)"; curl -fsSL https://raw.githubusercontent.com/wspotter/FramersHaven/main/install.sh -o "$installer" && bash "$installer"; rm -f "$installer"
 ```
 
-Open `http://127.0.0.1:8000`. The launcher defaults to `127.0.0.1`, so it is
-available only on the local machine. To opt in to access from other computers
-on a trusted private LAN, bind it to all network interfaces:
+The installer uses a compatible Python 3.11 or newer when available. If one is
+not available, it uses `uv` to install a private Python 3.12 runtime for
+FramersHaven without changing the system Python. On macOS it installs under
+`~/Applications/FramersHaven`; on Linux it installs under
+`~/.local/share/FramersHaven` and adds an application-menu launcher.
+
+See [macOS install](docs/MAC_INSTALL.md) or
+[Linux install](docs/LINUX_INSTALL.md) for restart and troubleshooting details.
+
+### Optional Local AI
+
+The basic app and Framewise catalog-grounded starter suggestions work without
+Ollama. To let Framewise inspect artwork with the recommended local vision
+model, follow [AI setup](docs/AI_SETUP.md). The AI setup is a separate,
+explicit step and downloads no model until you run it.
+
+### Localhost and Private LAN
+
+The launchers default to `127.0.0.1`, so only the workstation can connect. If
+port 8000 is busy, FramersHaven automatically tries the next available local
+port and prints the address. To opt in to access from other computers on a
+trusted private LAN, bind it to all network interfaces:
 
 ```bash
 HOST=0.0.0.0 ./scripts/run.sh
@@ -171,6 +189,9 @@ public internet.
 ## Documentation
 
 - [Windows install](docs/WINDOWS_INSTALL.md)
+- [macOS install](docs/MAC_INSTALL.md)
+- [Linux install](docs/LINUX_INSTALL.md)
+- [Optional local AI setup](docs/AI_SETUP.md)
 - [Operator manual](docs/USER_MANUAL.md)
 - [Feature ledger](docs/FEATURES.md)
 - [API reference](docs/API.md)

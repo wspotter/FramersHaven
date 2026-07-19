@@ -13,6 +13,12 @@ class WindowsPackageContentsTests(unittest.TestCase):
     def test_installer_is_a_required_package_file(self):
         self.assertIn("install_windows.ps1", build_windows_package.INCLUDE_FILES)
 
+    def test_optional_ai_and_cross_platform_launchers_are_required_package_files(self):
+        self.assertIn("setup_ai_windows.ps1", build_windows_package.INCLUDE_FILES)
+        self.assertIn("install.sh", build_windows_package.INCLUDE_FILES)
+        self.assertIn("setup_ai.sh", build_windows_package.INCLUDE_FILES)
+        self.assertIn("Start FramersHaven.command", build_windows_package.INCLUDE_FILES)
+
     def test_archive_contains_only_public_demo_catalog_previews(self):
         with tempfile.TemporaryDirectory() as tempdir:
             root = Path(tempdir) / "repo"

@@ -5,6 +5,7 @@ ROOT = Path(__file__).parent.parent
 INSTALLER = ROOT / "install_windows.ps1"
 LAUNCHER = ROOT / "run_windows.bat"
 SHELL_LAUNCHER = ROOT / "scripts" / "run.sh"
+PYTHON_LAUNCHER = ROOT / "scripts" / "launch.py"
 WINDOWS_INSTALL_DOC = ROOT / "docs" / "WINDOWS_INSTALL.md"
 START_HERE_WINDOWS = ROOT / "START_HERE_WINDOWS.txt"
 POWERSHELL_INSTALL_COMMAND = (
@@ -21,6 +22,14 @@ def test_installer_uses_expected_per_user_location_and_python_package():
     assert "Python.Python.3.12" in script
     assert "winget" in script
     assert "3, 11" in script
+
+
+def test_installer_creates_a_desktop_shortcut_and_offers_explicit_ai_setup():
+    script = INSTALLER.read_text(encoding="utf-8")
+    assert "CreateShortcut" in script
+    assert "Desktop" in script
+    assert "setup_ai_windows.ps1" in script
+    assert "[switch]$SetupAI" in script
 
 
 def test_installer_downloads_without_git_and_preserves_existing_install():
@@ -48,6 +57,19 @@ def test_launcher_accepts_and_validates_installer_python():
     launcher = LAUNCHER.read_text(encoding="utf-8")
     assert "PYTHON_EXE" in launcher
     assert "sys.version_info >= (3, 11)" in launcher
+
+
+def test_launcher_uses_the_shared_browser_aware_python_launcher():
+    launcher = LAUNCHER.read_text(encoding="utf-8")
+    assert 'scripts\\launch.py' in launcher
+    assert "Start-Sleep" not in launcher
+
+
+def test_launcher_skips_dependency_downloads_when_requirements_are_unchanged():
+    launcher = LAUNCHER.read_text(encoding="utf-8")
+    assert ".framershaven-requirements.txt" in launcher
+    assert 'fc /b "requirements.txt"' in launcher
+    assert 'copy /y "requirements.txt"' in launcher
 
 
 def test_launcher_checks_fallback_detection_at_execution_time():
@@ -95,8 +117,10 @@ def test_public_windows_docs_publish_the_same_exact_installer_command():
 
 
 def test_shell_launcher_defaults_to_localhost():
-    launcher = SHELL_LAUNCHER.read_text(encoding="utf-8")
-    assert 'HOST="${HOST:-127.0.0.1}"' in launcher
+    shell_launcher = SHELL_LAUNCHER.read_text(encoding="utf-8")
+    python_launcher = PYTHON_LAUNCHER.read_text(encoding="utf-8")
+    assert "scripts/launch.py" in shell_launcher
+    assert 'os.environ.get("HOST", "127.0.0.1")' in python_launcher
 
 
 def test_public_windows_docs_do_not_include_future_publication_copy():

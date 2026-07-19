@@ -2,7 +2,11 @@
 
 ## Supported Use
 
-FramersHaven is designed for a trusted local workstation or private LAN. It includes simple local login, but does not include internet-facing authentication hardening, TLS termination, or multi-tenant authorization. Do not expose the development server directly to the public internet.
+FramersHaven is designed for a trusted local workstation or private LAN and
+opens directly into the studio workspace. It does not include internet-facing
+authentication, TLS termination, or multi-tenant authorization. Anyone who can
+reach the app can use its operator and admin tools. Do not expose the local
+server directly to the public internet.
 
 ## Reporting
 
