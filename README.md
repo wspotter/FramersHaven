@@ -130,17 +130,13 @@ With the app running against demo data:
 ./venv/bin/python scripts/generate_screenshots.py
 ```
 
-## Login And Roles
+## Local Workstation Use
 
-FramersHaven includes a simple local workstation login so a shop can keep admin
-tools away from normal counter use. First-run demo accounts are:
-
-- `admin` / `admin` for catalog imports, pricing, backups, studio settings, and assistant setup
-- `operator` / `operator` for design, gallery, customers, quotes, orders, and day-to-day counter work
-
-Set `FRAMERSHAVEN_ADMIN_PASSWORD` and `FRAMERSHAVEN_OPERATOR_PASSWORD` before
-first launch to seed different defaults. This is intended for a trusted
-workstation or private LAN, not public internet hosting.
+FramersHaven opens directly into the studio workspace. It is intended for a
+trusted workstation or private LAN where the shop controls access to the
+computer itself. Admin tools are included in the free build so a shop can import
+catalogs, adjust pricing, configure Framewise, and manage backups without a
+separate license gate.
 
 ## Practical Capacity
 
@@ -167,7 +163,10 @@ Runtime data is deliberately ignored by Git. `catalog_previews/` runtime content
 - `backups/`
 - `catalog_imports/`
 
-The app is intended for a trusted workstation or private LAN. It includes simple local login, but does not provide internet-facing authentication hardening, TLS termination, payment processing, or automated message delivery. Do not expose it directly to the public internet.
+The app is intended for a trusted workstation or private LAN. It does not
+provide internet-facing authentication hardening, TLS termination, payment
+processing, or automated message delivery. Do not expose it directly to the
+public internet.
 
 ## Documentation
 

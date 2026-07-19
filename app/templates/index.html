@@ -4303,6 +4303,7 @@
         </div>
         <div class="actions">
           <a class="topbar-nav-button topbar-help-link" href="/help/" target="_blank" rel="noopener" title="Open the FramersHaven operator guide.">Help</a>
+          {% if auth_enabled %}
           <form method="post" action="/api/auth/logout">
             <button type="submit" class="secondary logout-button" title="Sign out of this workstation.">Sign Out</button>
           </form>
@@ -4310,6 +4311,7 @@
             <strong>{{ current_user.display_name }}</strong>
             <span>{{ current_user.role|title }}</span>
           </div>
+          {% endif %}
           <div class="theme-picker">
             <label for="themeSelect">Theme</label>
             <select id="themeSelect" onchange="onThemeChange(this.value)" title="Switch the workstation theme.">

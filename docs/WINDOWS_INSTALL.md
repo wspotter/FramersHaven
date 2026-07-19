@@ -80,4 +80,6 @@ run_windows.bat
 
 Then open `http://WORKSTATION-IP:8000` from the other computer.
 
-Do not expose FramersHaven directly to the public internet. It includes simple local login, but does not include internet-facing authentication hardening, TLS termination, or hosted-service hardening.
+Do not expose FramersHaven directly to the public internet. It does not include
+internet-facing authentication hardening, TLS termination, or hosted-service
+hardening.

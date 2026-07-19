@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from PIL import Image, ImageDraw, ImageOps, UnidentifiedImageError
@@ -24,7 +24,6 @@ from reportlab.lib.utils import ImageReader
 
 from . import db as db_module
 from .accounting_export import generate_accounting_export
-from .auth import ensure_default_users, get_current_user, require_admin, router as auth_router
 from .db import get_connection, init_db
 from .db_admin import init_admin_tables
 from .edition import (
@@ -56,13 +55,11 @@ PREVIEW_DIR.mkdir(exist_ok=True)
 async def lifespan(_: FastAPI):
     init_db()
     init_admin_tables()
-    ensure_default_users()
     _backfill_catalog_preview_links()
     yield
 
 
 app = FastAPI(title="FramersHaven", lifespan=lifespan)
-app.include_router(auth_router)
 app.include_router(framewise_router)
 
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
@@ -71,40 +68,11 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 app.mount("/catalog-previews", StaticFiles(directory=PREVIEW_DIR), name="catalog-previews")
 templates = Jinja2Templates(directory=str(ROOT / "templates"))
 
-AUTH_EXEMPT_PATHS = {"/login", "/api/auth/login", "/api/health"}
-AUTH_EXEMPT_PREFIXES = ("/static/", "/help", "/favicon.ico")
-ADMIN_PATH_PREFIXES = (
-    "/api/accounting/",
-    "/api/backups",
-    "/api/catalog/import",
-    "/api/catalog/items",
-    "/api/framewise/config",
-    "/api/framewise/examples/export",
-)
-ADMIN_MUTATION_PATH_PREFIXES = (
-    "/api/services",
-    "/api/settings",
-    "/api/studio-profile",
-)
-
-
-@app.middleware("http")
-async def require_local_login(request: Request, call_next):
-    path = request.url.path
-    is_exempt = path in AUTH_EXEMPT_PATHS or path.startswith(AUTH_EXEMPT_PREFIXES)
-    if not is_exempt and not get_current_user(request):
-        if path.startswith("/api/"):
-            return JSONResponse({"detail": "Login required"}, status_code=401)
-        return RedirectResponse("/login", status_code=303)
-    needs_admin = any(path.startswith(prefix) for prefix in ADMIN_PATH_PREFIXES)
-    if request.method != "GET" and any(path.startswith(prefix) for prefix in ADMIN_MUTATION_PATH_PREFIXES):
-        needs_admin = True
-    if needs_admin:
-        try:
-            require_admin(request)
-        except HTTPException as exc:
-            return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
-    return await call_next(request)
+PUBLIC_WORKSTATION_USER = {
+    "username": "local",
+    "display_name": "Local Workstation",
+    "role": "admin",
+}
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -252,10 +220,15 @@ def _save_studio_profile_values(values: Mapping[str, str]) -> dict[str, Any]:
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request) -> HTMLResponse:
-    user = get_current_user(request)
-    if not user:
-        return RedirectResponse("/login", status_code=303)
-    return templates.TemplateResponse(request, "index.html", {"brand": _get_studio_profile(), "current_user": user})
+    return templates.TemplateResponse(
+        request,
+        "index.html",
+        {
+            "auth_enabled": False,
+            "brand": _get_studio_profile(),
+            "current_user": PUBLIC_WORKSTATION_USER,
+        },
+    )
 
 
 @app.get("/api/health")
