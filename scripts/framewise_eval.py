@@ -32,7 +32,7 @@ from app.main import app
 DEFAULT_MODEL = "hf.co/ggml-org/SmolVLM2-2.2B-Instruct-GGUF:Q4_K_M"
 DEFAULT_BASE_URL = "http://127.0.0.1:11434/v1"
 PHOTO_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
-PRIVATE_REPORT_TERMS = ["Ollie", "Printery", "Katherine", "Stacy"]
+PRIVATE_REPORT_TERMS = ["PrivateAssistant", "PrivateShop", "PrivateCustomer", "PrivateOperator"]
 
 
 SCENARIOS: list[dict[str, Any]] = [

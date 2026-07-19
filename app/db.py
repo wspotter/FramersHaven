@@ -104,6 +104,20 @@ def init_db() -> None:
             sort_order INTEGER NOT NULL DEFAULT 0,
             updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS framewise_examples (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            image_id INTEGER,
+            subject TEXT,
+            goal TEXT,
+            source TEXT,
+            visual_analysis_json TEXT NOT NULL,
+            suggestion_json TEXT NOT NULL,
+            quote_context_json TEXT NOT NULL,
+            applied_snapshot_json TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(image_id) REFERENCES images(id)
+        );
         """
     )
 

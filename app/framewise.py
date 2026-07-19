@@ -10,6 +10,7 @@ from typing import Any
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import Response
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, Field
 
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/framewise", tags=["framewise"])
 
+UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
 RECOMMENDED_FRAMEWISE_MODEL = "hf.co/ggml-org/SmolVLM2-2.2B-Instruct-GGUF:Q4_K_M"
 
 FRAMEWISE_DEFAULTS: dict[str, str] = {
@@ -35,6 +37,17 @@ FRAMEWISE_DEFAULTS: dict[str, str] = {
 FRAMEWISE_SETTING_KEYS = {f"framewise_{key}": key for key in FRAMEWISE_DEFAULTS}
 ALLOWED_PROVIDER_TYPES = {"ollama", "llama.cpp", "lm-studio", "openai-compatible"}
 DESIGN_PROVIDER_TIMEOUT_SECONDS = 90
+SENSITIVE_EXPORT_KEY_PARTS = {
+    "api_key",
+    "authorization",
+    "contact",
+    "customer",
+    "email",
+    "phone",
+    "private",
+    "secret",
+    "token",
+}
 
 SYSTEM_PROMPT = """\
 You are Framewise, a concise framing-studio assistant built into FramersHaven.
@@ -57,6 +70,17 @@ class FramewiseDesignRequest(BaseModel):
     goal: str = Field("", max_length=1200)
     image_id: int | None = None
     quote_context: dict[str, Any] = Field(default_factory=dict)
+
+
+class FramewiseExampleRequest(BaseModel):
+    image_id: int | None = None
+    subject: str = Field("", max_length=1200)
+    goal: str = Field("", max_length=1200)
+    source: str = Field("operator-applied", max_length=80)
+    visual_analysis: dict[str, Any] = Field(default_factory=dict)
+    suggestion: dict[str, Any] = Field(default_factory=dict)
+    quote_context: dict[str, Any] = Field(default_factory=dict)
+    applied_snapshot: dict[str, Any] = Field(default_factory=dict)
 
 
 def _truthy(value: Any) -> bool:
@@ -214,6 +238,8 @@ def _framewise_image_payload(image_id: int | None) -> dict[str, Any]:
         return {"available": False, "reason": f"Gallery image {image_id} was not found."}
 
     image_path = Path(str(row["path"]))
+    if not image_path.is_absolute() and not image_path.exists():
+        image_path = UPLOAD_DIR / image_path
     if not image_path.exists() or not image_path.is_file():
         return {"available": False, "reason": "The selected gallery image file is missing."}
 
@@ -306,6 +332,66 @@ def _parse_provider_json(text: str) -> dict[str, Any]:
         if start >= 0 and end > start:
             return json.loads(clean[start : end + 1])
         raise
+
+
+def _json_compact(value: Any) -> str:
+    return json.dumps(value or {}, ensure_ascii=True, separators=(",", ":"))
+
+
+def _redact_training_value(value: Any) -> Any:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        return [_redact_training_value(item) for item in value]
+    if isinstance(value, dict):
+        redacted: dict[str, Any] = {}
+        for key, item in value.items():
+            clean_key = str(key)
+            lowered = clean_key.lower()
+            if any(part in lowered for part in SENSITIVE_EXPORT_KEY_PARTS):
+                continue
+            redacted[clean_key] = _redact_training_value(item)
+        return redacted
+    return value
+
+
+def _load_json_field(raw: str | None) -> Any:
+    if not raw:
+        return {}
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+
+
+def _training_record(row: dict[str, Any]) -> dict[str, Any]:
+    visual_analysis = _load_json_field(row.get("visual_analysis_json"))
+    suggestion = _load_json_field(row.get("suggestion_json"))
+    quote_context = _load_json_field(row.get("quote_context_json"))
+    applied_snapshot = _load_json_field(row.get("applied_snapshot_json"))
+    record = {
+        "version": "framewise-example-v1",
+        "created_at": row.get("created_at"),
+        "image": {
+            "id": row.get("image_id"),
+            "filename": row.get("filename"),
+            "width_in": row.get("width_in"),
+            "height_in": row.get("height_in"),
+            "ratio_label": row.get("ratio_label"),
+        },
+        "input": {
+            "subject": row.get("subject") or "",
+            "goal": row.get("goal") or "",
+            "quote_context": quote_context,
+            "visual_analysis": visual_analysis,
+        },
+        "output": {
+            "source": row.get("source") or "operator-applied",
+            "suggestion": suggestion,
+            "applied_snapshot": applied_snapshot,
+        },
+    }
+    return _redact_training_value(record)
 
 
 def _provider_suggestions(parsed: dict[str, Any]) -> list[dict[str, Any]]:
@@ -592,3 +678,89 @@ async def framewise_design_ideas(req: FramewiseDesignRequest) -> dict[str, Any]:
         "catalog_counts": {"mouldings": len(mouldings), "mats": len(mats)},
         "suggestions": suggestions,
     }
+
+
+@router.post("/examples")
+def save_framewise_example(req: FramewiseExampleRequest) -> dict[str, Any]:
+    if not req.suggestion:
+        raise HTTPException(status_code=400, detail="Framewise suggestion is required")
+    if not req.applied_snapshot:
+        raise HTTPException(status_code=400, detail="Applied design snapshot is required")
+
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        if req.image_id:
+            cur.execute("SELECT id FROM images WHERE id = ?", (req.image_id,))
+            if not cur.fetchone():
+                raise HTTPException(status_code=400, detail="Framewise example image was not found")
+        cur.execute(
+            """
+            INSERT INTO framewise_examples (
+                image_id,
+                subject,
+                goal,
+                source,
+                visual_analysis_json,
+                suggestion_json,
+                quote_context_json,
+                applied_snapshot_json
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                req.image_id,
+                req.subject.strip(),
+                req.goal.strip(),
+                req.source.strip() or "operator-applied",
+                _json_compact(req.visual_analysis),
+                _json_compact(req.suggestion),
+                _json_compact(req.quote_context),
+                _json_compact(req.applied_snapshot),
+            ),
+        )
+        example_id = cur.lastrowid
+        conn.commit()
+        cur.execute("SELECT id, image_id, source, created_at FROM framewise_examples WHERE id = ?", (example_id,))
+        row = cur.fetchone()
+        return {"example": dict(row)}
+    finally:
+        conn.close()
+
+
+@router.get("/examples/export")
+def export_framewise_examples() -> Response:
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT
+                examples.id,
+                examples.image_id,
+                examples.subject,
+                examples.goal,
+                examples.source,
+                examples.visual_analysis_json,
+                examples.suggestion_json,
+                examples.quote_context_json,
+                examples.applied_snapshot_json,
+                examples.created_at,
+                images.filename,
+                images.width_in,
+                images.height_in,
+                images.ratio_label
+            FROM framewise_examples AS examples
+            LEFT JOIN images ON images.id = examples.image_id
+            ORDER BY examples.id
+            """
+        )
+        rows = [dict(row) for row in cur.fetchall()]
+    finally:
+        conn.close()
+    lines = [json.dumps(_training_record(row), ensure_ascii=True, sort_keys=True) for row in rows]
+    body = "\n".join(lines)
+    if body:
+        body += "\n"
+    headers = {"Content-Disposition": 'attachment; filename="framewise-training-examples.jsonl"'}
+    return Response(content=body, media_type="application/x-ndjson", headers=headers)

@@ -46,6 +46,12 @@ workspace sends the selected artwork image for visual analysis before suggesting
 catalog-grounded looks. When no model is configured, it still produces local
 starter looks from the workstation catalog. The app does not ship model weights.
 
+When an operator reviews and applies a Framewise look, the app can store an
+optional reviewed example locally for future model tuning or export. Example
+storage and export stay on the workstation. The local JSONL export should be
+reviewed for operator-supplied artwork, customer, and catalog context before it
+is shared.
+
 Recommended local AI starter:
 
 ```bash

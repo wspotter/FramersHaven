@@ -22,6 +22,18 @@ look can be applied to the live mockup before the operator calculates the quote.
 If no model provider is enabled, Framewise uses local starter looks instead of
 blocking the workflow.
 
+### Reviewed Framewise Examples
+
+After reviewing and applying a Framewise look, the app can store an optional
+reviewed example locally. Examples can preserve the request context, visual
+analysis, suggestion, and applied design snapshot for future model tuning or
+export. They remain in the local workstation data until an operator exports
+them.
+
+The export is a local JSONL file, `framewise-training-examples.jsonl`. Review
+the file before sharing it because it may contain operator-supplied artwork,
+customer, or catalog context.
+
 The recommended local starter is SmolVLM2 through Ollama:
 
 ```bash

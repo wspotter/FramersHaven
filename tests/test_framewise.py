@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -10,6 +11,7 @@ from fastapi.testclient import TestClient
 from PIL import Image
 
 from app import db
+from app import framewise
 from app import main as main_module
 from app.main import app
 
@@ -27,6 +29,8 @@ class FramewiseTests(unittest.TestCase):
         self.original_upload_dir = main_module.UPLOAD_DIR
         main_module.UPLOAD_DIR = Path(self.tempdir.name) / "uploads"
         main_module.UPLOAD_DIR.mkdir(exist_ok=True)
+        self.original_framewise_upload_dir = framewise.UPLOAD_DIR
+        framewise.UPLOAD_DIR = main_module.UPLOAD_DIR
         main_module._catalog_preview_basename_index.cache_clear()
         db.init_db()
         self.client = TestClient(app)
@@ -34,8 +38,102 @@ class FramewiseTests(unittest.TestCase):
     def tearDown(self):
         self.client.close()
         main_module.UPLOAD_DIR = self.original_upload_dir
+        framewise.UPLOAD_DIR = self.original_framewise_upload_dir
         main_module._catalog_preview_basename_index.cache_clear()
         self.tempdir.cleanup()
+
+    def _reviewed_example_payload(self):
+        return {
+            "image_id": None,
+            "subject": "Warm landscape photograph",
+            "goal": "Present a calm, refined framing direction.",
+            "source": "vision-guided",
+            "visual_analysis": {
+                "summary": "Warm landscape with a moderate contrast range.",
+                "dominant_colors": ["gold", "blue"],
+            },
+            "suggestion": {
+                "title": "Sunset Walnut",
+                "summary": "Warm walnut with a quiet ivory mat.",
+                "why": "The restrained contrast keeps attention on the image.",
+            },
+            "quote_context": {
+                "width_in": 12,
+                "height_in": 16,
+                "customer_name": "Private Customer",
+                "customer_email": "customer-private@example.test",
+            },
+            "applied_snapshot": {
+                "moulding": {"sku": "F1", "name": "Walnut"},
+                "top_mat": {"sku": "M1", "name": "Warm White"},
+                "private_notes": "Sensitive counter note.",
+                "api_key": "framewise-example-secret",
+            },
+        }
+
+    def _save_reviewed_example(self):
+        self.client.post(
+            "/api/framewise/config",
+            data={
+                "enabled": "on",
+                "assistant_name": "Framewise",
+                "provider_type": "openai-compatible",
+                "base_url": "http://127.0.0.1:1234/v1",
+                "model": "local-test-model",
+                "api_key": "framewise-config-secret",
+                "context_tokens": "4096",
+                "temperature": "0.2",
+            },
+        )
+        return self.client.post("/api/framewise/examples", json=self._reviewed_example_payload())
+
+    def test_framewise_reviewed_example_saves_applied_look_without_private_response_data(self):
+        response = self._save_reviewed_example()
+
+        self.assertIn(response.status_code, (200, 201))
+        self.assertNotIn("framewise-config-secret", response.text)
+        self.assertNotIn("framewise-example-secret", response.text)
+        self.assertNotIn("Private Customer", response.text)
+        self.assertNotIn("customer-private@example.test", response.text)
+
+        conn = db.get_connection()
+        try:
+            row = conn.execute(
+                "SELECT subject, applied_snapshot_json FROM framewise_examples ORDER BY id DESC LIMIT 1"
+            ).fetchone()
+        finally:
+            conn.close()
+        self.assertIsNotNone(row)
+        self.assertEqual(row["subject"], "Warm landscape photograph")
+        self.assertEqual(json.loads(row["applied_snapshot_json"])["moulding"]["sku"], "F1")
+
+    def test_framewise_reviewed_examples_export_as_redacted_jsonl(self):
+        saved = self._save_reviewed_example()
+        self.assertIn(saved.status_code, (200, 201))
+
+        response = self.client.get("/api/framewise/examples/export")
+
+        self.assertEqual(response.status_code, 200)
+        lines = [line for line in response.text.splitlines() if line.strip()]
+        self.assertEqual(len(lines), 1)
+        exported = json.loads(lines[0])
+        self.assertEqual(exported["version"], "framewise-example-v1")
+        self.assertEqual(exported["input"]["subject"], "Warm landscape photograph")
+        self.assertEqual(exported["output"]["suggestion"]["title"], "Sunset Walnut")
+        self.assertEqual(exported["output"]["applied_snapshot"]["moulding"]["sku"], "F1")
+
+        exported_text = response.text
+        for private_term in (
+            "framewise-config-secret",
+            "framewise-example-secret",
+            "api_key",
+            "customer_name",
+            "customer_email",
+            "customer-private@example.test",
+            "Private Customer",
+            "private_notes",
+        ):
+            self.assertNotIn(private_term, exported_text)
 
     def test_framewise_defaults_are_public_local_and_disabled(self):
         response = self.client.get("/api/framewise/config")
@@ -46,8 +144,6 @@ class FramewiseTests(unittest.TestCase):
         self.assertEqual(config["provider_type"], "ollama")
         self.assertEqual(config["base_url"], "http://127.0.0.1:11434/v1")
         self.assertEqual(config["model"], "hf.co/ggml-org/SmolVLM2-2.2B-Instruct-GGUF:Q4_K_M")
-        self.assertNotIn("Ollie", str(config))
-        self.assertNotIn("Printery", str(config))
 
     def test_framewise_config_round_trips_without_exposing_api_key(self):
         saved = self.client.post(
@@ -91,7 +187,6 @@ class FramewiseTests(unittest.TestCase):
         self.assertIn('id="framewiseSubjectPrompt"', home.text)
         self.assertIn("Suggest Looks", home.text)
         self.assertIn("/api/framewise/config", home.text)
-        self.assertNotIn("Ask Ollie", home.text)
 
     def test_framewise_design_ideas_use_local_catalog_when_provider_is_off(self):
         self.client.post(
@@ -130,8 +225,6 @@ class FramewiseTests(unittest.TestCase):
         self.assertEqual(first["selections"]["moulding"]["sku"], "F1")
         self.assertEqual(first["selections"]["top_mat"]["sku"], "M1")
         self.assertIn("conversation_tip", first)
-        self.assertNotIn("Ollie", str(payload))
-        self.assertNotIn("Printery", str(payload))
 
     @patch("httpx.AsyncClient.post")
     def test_framewise_design_ideas_can_use_provider_wording_with_catalog_ids(self, mocked_post):
@@ -429,6 +522,80 @@ class FramewiseTests(unittest.TestCase):
         self.assertIsInstance(content, list)
         self.assertEqual(content[1]["type"], "image_url")
         self.assertTrue(content[1]["image_url"]["url"].startswith("data:image/jpeg;base64,"))
+
+    @patch("httpx.AsyncClient.post")
+    def test_framewise_design_ideas_resolves_relative_uploaded_image_path(self, mocked_post):
+        class FakeResponse:
+            def raise_for_status(self):
+                return None
+
+            def json(self):
+                return {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": (
+                                    '{"visual_analysis":{"summary":"Graphic color study.",'
+                                    '"dominant_colors":["teal","rose"],'
+                                    '"temperature":"mixed","contrast":"medium","style":"graphic",'
+                                    '"framing_notes":["Keep the frame quiet."]},'
+                                    '"suggestions":[{"title":"Clean Color Study","summary":"Simple and polished.",'
+                                    '"why":"Lets the color lead.","conversation_tip":"A counter-safe first option."}]}'
+                                )
+                            }
+                        }
+                    ]
+                }
+
+        mocked_post.return_value = FakeResponse()
+        self.client.post(
+            "/api/catalog/import",
+            files={
+                "file": (
+                    "catalog.csv",
+                    "sku,name,category,cost,width_in\nF1,Graphite,moulding,12,1.5\nM1,Warm White,mat,4,0\n",
+                    "text/csv",
+                )
+            },
+        )
+        image_path = main_module.UPLOAD_DIR / "relative-demo.png"
+        Image.new("RGB", (120, 80), "#1fb7a6").save(image_path, format="PNG")
+        conn = db.get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                INSERT INTO images (filename, path, width_in, height_in, ratio_label, crop_json)
+                VALUES (?, ?, 12, 8, '3:2', '{}')
+                """,
+                ("relative-demo.png", "relative-demo.png"),
+            )
+            image_id = cur.lastrowid
+            conn.commit()
+        finally:
+            conn.close()
+        self.client.post(
+            "/api/framewise/config",
+            data={
+                "enabled": "on",
+                "assistant_name": "Framewise",
+                "provider_type": "ollama",
+                "base_url": "http://127.0.0.1:11434/v1",
+                "model": "smolvlm2:2.2b",
+                "context_tokens": "4096",
+                "temperature": "0.1",
+            },
+        )
+
+        response = self.client.post("/api/framewise/design-ideas", json={"subject": "color study", "image_id": image_id})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["source"], "vision-guided")
+        self.assertTrue(payload["image"]["available"])
+        content = mocked_post.await_args.kwargs["json"]["messages"][1]["content"]
+        self.assertIsInstance(content, list)
+        self.assertEqual(content[1]["type"], "image_url")
 
 
 if __name__ == "__main__":

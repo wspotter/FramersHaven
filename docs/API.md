@@ -31,6 +31,15 @@
   - response includes three framing suggestions with real local catalog IDs/SKUs where available
   - response includes `image` and `visual_analysis` metadata so the UI can show whether the artwork was actually analyzed
   - if the provider is disabled or unreachable, returns local starter looks instead of blocking the design workflow
+- `POST /api/framewise/examples`
+  - records an optional local reviewed example after an operator applies a Framewise look
+  - JSON body: `{ image_id, subject, goal, source, visual_analysis, suggestion, quote_context, applied_snapshot }`
+  - `suggestion` and `applied_snapshot` are required; the other fields are optional
+  - stores the example in the local SQLite database for future model tuning or export
+- `GET /api/framewise/examples/export`
+  - downloads the locally stored examples as `framewise-training-examples.jsonl`
+  - returns newline-delimited JSON with the request context, visual analysis, suggestion, and applied design snapshot
+  - the export is local-only and should be reviewed for operator-supplied artwork, customer, and catalog context before sharing
 
 ## Settings
 - `GET /api/settings`

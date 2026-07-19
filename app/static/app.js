@@ -31,6 +31,13 @@ let pricingSettings = null;
 let serviceOptionsCache = [];
 let editionStatusCache = null;
 let framewiseDesignIdeas = [];
+let framewiseDesignContext = {
+  subject: '',
+  goal: '',
+  source: '',
+  visual_analysis: {},
+  quote_context: {},
+};
 let customerSearchTimer = null;
 let orderSearchTimer = null;
 let designSearchTimer = null;
@@ -514,16 +521,26 @@ async function askFramewiseForIdeas() {
   if (status) status.textContent = 'Asking Framewise for catalog-grounded looks...';
   try {
     await ensureCatalogCache();
+    const subject = document.getElementById('framewiseSubjectPrompt')?.value || '';
+    const goal = 'Give the frame counter three concise framing looks. Use real local catalog selections when possible.';
+    const quoteContext = buildFramewiseQuoteContext();
     const data = await fetchJson('/api/framewise/design-ideas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        subject: document.getElementById('framewiseSubjectPrompt')?.value || '',
-        goal: 'Give the frame counter three concise framing looks. Use real local catalog selections when possible.',
+        subject,
+        goal,
         image_id: selectedImageId || null,
-        quote_context: buildFramewiseQuoteContext(),
+        quote_context: quoteContext,
       }),
     });
+    framewiseDesignContext = {
+      subject,
+      goal,
+      source: data.source || '',
+      visual_analysis: data.visual_analysis || {},
+      quote_context: quoteContext,
+    };
     framewiseDesignIdeas = data.suggestions || [];
     renderFramewiseIdeas(data);
     setNotice(framewiseDesignIdeas.length ? 'Framewise suggestions ready.' : 'Framewise had no suggestions.', framewiseDesignIdeas.length ? 'success' : 'error');
@@ -532,6 +549,30 @@ async function askFramewiseForIdeas() {
     renderFramewiseIdeas();
     if (status) status.textContent = error.message;
     setNotice(error.message, 'error');
+  }
+}
+
+async function recordAppliedFramewiseExample(idea, quote) {
+  try {
+    await fetchJson('/api/framewise/examples', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        image_id: selectedImageId || null,
+        subject: framewiseDesignContext.subject,
+        goal: framewiseDesignContext.goal,
+        source: framewiseDesignContext.source,
+        visual_analysis: framewiseDesignContext.visual_analysis,
+        suggestion: idea,
+        quote_context: framewiseDesignContext.quote_context,
+        applied_snapshot: {
+          ...captureDesignSnapshot(),
+          quote,
+        },
+      }),
+    });
+  } catch (error) {
+    console.warn('Framewise applied example could not be recorded.', error);
   }
 }
 
@@ -560,8 +601,9 @@ async function applyFramewiseIdea(index) {
   updateSelectionSummary();
   renderCatalogDrawer();
   renderMockup();
-  await calcQuote();
+  const quote = await calcQuote();
   setNotice(`${idea.title || 'Framewise look'} applied to the design.`, 'success');
+  if (quote) void recordAppliedFramewiseExample(idea, quote);
 }
 
 function setActiveMatSlot(type) {
@@ -4392,8 +4434,10 @@ async function calcQuote() {
     renderMockup();
     show(lastQuote);
     setNotice('Quote calculated.', 'success');
+    return lastQuote;
   } catch (error) {
     setNotice(error.message, 'error');
+    return null;
   }
 }
 
