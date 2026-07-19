@@ -25,8 +25,10 @@
   - JSON body: `{ message, conversation_id, workspace, quote_context }`
   - sends an advisory chat turn to the configured local/OpenAI-compatible provider
 - `POST /api/framewise/design-ideas`
-  - JSON body: `{ subject, goal, quote_context }`
+  - JSON body: `{ subject, goal, image_id, quote_context }`
+  - `image_id` is optional; when supplied and a vision-capable provider is enabled, the selected gallery image is sent as an image input
   - response includes three framing suggestions with real local catalog IDs/SKUs where available
+  - response includes `image` and `visual_analysis` metadata so the UI can show whether the artwork was actually analyzed
   - if the provider is disabled or unreachable, returns local starter looks instead of blocking the design workflow
 
 ## Settings

@@ -41,9 +41,10 @@ limits in the public app.
 The optional **Framewise** assistant can be enabled from Admin and pointed at a
 local or OpenAI-compatible provider such as Ollama, llama.cpp, LM Studio, or a
 shop-managed endpoint. It defaults to a small local-model profile and remains
-off until the operator enables it. The Design workspace can still produce local
-starter looks from the workstation catalog when no model is configured. The app
-does not ship model weights.
+off until the operator enables it. With a vision-capable provider, the Design
+workspace sends the selected artwork image for visual analysis before suggesting
+catalog-grounded looks. When no model is configured, it still produces local
+starter looks from the workstation catalog. The app does not ship model weights.
 
 No vendor catalogs, customer records, accounting credentials, or online billing flow are included in the repository. This is a local-first app. Accounting support is a local CSV handoff only; it does not provide accounting API sync. The app does not process payments or send email/SMS. Do not expose it directly to the public internet.
 

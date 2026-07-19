@@ -2055,6 +2055,38 @@
       line-height: 1.25;
     }
 
+    .framewise-visual-analysis {
+      display: grid;
+      gap: 2px;
+      padding: 5px 6px;
+      border: 1px dashed var(--line);
+      border-radius: 7px;
+      background: var(--panel);
+      text-align: left;
+    }
+
+    .framewise-visual-analysis[hidden] {
+      display: none;
+    }
+
+    .framewise-visual-analysis strong,
+    .framewise-visual-analysis span,
+    .framewise-visual-analysis small {
+      display: block;
+    }
+
+    .framewise-visual-analysis span {
+      font-size: 10px;
+      line-height: 1.25;
+    }
+
+    .framewise-visual-analysis small {
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+
     .framewise-suggestions {
       display: grid;
       gap: 5px;
@@ -4407,6 +4439,7 @@
                     <button type="button" class="secondary mini-button" onclick="askFramewiseForIdeas()">Ask</button>
                   </div>
                   <div id="framewiseDesignStatus" class="framewise-status" aria-live="polite">Optional local assistant. Suggestions stay grounded to catalog items.</div>
+                  <div id="framewiseVisualAnalysis" class="framewise-visual-analysis" hidden></div>
                   <div id="framewiseDesignSuggestions" class="framewise-suggestions" aria-label="Framewise framing suggestions"></div>
                 </div>
 

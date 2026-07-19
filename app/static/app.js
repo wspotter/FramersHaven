@@ -450,14 +450,36 @@ function buildFramewiseQuoteContext() {
 function renderFramewiseIdeas(payload = null) {
   const root = document.getElementById('framewiseDesignSuggestions');
   const status = document.getElementById('framewiseDesignStatus');
+  const analysisRoot = document.getElementById('framewiseVisualAnalysis');
   if (!root) return;
   root.innerHTML = '';
+  if (analysisRoot) {
+    const analysis = payload?.visual_analysis || null;
+    const image = payload?.image || null;
+    if (analysis) {
+      const colors = (analysis.dominant_colors || []).join(', ');
+      const source = analysis.source === 'vision-model' ? 'Image analyzed' : image?.available ? 'Image attached' : 'No image analyzed';
+      analysisRoot.hidden = false;
+      analysisRoot.innerHTML = `
+        <strong>${escapeHtml(source)}</strong>
+        <span>${escapeHtml(analysis.summary || image?.reason || 'Framewise has no visual read yet.')}</span>
+        <small>${escapeHtml([
+          colors ? `Colors: ${colors}` : '',
+          analysis.temperature ? `Temp: ${analysis.temperature}` : '',
+          analysis.contrast ? `Contrast: ${analysis.contrast}` : '',
+        ].filter(Boolean).join(' · '))}</small>
+      `;
+    } else {
+      analysisRoot.hidden = true;
+      analysisRoot.innerHTML = '';
+    }
+  }
   if (!framewiseDesignIdeas.length) {
     if (status && payload?.provider_error) status.textContent = payload.provider_error;
     return;
   }
   if (status) {
-    const source = payload?.source === 'provider-guided' ? 'Model-guided' : 'Local starter';
+    const source = payload?.source === 'vision-guided' ? 'Vision-guided' : payload?.source === 'provider-guided' ? 'Model-guided' : 'Local starter';
     const counts = payload?.catalog_counts || {};
     status.textContent = `${source} looks using ${counts.mouldings || 0} mouldings and ${counts.mats || 0} mats from this workstation.`;
   }
@@ -497,6 +519,7 @@ async function askFramewiseForIdeas() {
       body: JSON.stringify({
         subject: document.getElementById('framewiseSubjectPrompt')?.value || '',
         goal: 'Give the frame counter three concise framing looks. Use real local catalog selections when possible.',
+        image_id: selectedImageId || null,
         quote_context: buildFramewiseQuoteContext(),
       }),
     });

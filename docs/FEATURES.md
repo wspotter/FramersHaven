@@ -52,7 +52,7 @@ This file is the source of truth for implemented behavior so sprint work does no
 - Mockup rendering shows stacked mat reveals with white-core cut lines instead of a single flat mat only.
 - Material summary shows human-readable SKU/name selections instead of raw IDs.
 - Quote panel shows line items alongside subtotal, tax, and total.
-- Framewise can suggest three customer-facing framing looks from the Design workspace.
+- Framewise can analyze the selected artwork image with a vision-capable provider and suggest three customer-facing framing looks from the Design workspace.
 - Framewise suggestions are grounded to local catalog IDs/SKUs and can be applied directly to the current design before quote calculation.
 
 ### Catalog

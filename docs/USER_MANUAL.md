@@ -16,10 +16,11 @@ The optional Framewise assistant is configured from Admin. It can point at
 Ollama, llama.cpp, LM Studio, or another OpenAI-compatible provider running on
 the workstation or trusted private LAN. Framewise stays off until the operator
 enables it, and the app does not ship model weights. In Design, Framewise can
-suggest three customer-facing framing looks using real local catalog SKUs. A
-selected look can be applied to the live mockup before the operator calculates
-the quote. If no model provider is enabled, Framewise uses local starter looks
-instead of blocking the workflow.
+analyze the selected artwork image with a vision-capable provider, then suggest
+three customer-facing framing looks using real local catalog SKUs. A selected
+look can be applied to the live mockup before the operator calculates the quote.
+If no model provider is enabled, Framewise uses local starter looks instead of
+blocking the workflow.
 
 The app is local-first. Operator-supplied catalog files, customer records, exports, backups, and previews stay on the workstation or trusted private LAN unless the operator moves them manually.
 

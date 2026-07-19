@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import base64
+import io
 import json
 import logging
 import uuid
+from pathlib import Path
 from typing import Any
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request
+from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, Field
 
 from .db import get_connection
@@ -48,6 +52,7 @@ class FramewiseChatRequest(BaseModel):
 class FramewiseDesignRequest(BaseModel):
     subject: str = Field("", max_length=1200)
     goal: str = Field("", max_length=1200)
+    image_id: int | None = None
     quote_context: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -179,6 +184,97 @@ def _compact_item(item: dict[str, Any] | None) -> dict[str, Any] | None:
     }
 
 
+def _image_id_from_request(req: FramewiseDesignRequest) -> int | None:
+    if req.image_id:
+        return req.image_id
+    selected = (req.quote_context or {}).get("selected_image") or {}
+    try:
+        return int(selected.get("id") or 0) or None
+    except (TypeError, ValueError):
+        return None
+
+
+def _framewise_image_payload(image_id: int | None) -> dict[str, Any]:
+    if not image_id:
+        return {"available": False, "reason": "No gallery image is selected."}
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, filename, path, width_in, height_in, ratio_label, crop_json FROM images WHERE id = ?",
+            (image_id,),
+        )
+        row = cur.fetchone()
+    finally:
+        conn.close()
+    if not row:
+        return {"available": False, "reason": f"Gallery image {image_id} was not found."}
+
+    image_path = Path(str(row["path"]))
+    if not image_path.exists() or not image_path.is_file():
+        return {"available": False, "reason": "The selected gallery image file is missing."}
+
+    try:
+        with Image.open(image_path) as image:
+            image = image.convert("RGB")
+            image.thumbnail((768, 768))
+            buffer = io.BytesIO()
+            image.save(buffer, format="JPEG", quality=82, optimize=True)
+    except (UnidentifiedImageError, OSError) as exc:
+        logger.warning("Framewise image load failed for %s: %s", image_path, exc)
+        return {"available": False, "reason": "The selected gallery image could not be prepared for vision analysis."}
+
+    encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+    return {
+        "available": True,
+        "image_id": row["id"],
+        "filename": row["filename"],
+        "width_in": row["width_in"],
+        "height_in": row["height_in"],
+        "ratio_label": row["ratio_label"],
+        "crop_json": row["crop_json"],
+        "data_url": f"data:image/jpeg;base64,{encoded}",
+    }
+
+
+def _default_visual_analysis(image_payload: dict[str, Any]) -> dict[str, Any]:
+    if image_payload.get("available"):
+        return {
+            "source": "image-not-analyzed",
+            "summary": "A selected artwork image is available, but no vision model analysis was returned.",
+            "dominant_colors": [],
+            "temperature": "unknown",
+            "contrast": "unknown",
+            "style": "unknown",
+            "framing_notes": [],
+        }
+    return {
+        "source": "no-image",
+        "summary": image_payload.get("reason") or "No selected artwork image was available.",
+        "dominant_colors": [],
+        "temperature": "unknown",
+        "contrast": "unknown",
+        "style": "unknown",
+        "framing_notes": [],
+    }
+
+
+def _clean_visual_analysis(value: Any, image_payload: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        return _default_visual_analysis(image_payload)
+    colors = value.get("dominant_colors") or []
+    notes = value.get("framing_notes") or []
+    return {
+        "source": "vision-model" if image_payload.get("available") else "text-only-model",
+        "summary": str(value.get("summary") or "")[:500],
+        "dominant_colors": [str(color)[:40] for color in colors[:6] if str(color).strip()],
+        "temperature": str(value.get("temperature") or "unknown")[:40],
+        "contrast": str(value.get("contrast") or "unknown")[:40],
+        "style": str(value.get("style") or "unknown")[:80],
+        "framing_notes": [str(note)[:180] for note in notes[:5] if str(note).strip()],
+    }
+
+
 def _parse_provider_json(text: str) -> dict[str, Any]:
     clean = text.strip()
     if clean.startswith("```"):
@@ -199,8 +295,12 @@ def _starter_suggestions(
     goal: str,
     mouldings: list[dict[str, Any]],
     mats: list[dict[str, Any]],
+    visual_analysis: dict[str, Any] | None = None,
     provider_directions: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
+    visual = visual_analysis or {}
+    visual_summary = str(visual.get("summary") or "").strip()
+    color_summary = ", ".join(str(color) for color in (visual.get("dominant_colors") or [])[:4])
     templates = [
         {
             "title": "Quiet Gallery Contrast",
@@ -242,12 +342,14 @@ def _starter_suggestions(
         second_mat = mats[(index + 1) % len(mats)] if len(mats) > 1 and index != 0 else None
         subject_note = f" Subject: {subject.strip()}" if subject.strip() else ""
         goal_note = f" Goal: {goal.strip()}" if goal.strip() else ""
+        vision_note = f" Visual read: {visual_summary}" if visual_summary else ""
+        color_note = f" Dominant colors: {color_summary}." if color_summary else ""
         suggestions.append(
             {
                 "id": f"look-{index + 1}",
                 "title": template["title"],
                 "summary": template["summary"],
-                "why": f"{template['why']}{subject_note}{goal_note}",
+                "why": f"{template['why']}{subject_note}{goal_note}{vision_note}{color_note}",
                 "conversation_tip": template["conversation_tip"],
                 "selections": {
                     "moulding": _compact_item(moulding),
@@ -271,9 +373,10 @@ async def _provider_design_directions(
     req: FramewiseDesignRequest,
     mouldings: list[dict[str, Any]],
     mats: list[dict[str, Any]],
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     if not config["enabled"]:
-        return []
+        return [], _default_visual_analysis({})
+    image_payload = _framewise_image_payload(_image_id_from_request(req))
     catalog_sample = {
         "mouldings": [_compact_item(item) for item in mouldings[:8]],
         "mats": [_compact_item(item) for item in mats[:8]],
@@ -283,13 +386,26 @@ async def _provider_design_directions(
         "rules": [
             "Return JSON only.",
             "Do not invent catalog item numbers.",
+            "Analyze the artwork image when one is attached.",
             "Use plain shop-floor language a customer can understand.",
         ],
         "subject": req.subject,
         "goal": req.goal,
         "current_quote_context": req.quote_context,
+        "selected_image": {
+            key: image_payload.get(key)
+            for key in ["available", "image_id", "filename", "width_in", "height_in", "ratio_label", "reason"]
+        },
         "available_catalog_sample": catalog_sample,
         "schema": {
+            "visual_analysis": {
+                "summary": "one sentence about the artwork",
+                "dominant_colors": ["color names visible in the artwork"],
+                "temperature": "warm, cool, or mixed",
+                "contrast": "low, medium, or high",
+                "style": "photograph, painting, document, graphic, etc.",
+                "framing_notes": ["specific visual cues that should guide framing"],
+            },
             "suggestions": [
                 {
                     "title": "short display title",
@@ -300,11 +416,20 @@ async def _provider_design_directions(
             ]
         },
     }
+    user_content: str | list[dict[str, Any]]
+    prompt_text = json.dumps(prompt, indent=2)
+    if image_payload.get("available"):
+        user_content = [
+            {"type": "text", "text": prompt_text},
+            {"type": "image_url", "image_url": {"url": image_payload["data_url"]}},
+        ]
+    else:
+        user_content = prompt_text
     payload = {
         "model": config["model"],
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": json.dumps(prompt, indent=2)},
+            {"role": "user", "content": user_content},
         ],
         "max_tokens": 700,
         "temperature": config["temperature"],
@@ -321,7 +446,8 @@ async def _provider_design_directions(
     content = data["choices"][0]["message"]["content"]
     parsed = _parse_provider_json(content)
     suggestions = parsed.get("suggestions") or []
-    return [item for item in suggestions if isinstance(item, dict)]
+    visual_analysis = _clean_visual_analysis(parsed.get("visual_analysis"), image_payload)
+    return [item for item in suggestions if isinstance(item, dict)], visual_analysis
 
 
 @router.get("/config")
@@ -409,22 +535,26 @@ async def framewise_design_ideas(req: FramewiseDesignRequest) -> dict[str, Any]:
     mouldings = _catalog_rows("mould", 18)
     mats = _catalog_rows("mat", 18)
     provider_directions: list[dict[str, Any]] = []
+    image_payload = _framewise_image_payload(_image_id_from_request(req))
+    visual_analysis = _default_visual_analysis(image_payload)
     source = "local-starter"
     provider_error = ""
     if config["enabled"]:
         try:
-            provider_directions = await _provider_design_directions(config, req, mouldings, mats)
+            provider_directions, visual_analysis = await _provider_design_directions(config, req, mouldings, mats)
             if provider_directions:
-                source = "provider-guided"
+                source = "vision-guided" if visual_analysis.get("source") == "vision-model" else "provider-guided"
         except Exception as exc:
             logger.warning("Framewise design provider error: %s", exc)
             provider_error = "Framewise could not reach the configured model, so local starter looks were used."
-    suggestions = _starter_suggestions(req.subject, req.goal, mouldings, mats, provider_directions)
+    suggestions = _starter_suggestions(req.subject, req.goal, mouldings, mats, visual_analysis, provider_directions)
     return {
         "assistant_name": config["assistant_name"],
         "enabled": config["enabled"],
         "source": source,
         "provider_error": provider_error,
+        "image": {key: image_payload.get(key) for key in ["available", "image_id", "filename", "width_in", "height_in", "ratio_label", "reason"]},
+        "visual_analysis": visual_analysis,
         "catalog_counts": {"mouldings": len(mouldings), "mats": len(mats)},
         "suggestions": suggestions,
     }
