@@ -85,6 +85,18 @@ class ApiTests(unittest.TestCase):
         self.assertIn('/static/app.js?v=', home.text)
         self.assertEqual(home.text.count(f'?v={main_module.STATIC_ASSET_VERSION}'), 2)
 
+    def test_gallery_has_finder_controls_for_large_image_sets(self):
+        home = self.client.get("/")
+        self.assertEqual(home.status_code, 200)
+        self.assertIn('id="gallerySearch"', home.text)
+        self.assertIn('id="gallerySort"', home.text)
+        self.assertIn('id="galleryRecentOnly"', home.text)
+        self.assertIn('id="galleryCount"', home.text)
+        script = self.client.get("/static/app.js").text
+        self.assertIn("function bindGalleryFinder()", script)
+        self.assertIn("function renderGalleryImages()", script)
+        self.assertIn("No artwork matched", script)
+
     def test_studio_profile_updates_branding_used_by_the_app_and_handoffs(self):
         saved = self.client.post(
             "/api/studio-profile",

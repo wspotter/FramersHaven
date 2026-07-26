@@ -847,11 +847,19 @@
 
     button:disabled {
       cursor: not-allowed;
-      opacity: 0.48;
+      background: #f6f8fb;
+      color: var(--muted);
+      border-color: #cbd5e1;
+      opacity: 1;
+      box-shadow: none;
     }
 
     body[data-theme="framershaven"] button {
       color: #111111;
+    }
+
+    body[data-theme="framershaven"] button:disabled {
+      color: var(--muted);
     }
 
     body[data-theme="framershaven"] .nav-button {
@@ -1054,6 +1062,50 @@
       padding: 8px 10px;
       border-radius: 12px;
       font-size: 12px;
+    }
+
+    .gallery-finder {
+      display: grid;
+      gap: 8px;
+      margin: 10px 0 12px;
+      flex: 0 0 auto;
+    }
+
+    .gallery-search-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 120px;
+      gap: 8px;
+    }
+
+    .gallery-search-row input,
+    .gallery-search-row select {
+      min-width: 0;
+      margin-top: 0;
+      height: 36px;
+      font-size: 13px;
+    }
+
+    .gallery-filter-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .gallery-filter-row label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    .gallery-filter-row input[type="checkbox"] {
+      width: auto;
+      margin: 0;
     }
 
     .gallery-list {
@@ -2089,14 +2141,14 @@
 
     .framewise-status {
       color: var(--muted);
-      font-size: 10px;
+      font-size: 11px;
       line-height: 1.25;
     }
 
     .framewise-visual-analysis {
       display: grid;
-      gap: 2px;
-      padding: 5px 6px;
+      gap: 5px;
+      padding: 8px 9px;
       border: 1px dashed var(--line);
       border-radius: 7px;
       background: var(--panel);
@@ -2107,21 +2159,22 @@
       display: none;
     }
 
-    .framewise-visual-analysis strong,
     .framewise-visual-analysis span,
     .framewise-visual-analysis small {
       display: block;
     }
 
     .framewise-visual-analysis span {
-      font-size: 10px;
-      line-height: 1.25;
+      color: var(--ink);
+      font-size: 12px;
+      line-height: 1.35;
     }
 
     .framewise-visual-analysis small {
-      color: var(--muted);
-      font-size: 9px;
-      line-height: 1.25;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.35;
       overflow-wrap: anywhere;
     }
 
@@ -2144,6 +2197,11 @@
     .framewise-suggestion span,
     .framewise-suggestion small {
       display: block;
+    }
+
+    .framewise-suggestion strong {
+      font-size: 13px;
+      line-height: 1.2;
     }
 
     .framewise-suggestion span {
@@ -2170,8 +2228,14 @@
       border-radius: 5px;
       background: var(--code-bg);
       color: var(--code-ink);
-      font-size: 9px;
+      font-size: 10px;
       overflow-wrap: anywhere;
+    }
+
+    .framewise-actions {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 5px;
     }
 
     .position-slider input[type="range"] {
@@ -4482,13 +4546,12 @@
                       <h3>Framewise</h3>
                       <p>Customer-ready framing recommendations.</p>
                     </div>
-                    <button type="button" class="secondary mini-button" onclick="askFramewiseForIdeas()" title="Ask Framewise for three catalog-grounded framing directions.">Suggest Looks</button>
                   </div>
                   <div class="framewise-prompt-row">
                     <textarea id="framewiseSubjectPrompt" maxlength="1200" aria-label="Extra details or questions for Framewise" placeholder="Extra details or questions, e.g. customer wants warm, polished, not flashy."></textarea>
-                    <button type="button" class="secondary mini-button" onclick="askFramewiseForIdeas()">Get Looks</button>
+                    <button type="button" class="secondary mini-button" onclick="askFramewiseForIdeas()">Suggest 3 Looks</button>
                   </div>
-                  <div id="framewiseDesignStatus" class="framewise-status" aria-live="polite">Optional local assistant. Suggestions stay grounded to catalog items.</div>
+                  <div id="framewiseDesignStatus" class="framewise-status" aria-live="polite">Ready for a fresh set of looks.</div>
                   <div id="framewiseVisualAnalysis" class="framewise-visual-analysis" hidden></div>
                   <div id="framewiseDesignSuggestions" class="framewise-suggestions" aria-label="Framewise framing suggestions"></div>
                 </div>
@@ -4574,15 +4637,15 @@
                     </div>
                     <div class="material-slot">
                       <div class="material-slot-head">
-                        <button type="button" class="secondary mini-button" disabled title="Additional moulding layer is not wired yet.">2nd / liner</button>
-                        <div class="material-slot-title">Deferred</div>
+                        <button type="button" class="secondary mini-button" disabled title="Coming later: second frame or liner selection.">2nd / liner</button>
+                        <div class="material-slot-title">Later</div>
                       </div>
                       <input value="" readonly />
                     </div>
                     <div class="material-slot">
                       <div class="material-slot-head">
-                        <button type="button" class="secondary mini-button" disabled title="Fillet selection is not wired yet.">3rd / fillet</button>
-                        <div class="material-slot-title">Deferred</div>
+                        <button type="button" class="secondary mini-button" disabled title="Coming later: fillet selection.">3rd / fillet</button>
+                        <div class="material-slot-title">Later</div>
                       </div>
                       <input value="" readonly />
                     </div>
@@ -4623,66 +4686,66 @@
                         <input id="selectionGlazing" type="hidden" value="None" />
                       </div>
                       <div class="option-row">
-                        <select id="optionBacking"><option value="">— Backing —</option></select>
+                        <select id="optionBacking"><option value="">No backing</option></select>
                         <input id="countBacking" type="number" min="0" step="1" value="1" title="Count for backing. Area-priced rows use the frame area." />
                         <div id="priceBacking" class="option-price">-</div>
                       </div>
                       <div class="option-row">
-                        <select id="optionMounting"><option value="">— Mounting —</option></select>
+                        <select id="optionMounting"><option value="">No subject mounting</option></select>
                         <input id="countMounting" type="number" min="0" step="1" value="1" title="Count for subject mounting." />
                         <div id="priceMounting" class="option-price">-</div>
                       </div>
                       <div class="option-row">
-                        <select id="optionFrameMounting"><option value="">— Frame Mount —</option></select>
+                        <select id="optionFrameMounting"><option value="">No frame mounting</option></select>
                         <input id="countFrameMounting" type="number" min="0" step="1" value="1" title="Count for frame mounting." />
                         <div id="priceFrameMounting" class="option-price">-</div>
                       </div>
                       <div class="option-row">
-                        <select id="optionPrinting"><option value="">— Printing —</option></select>
+                        <select id="optionPrinting"><option value="">No printing</option></select>
                         <input id="countPrinting" type="number" min="0" step="1" value="1" title="Count for printing." />
                         <div id="pricePrinting" class="option-price">-</div>
                       </div>
                       <div class="option-row">
-                        <select id="optionVarious"><option value="">— Various —</option></select>
+                        <select id="optionVarious"><option value="">No various</option></select>
                         <input id="countVarious" type="number" min="0" step="1" value="1" title="Count for various." />
                         <div id="priceVarious" class="option-price">-</div>
                       </div>
                       <div class="option-row">
-                        <select id="optionAssembly"><option value="">— Assembly —</option></select>
+                        <select id="optionAssembly"><option value="">No assembly</option></select>
                         <input id="countAssembly" type="number" min="0" step="1" value="1" title="Count for assembly." />
                         <div id="priceAssembly" class="option-price">-</div>
                       </div>
                       <div class="option-row">
-                        <select id="optionRoyalties"><option value="">— Royalties —</option></select>
+                        <select id="optionRoyalties"><option value="">No royalties</option></select>
                         <input id="countRoyalties" type="number" min="0" step="1" value="1" title="Count for royalties." />
                         <div id="priceRoyalties" class="option-price">-</div>
                       </div>
                       <div class="option-row">
-                        <select id="optionCustom1"><option value="">— Custom 1 —</option></select>
+                        <select id="optionCustom1"><option value="">No custom 1</option></select>
                         <input id="countCustom1" type="number" min="0" step="1" value="1" title="Count for the first custom service." />
                         <div id="priceCustom1" class="option-price">-</div>
                       </div>
                       <div class="option-row">
-                        <select id="optionCustom2"><option value="">— Custom 2 —</option></select>
+                        <select id="optionCustom2"><option value="">No custom 2</option></select>
                         <input id="countCustom2" type="number" min="0" step="1" value="1" title="Count for the second custom service." />
                         <div id="priceCustom2" class="option-price">-</div>
                       </div>
                     </div>
                     <div class="quote-extra-grid">
                       <div class="option-row">
-                        <input id="otherLineLabel" placeholder="Other 1" />
+                        <input id="otherLineLabel" placeholder="Custom line 1" />
                         <input id="otherLineDiscount" type="number" min="0" max="100" step="1" value="0" title="Percent discount for the first custom line." />
                         <input id="otherLineAmount" type="number" min="0" step="0.01" value="0" placeholder="0.00" />
                       </div>
                       <div class="option-row">
-                        <input id="otherLine2Label" placeholder="Other 2" />
+                        <input id="otherLine2Label" placeholder="Custom line 2" />
                         <input id="otherLine2Discount" type="number" min="0" max="100" step="1" value="0" title="Percent discount for the second custom line." />
                         <input id="otherLine2Amount" type="number" min="0" step="0.01" value="0" placeholder="0.00" />
                       </div>
                       <div class="option-row">
                         <div></div>
                         <input id="globalDiscount" type="number" min="0" max="100" step="1" value="0" title="Global quote discount applied after row discounts." />
-                        <div class="option-price">Global %</div>
+                        <div class="option-price">Fill discounts</div>
                       </div>
                     </div>
                     <div class="detail-box quote-totals" style="margin-top: 5px;">
@@ -4698,7 +4761,7 @@
                     <div id="quoteEditNotice" class="quote-edit-notice" hidden></div>
                     <div class="quote-button-row">
                       <button onclick="calcQuote()" title="Run pricing using the current materials, artwork size, and pricing rules.">Calculate Quote</button>
-                      <button id="quoteSaveButton" class="secondary" onclick="createOrder()" title="Save the current quote into the Orders / Quotes workspace.">Save Quote</button>
+                      <button id="quoteSaveButton" class="secondary" onclick="createOrder()" title="Calculate the quote before saving it." disabled>Save Quote</button>
                     </div>
                   </div>
                 </div>
@@ -4718,6 +4781,21 @@
                 <div class="gallery-rail-actions">
                   <button class="secondary" onclick="newGalleryArtworkMode()" title="Clear the editor for a new artwork upload.">New</button>
                   <button class="secondary" onclick="listImages()" title="Reload saved artwork from local storage.">Refresh</button>
+                </div>
+              </div>
+              <div class="gallery-finder">
+                <div class="gallery-search-row">
+                  <input id="gallerySearch" type="search" placeholder="Search filename, ID, size, date" aria-label="Search artwork gallery" />
+                  <select id="gallerySort" aria-label="Sort artwork gallery">
+                    <option value="newest">Newest</option>
+                    <option value="oldest">Oldest</option>
+                    <option value="name">Name</option>
+                    <option value="size">Size</option>
+                  </select>
+                </div>
+                <div class="gallery-filter-row">
+                  <label><input id="galleryRecentOnly" type="checkbox" /> Last 7 days</label>
+                  <span id="galleryCount">0 images</span>
                 </div>
               </div>
               <div id="imageList" class="gallery-list list"></div>
@@ -5417,7 +5495,7 @@
               </div>
               <div class="card admin-utility-panel" data-admin-panel="assistant">
                 <h3>Framewise Assistant</h3>
-                <p>Optional local AI help for image-aware framing suggestions and quote explanations. It stays off until this workstation is pointed at a local or OpenAI-compatible provider.</p>
+                <p>Optional local AI help for artwork palette, framing directions, and counter-friendly wording. It stays off until this workstation is pointed at a local or OpenAI-compatible provider.</p>
                 <div class="detail-box">
                   <h4>Recommended local vision model</h4>
                   <p>For Ollama, install SmolVLM2 with: <code>ollama run hf.co/ggml-org/SmolVLM2-2.2B-Instruct-GGUF:Q4_K_M</code></p>
