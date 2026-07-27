@@ -177,17 +177,41 @@ const SERVICE_ADMIN_ROWS = [
 ];
 const THEMES = {
   classic: {
-    label: 'Classic',
-    detail: 'Warm neutral default',
+    label: 'Studio Classic',
+    detail: 'Warm neutral counter workspace',
+    swatches: ['#fbfaf7', '#59636e', '#e8e3d8'],
   },
   framershaven: {
     label: 'FramersHaven',
     detail: 'FramersHaven pink, teal, black, and white',
+    swatches: ['#ffffff', '#0f8f87', '#f59ab1'],
   },
-  gallery: {
-    label: 'Gallery Neon (Light)',
-    detail: 'Premium light mode with pink and teal accents',
-  },
+  coastal: { label: 'Coastal Blue', detail: 'Blue-green with a warm sand accent', swatches: ['#f7fbfb', '#267991', '#d9902d'] },
+  heritage: { label: 'Heritage Green', detail: 'Traditional green, brass, and ivory', swatches: ['#faf8f0', '#4e6f52', '#946833'] },
+  'warm-gallery': { label: 'Warm Gallery', detail: 'Clay, cream, and honey tones', swatches: ['#fffaf5', '#b06041', '#bf8532'] },
+  'clean-mono': { label: 'Clean Mono', detail: 'Black, white, and quiet gray', swatches: ['#ffffff', '#20262c', '#e8ecef'] },
+  sunrise: { label: 'Sunrise Retail', detail: 'Coral, amber, and soft lavender', swatches: ['#fff9f2', '#d35c70', '#d88735'] },
+  blueprint: { label: 'Blueprint', detail: 'Professional blue and paper white', swatches: ['#f7f9fc', '#27568c', '#96a9c2'] },
+  custom: { label: 'Custom', detail: 'Saved company color scheme', swatches: ['#ffffff', '#0f8f87', '#f59ab1'] },
+};
+const THEME_STORAGE_KEY = 'framershaven-theme';
+const CUSTOM_THEME_STORAGE_KEY = 'framershaven-custom-theme';
+const DEFAULT_CUSTOM_THEME = {
+  ink: '#111827',
+  muted: '#5b6470',
+  accent: '#0f8f87',
+  accentStrong: '#0a5e5a',
+  paper: '#ffffff',
+  panel: '#ffffff',
+  sidebar: '#f7fbfb',
+  sidebarText: '#111827',
+  font: 'system',
+};
+const THEME_FONT_STACKS = {
+  system: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  serif: 'Georgia, "Times New Roman", Times, serif',
+  friendly: '"Trebuchet MS", "Segoe UI", Verdana, sans-serif',
+  compact: '"Arial Narrow", "Roboto Condensed", Arial, sans-serif',
 };
 const DRAWER_RESULT_LIMIT = 500;
 const GLAZING_SERVICE_KEYS = new Set(SERVICE_ADMIN_ROWS.slice(0, 4).map(([key]) => key));
@@ -476,19 +500,195 @@ function showWorkspaceState() {
   });
 }
 
+
+function isHexColor(value) {
+  return /^#[0-9a-f]{6}$/i.test(String(value || '').trim());
+}
+
+function normalizeThemeColor(value, fallback) {
+  const raw = String(value || '').trim();
+  return isHexColor(raw) ? raw.toLowerCase() : fallback;
+}
+
+function hexToRgb(hex) {
+  const clean = normalizeThemeColor(hex, '#000000').replace('#', '');
+  return {
+    r: parseInt(clean.slice(0, 2), 16),
+    g: parseInt(clean.slice(2, 4), 16),
+    b: parseInt(clean.slice(4, 6), 16),
+  };
+}
+
+function rgba(hex, alpha) {
+  const { r, g, b } = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function mixColors(first, second, amount = 0.5) {
+  const a = hexToRgb(first);
+  const b = hexToRgb(second);
+  const mix = (x, y) => Math.round(x + ((y - x) * amount)).toString(16).padStart(2, '0');
+  return `#${mix(a.r, b.r)}${mix(a.g, b.g)}${mix(a.b, b.b)}`;
+}
+
+function readCustomTheme() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(CUSTOM_THEME_STORAGE_KEY) || '{}');
+    return {
+      ink: normalizeThemeColor(parsed.ink, DEFAULT_CUSTOM_THEME.ink),
+      muted: normalizeThemeColor(parsed.muted, DEFAULT_CUSTOM_THEME.muted),
+      accent: normalizeThemeColor(parsed.accent, DEFAULT_CUSTOM_THEME.accent),
+      accentStrong: normalizeThemeColor(parsed.accentStrong, DEFAULT_CUSTOM_THEME.accentStrong),
+      paper: normalizeThemeColor(parsed.paper, DEFAULT_CUSTOM_THEME.paper),
+      panel: normalizeThemeColor(parsed.panel, DEFAULT_CUSTOM_THEME.panel),
+      sidebar: normalizeThemeColor(parsed.sidebar, DEFAULT_CUSTOM_THEME.sidebar),
+      sidebarText: normalizeThemeColor(parsed.sidebarText, DEFAULT_CUSTOM_THEME.sidebarText),
+      font: THEME_FONT_STACKS[parsed.font] ? parsed.font : DEFAULT_CUSTOM_THEME.font,
+    };
+  } catch {
+    return { ...DEFAULT_CUSTOM_THEME };
+  }
+}
+
+function customThemeVars(theme = readCustomTheme()) {
+  const accentSoft = rgba(theme.accent, 0.12);
+  const line = rgba(theme.accentStrong, 0.22);
+  const paperMid = mixColors(theme.paper, theme.accent, 0.08);
+  const paperEnd = mixColors(theme.paper, theme.accentStrong, 0.12);
+  return {
+    '--app-font': THEME_FONT_STACKS[theme.font] || THEME_FONT_STACKS.system,
+    '--ink': theme.ink,
+    '--muted': theme.muted,
+    '--line': line,
+    '--paper': theme.paper,
+    '--panel': `${theme.panel}eb`,
+    '--accent': theme.accent,
+    '--accent-strong': theme.accentStrong,
+    '--accent-soft': accentSoft,
+    '--nav': theme.panel,
+    '--nav-soft': mixColors(theme.panel, theme.accent, 0.08),
+    '--shadow': `0 14px 34px ${rgba(theme.accentStrong, 0.1)}`,
+    '--bg-glow': rgba(theme.accent, 0.11),
+    '--bg-start': theme.paper,
+    '--bg-mid': paperMid,
+    '--bg-end': paperEnd,
+    '--sidebar-start': theme.sidebar,
+    '--sidebar-end': mixColors(theme.sidebar, theme.accent, 0.08),
+    '--sidebar-text': theme.sidebarText,
+    '--sidebar-muted': theme.muted,
+    '--sidebar-border': line,
+    '--nav-active-bg': accentSoft,
+    '--nav-active-border': theme.accent,
+    '--topbar-bg': `${theme.panel}eb`,
+    '--field-bg': theme.panel,
+    '--ghost-bg': rgba(theme.accent, 0.08),
+    '--ghost-border': rgba(theme.accent, 0.32),
+    '--status-bg': accentSoft,
+    '--status-border': theme.accent,
+    '--code-bg': paperMid,
+    '--code-ink': theme.ink,
+    '--mockup-bg-start': paperMid,
+    '--mockup-bg-end': paperEnd,
+  };
+}
+
+function clearCustomThemeVars() {
+  Object.keys(customThemeVars()).forEach((name) => document.body.style.removeProperty(name));
+}
+
+function applyCustomThemeVars(theme = readCustomTheme()) {
+  Object.entries(customThemeVars(theme)).forEach(([name, value]) => {
+    document.body.style.setProperty(name, value);
+  });
+}
+
+function setCustomThemeInputs(theme = readCustomTheme()) {
+  Object.entries({
+    ink: 'customThemeInk',
+    muted: 'customThemeMuted',
+    accent: 'customThemeAccent',
+    accentStrong: 'customThemeAccentStrong',
+    paper: 'customThemePaper',
+    panel: 'customThemePanel',
+    sidebar: 'customThemeSidebar',
+    sidebarText: 'customThemeSidebarText',
+  }).forEach(([key, id]) => {
+    const input = document.getElementById(id);
+    if (input) input.value = theme[key];
+  });
+  const font = document.getElementById('customThemeFont');
+  if (font) font.value = theme.font;
+}
+
+function readCustomThemeInputs() {
+  return {
+    ink: normalizeThemeColor(document.getElementById('customThemeInk')?.value, DEFAULT_CUSTOM_THEME.ink),
+    muted: normalizeThemeColor(document.getElementById('customThemeMuted')?.value, DEFAULT_CUSTOM_THEME.muted),
+    accent: normalizeThemeColor(document.getElementById('customThemeAccent')?.value, DEFAULT_CUSTOM_THEME.accent),
+    accentStrong: normalizeThemeColor(document.getElementById('customThemeAccentStrong')?.value, DEFAULT_CUSTOM_THEME.accentStrong),
+    paper: normalizeThemeColor(document.getElementById('customThemePaper')?.value, DEFAULT_CUSTOM_THEME.paper),
+    panel: normalizeThemeColor(document.getElementById('customThemePanel')?.value, DEFAULT_CUSTOM_THEME.panel),
+    sidebar: normalizeThemeColor(document.getElementById('customThemeSidebar')?.value, DEFAULT_CUSTOM_THEME.sidebar),
+    sidebarText: normalizeThemeColor(document.getElementById('customThemeSidebarText')?.value, DEFAULT_CUSTOM_THEME.sidebarText),
+    font: THEME_FONT_STACKS[document.getElementById('customThemeFont')?.value] ? document.getElementById('customThemeFont').value : DEFAULT_CUSTOM_THEME.font,
+  };
+}
+
+function updateThemePreview(theme = readCustomThemeInputs()) {
+  const preview = document.getElementById('themePreviewCard');
+  if (!preview) return;
+  const vars = customThemeVars(theme);
+  preview.style.setProperty('--theme-preview-ink', vars['--ink']);
+  preview.style.setProperty('--theme-preview-muted', vars['--muted']);
+  preview.style.setProperty('--theme-preview-line', vars['--line']);
+  preview.style.setProperty('--theme-preview-panel', vars['--panel']);
+  preview.style.setProperty('--theme-preview-accent', vars['--accent']);
+  preview.style.setProperty('--theme-preview-accent-strong', vars['--accent-strong']);
+  preview.style.setProperty('--theme-preview-accent-soft', vars['--accent-soft']);
+  preview.style.setProperty('--theme-preview-bg-start', vars['--bg-start']);
+  preview.style.setProperty('--theme-preview-bg-end', vars['--bg-end']);
+  preview.style.setProperty('--theme-preview-nav-soft', vars['--nav-soft']);
+  preview.style.fontFamily = vars['--app-font'];
+}
+
+function renderThemePresetGrid() {
+  const root = document.getElementById('themePresetGrid');
+  if (!root) return;
+  const activeTheme = document.body.dataset.theme || 'classic';
+  root.innerHTML = '';
+  Object.entries(THEMES)
+    .filter(([key]) => key !== 'custom')
+    .forEach(([key, theme]) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `theme-preset-button${activeTheme === key ? ' active' : ''}`;
+      button.onclick = () => onThemeChange(key);
+      button.innerHTML = `
+        <span class="theme-swatch-row">${theme.swatches.map((color) => `<span class="theme-swatch" style="background:${escapeHtml(color)}"></span>`).join('')}</span>
+        <span class="theme-preset-name">${escapeHtml(theme.label)}</span>
+        <span class="theme-preset-detail">${escapeHtml(theme.detail)}</span>
+      `;
+      root.appendChild(button);
+    });
+}
+
 function applyTheme(themeName, persist = true) {
-  const theme = THEMES[themeName] ? themeName : 'gallery';
+  const theme = THEMES[themeName] ? themeName : 'classic';
   document.body.dataset.theme = theme;
+  if (theme === 'custom') {
+    applyCustomThemeVars();
+  } else {
+    clearCustomThemeVars();
+  }
   const select = document.getElementById('themeSelect');
-  const status = document.getElementById('themeStatus');
   if (select) {
     select.value = theme;
   }
-  if (status) {
-    status.textContent = THEMES[theme].detail;
-  }
+  renderThemePresetGrid();
+  setCustomThemeInputs();
+  updateThemePreview();
   if (persist) {
-    window.localStorage.setItem('framershaven-theme', theme);
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   }
 }
 
@@ -496,6 +696,34 @@ function onThemeChange(themeName) {
   applyTheme(themeName);
   setNotice(`Theme switched to ${THEMES[themeName]?.label || THEMES.classic.label}.`, 'success');
 }
+
+function saveCustomTheme() {
+  const theme = readCustomThemeInputs();
+  window.localStorage.setItem(CUSTOM_THEME_STORAGE_KEY, JSON.stringify(theme));
+  applyTheme('custom');
+  setNotice('Custom theme saved.', 'success');
+}
+
+function resetCustomTheme() {
+  window.localStorage.removeItem(CUSTOM_THEME_STORAGE_KEY);
+  setCustomThemeInputs({ ...DEFAULT_CUSTOM_THEME });
+  updateThemePreview({ ...DEFAULT_CUSTOM_THEME });
+  if (document.body.dataset.theme === 'custom') {
+    applyTheme('classic');
+  }
+  setNotice('Custom theme reset.', 'success');
+}
+
+function bindThemeBuilder() {
+  renderThemePresetGrid();
+  setCustomThemeInputs();
+  updateThemePreview();
+  document.querySelectorAll('[data-theme-field]').forEach((node) => {
+    node.addEventListener('input', () => updateThemePreview());
+    node.addEventListener('change', () => updateThemePreview());
+  });
+}
+
 
 function updatePricingInputs(settings) {
   if (!settings) return;
@@ -5747,7 +5975,8 @@ window.addEventListener('DOMContentLoaded', async () => {
       closeCatalogEditor();
     }
   });
-  applyTheme(window.localStorage.getItem('framershaven-theme') || 'classic', false);
+  bindThemeBuilder();
+  applyTheme(window.localStorage.getItem(THEME_STORAGE_KEY) || 'classic', false);
   loadLocalPreview();
   bindGalleryFinder();
   bindMockupDesigner();

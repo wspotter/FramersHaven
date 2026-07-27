@@ -85,6 +85,26 @@ class ApiTests(unittest.TestCase):
         self.assertIn('/static/app.js?v=', home.text)
         self.assertEqual(home.text.count(f'?v={main_module.STATIC_ASSET_VERSION}'), 2)
 
+    def test_appearance_theme_builder_replaces_old_theme_factory(self):
+        home = self.client.get("/")
+        self.assertEqual(home.status_code, 200)
+        self.assertIn('data-admin-view="appearance"', home.text)
+        self.assertIn('data-admin-panel="appearance"', home.text)
+        self.assertIn('id="themePresetGrid"', home.text)
+        self.assertIn('id="customThemeAccent"', home.text)
+        self.assertIn('id="customThemeFont"', home.text)
+        self.assertIn('value="coastal"', home.text)
+        self.assertIn('value="heritage"', home.text)
+        self.assertIn('value="custom"', home.text)
+        self.assertNotIn("Theme Factory", home.text)
+        self.assertNotIn('value="gallery"', home.text)
+
+        script = self.client.get("/static/app.js").text
+        self.assertIn("const CUSTOM_THEME_STORAGE_KEY", script)
+        self.assertIn("function saveCustomTheme()", script)
+        self.assertIn("function renderThemePresetGrid()", script)
+        self.assertIn("function bindThemeBuilder()", script)
+
     def test_gallery_has_finder_controls_for_large_image_sets(self):
         home = self.client.get("/")
         self.assertEqual(home.status_code, 200)

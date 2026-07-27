@@ -40,184 +40,309 @@
       --mockup-bg-start: #f1ede4; /* light canvas background as in design */
       --mockup-bg-end: #e4e1d7;
     }
+    body[data-theme="classic"],
+    body[data-theme="framershaven"],
+    body[data-theme="coastal"],
+    body[data-theme="heritage"],
+    body[data-theme="warm-gallery"],
+    body[data-theme="clean-mono"],
+    body[data-theme="sunrise"],
+    body[data-theme="blueprint"],
+    body[data-theme="custom"] {
+      --app-font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
 
-        body[data-theme="framershaven"] {
-      --ink: #111111;
-      --muted: #555555;
-      --line: #F9C6D3; /* Pink border */
-      --paper: #ffffff;
-      --panel: #ffffff;
-      --accent: #F9C6D3; /* Pink */
-      --accent-strong: #0f6f69;
-      --accent-soft: #53C2BA; /* Teal */
+    body[data-theme="classic"] {
+      --ink: #1f2933;
+      --muted: #64748b;
+      --line: rgba(31, 41, 51, 0.12);
+      --paper: #fbfaf7;
+      --panel: rgba(255, 255, 255, 0.9);
+      --accent: #59636e;
+      --accent-strong: #26313b;
+      --accent-soft: rgba(89, 99, 110, 0.1);
       --nav: #ffffff;
-      --nav-soft: #f0f7f7; /* Very light teal */
-      --shadow: 0 18px 40px rgba(17, 17, 17, 0.08);
-      --bg-glow: rgba(249, 198, 211, 0.15); /* Soft pink */
-      --bg-start: #ffffff;
-      --bg-mid: #ffffff;
-      --bg-end: #e6f5f4; /* Soft teal */
+      --nav-soft: #f1f4f7;
+      --shadow: 0 12px 32px rgba(31, 41, 51, 0.08);
+      --bg-glow: rgba(89, 99, 110, 0.06);
+      --bg-start: #fbfaf7;
+      --bg-mid: #f4f1ea;
+      --bg-end: #e8e3d8;
       --sidebar-start: #ffffff;
-      --sidebar-end: #f8fafc;
-      --sidebar-text: #111111;
-      --sidebar-muted: #555555;
-      --sidebar-border: #F9C6D3;
-      --nav-active-bg: #fff0f4; /* Light pink */
-      --nav-active-border: #53C2BA; /* Teal */
+      --sidebar-end: #f4f1ea;
+      --sidebar-text: #1f2933;
+      --sidebar-muted: #65727f;
+      --sidebar-border: rgba(31, 41, 51, 0.12);
+      --nav-active-bg: rgba(89, 99, 110, 0.1);
+      --nav-active-border: #59636e;
+      --topbar-bg: rgba(255, 255, 255, 0.92);
+      --field-bg: #ffffff;
+      --ghost-bg: rgba(89, 99, 110, 0.06);
+      --ghost-border: rgba(89, 99, 110, 0.28);
+      --status-bg: rgba(89, 99, 110, 0.1);
+      --status-border: #59636e;
+      --code-bg: #f4f1ea;
+      --code-ink: #1f2933;
+      --mockup-bg-start: #f1ede4;
+      --mockup-bg-end: #e4e1d7;
+    }
+
+    body[data-theme="framershaven"] {
+      --ink: #111827;
+      --muted: #5b6470;
+      --line: rgba(15, 111, 105, 0.18);
+      --paper: #ffffff;
+      --panel: rgba(255, 255, 255, 0.92);
+      --accent: #0f8f87;
+      --accent-strong: #0a5e5a;
+      --accent-soft: rgba(83, 194, 186, 0.14);
+      --nav: #ffffff;
+      --nav-soft: #eefafa;
+      --shadow: 0 14px 36px rgba(17, 24, 39, 0.08);
+      --bg-glow: rgba(249, 198, 211, 0.22);
+      --bg-start: #ffffff;
+      --bg-mid: #fff6f9;
+      --bg-end: #eaf8f7;
+      --sidebar-start: #ffffff;
+      --sidebar-end: #f7fbfb;
+      --sidebar-text: #111827;
+      --sidebar-muted: #5b6470;
+      --sidebar-border: rgba(249, 198, 211, 0.8);
+      --nav-active-bg: #fff0f4;
+      --nav-active-border: #0f8f87;
       --topbar-bg: rgba(255, 255, 255, 0.94);
       --field-bg: #ffffff;
-      --ghost-bg: #e6f5f4;
-      --ghost-border: #53C2BA;
+      --ghost-bg: #eaf8f7;
+      --ghost-border: rgba(15, 143, 135, 0.36);
       --status-bg: #fff0f4;
-      --status-border: #F9C6D3;
+      --status-border: #f59ab1;
       --code-bg: #f8fafc;
-      --code-ink: #111111;
+      --code-ink: #111827;
       --mockup-bg-start: #ffffff;
-      --mockup-bg-end: #e6f5f4;
+      --mockup-bg-end: #eaf8f7;
     }
 
+    body[data-theme="coastal"] {
+      --ink: #17313b;
+      --muted: #526b75;
+      --line: rgba(38, 121, 145, 0.22);
+      --paper: #f7fbfb;
+      --panel: rgba(255, 255, 255, 0.9);
+      --accent: #267991;
+      --accent-strong: #15566b;
+      --accent-soft: rgba(38, 121, 145, 0.12);
+      --nav: #ffffff;
+      --nav-soft: #e9f5f6;
+      --shadow: 0 14px 34px rgba(23, 49, 59, 0.09);
+      --bg-glow: rgba(244, 181, 91, 0.14);
+      --bg-start: #f7fbfb;
+      --bg-mid: #e9f5f6;
+      --bg-end: #d9ebe9;
+      --sidebar-start: #ffffff;
+      --sidebar-end: #e9f5f6;
+      --sidebar-text: #17313b;
+      --sidebar-muted: #526b75;
+      --sidebar-border: rgba(38, 121, 145, 0.2);
+      --nav-active-bg: rgba(244, 181, 91, 0.16);
+      --nav-active-border: #267991;
+      --topbar-bg: rgba(255, 255, 255, 0.92);
+      --field-bg: #ffffff;
+      --ghost-bg: rgba(38, 121, 145, 0.08);
+      --ghost-border: rgba(38, 121, 145, 0.32);
+      --status-bg: rgba(244, 181, 91, 0.16);
+      --status-border: #d9902d;
+      --code-bg: #e9f5f6;
+      --code-ink: #17313b;
+      --mockup-bg-start: #eef5f1;
+      --mockup-bg-end: #dce9e6;
+    }
 
-        body[data-theme="gallery"] {
-      --ink: #0f172a; /* slate-900 */
-      --muted: #475569; /* slate-600 */
-      --line: rgba(20, 184, 166, 0.2); /* teal border */
+    body[data-theme="heritage"] {
+      --ink: #263225;
+      --muted: #66705d;
+      --line: rgba(78, 111, 82, 0.24);
+      --paper: #faf8f0;
+      --panel: rgba(255, 253, 247, 0.92);
+      --accent: #4e6f52;
+      --accent-strong: #2e4b32;
+      --accent-soft: rgba(78, 111, 82, 0.12);
+      --nav: #fffdf7;
+      --nav-soft: #eeeadc;
+      --shadow: 0 14px 34px rgba(38, 50, 37, 0.1);
+      --bg-glow: rgba(171, 124, 65, 0.11);
+      --bg-start: #faf8f0;
+      --bg-mid: #efe9d9;
+      --bg-end: #e1d6bd;
+      --sidebar-start: #fffdf7;
+      --sidebar-end: #efe9d9;
+      --sidebar-text: #263225;
+      --sidebar-muted: #66705d;
+      --sidebar-border: rgba(78, 111, 82, 0.24);
+      --nav-active-bg: rgba(171, 124, 65, 0.14);
+      --nav-active-border: #4e6f52;
+      --topbar-bg: rgba(255, 253, 247, 0.92);
+      --field-bg: #fffdf8;
+      --ghost-bg: rgba(78, 111, 82, 0.08);
+      --ghost-border: rgba(78, 111, 82, 0.32);
+      --status-bg: rgba(171, 124, 65, 0.14);
+      --status-border: #946833;
+      --code-bg: #efe9d9;
+      --code-ink: #263225;
+      --mockup-bg-start: #efe9d9;
+      --mockup-bg-end: #e1d6bd;
+    }
+
+    body[data-theme="warm-gallery"] {
+      --ink: #33251e;
+      --muted: #755e52;
+      --line: rgba(176, 96, 65, 0.24);
+      --paper: #fffaf5;
+      --panel: rgba(255, 252, 248, 0.92);
+      --accent: #b06041;
+      --accent-strong: #7a3824;
+      --accent-soft: rgba(176, 96, 65, 0.12);
+      --nav: #fffdf9;
+      --nav-soft: #f6eadf;
+      --shadow: 0 14px 34px rgba(51, 37, 30, 0.1);
+      --bg-glow: rgba(232, 182, 92, 0.13);
+      --bg-start: #fffaf5;
+      --bg-mid: #f7eadf;
+      --bg-end: #ead6c0;
+      --sidebar-start: #fffdf9;
+      --sidebar-end: #f6eadf;
+      --sidebar-text: #33251e;
+      --sidebar-muted: #755e52;
+      --sidebar-border: rgba(176, 96, 65, 0.22);
+      --nav-active-bg: rgba(232, 182, 92, 0.17);
+      --nav-active-border: #b06041;
+      --topbar-bg: rgba(255, 252, 248, 0.92);
+      --field-bg: #ffffff;
+      --ghost-bg: rgba(176, 96, 65, 0.08);
+      --ghost-border: rgba(176, 96, 65, 0.3);
+      --status-bg: rgba(232, 182, 92, 0.16);
+      --status-border: #bf8532;
+      --code-bg: #f6eadf;
+      --code-ink: #33251e;
+      --mockup-bg-start: #f7eadf;
+      --mockup-bg-end: #ead6c0;
+    }
+
+    body[data-theme="clean-mono"] {
+      --ink: #20262c;
+      --muted: #69727b;
+      --line: rgba(32, 38, 44, 0.14);
       --paper: #ffffff;
-      --panel: rgba(255, 255, 255, 0.85); /* translucent white */
-      --accent: #ec4899; /* pink-500 */
-      --accent-strong: #9d174d; /* pink-800 */
-      --accent-soft: rgba(236, 72, 153, 0.1);
-      --nav: rgba(255, 255, 255, 0.6);
-      --nav-soft: rgba(20, 184, 166, 0.08); /* soft teal */
-      --shadow: 0 20px 40px rgba(20, 184, 166, 0.08), 0 8px 16px rgba(236, 72, 153, 0.06);
-      --bg-glow: rgba(236, 72, 153, 0.08); /* pink radial glow */
+      --panel: rgba(255, 255, 255, 0.94);
+      --accent: #20262c;
+      --accent-strong: #0d1115;
+      --accent-soft: rgba(32, 38, 44, 0.08);
+      --nav: #ffffff;
+      --nav-soft: #f3f5f6;
+      --shadow: 0 12px 30px rgba(32, 38, 44, 0.07);
+      --bg-glow: rgba(105, 114, 123, 0.06);
       --bg-start: #ffffff;
-      --bg-mid: #fdf2f8; /* pink-50 */
-      --bg-end: #f0fdfa; /* teal-50 */
-      --sidebar-start: rgba(255, 255, 255, 0.9);
-      --sidebar-end: rgba(253, 242, 248, 0.9); /* pink-50 tint */
-      --sidebar-text: #0f172a;
-      --sidebar-muted: #475569;
-      --sidebar-border: rgba(236, 72, 153, 0.15);
-      --nav-active-bg: rgba(236, 72, 153, 0.1);
-      --nav-active-border: #ec4899; /* pink-500 */
-      --topbar-bg: rgba(255, 255, 255, 0.85);
-      --field-bg: rgba(255, 255, 255, 0.9);
-      --ghost-bg: rgba(20, 184, 166, 0.1); /* soft teal */
-      --ghost-border: rgba(20, 184, 166, 0.4);
-      --status-bg: rgba(236, 72, 153, 0.1);
-      --status-border: #ec4899;
-      --code-bg: #fdf2f8;
-      --code-ink: #ec4899;
-      --mockup-bg-start: #f8fafc;
-      --mockup-bg-end: #f1f5f9;
+      --bg-mid: #f6f7f8;
+      --bg-end: #e8ecef;
+      --sidebar-start: #ffffff;
+      --sidebar-end: #f6f7f8;
+      --sidebar-text: #20262c;
+      --sidebar-muted: #69727b;
+      --sidebar-border: rgba(32, 38, 44, 0.14);
+      --nav-active-bg: rgba(32, 38, 44, 0.07);
+      --nav-active-border: #20262c;
+      --topbar-bg: rgba(255, 255, 255, 0.94);
+      --field-bg: #ffffff;
+      --ghost-bg: rgba(32, 38, 44, 0.05);
+      --ghost-border: rgba(32, 38, 44, 0.22);
+      --status-bg: rgba(32, 38, 44, 0.08);
+      --status-border: #20262c;
+      --code-bg: #f3f5f6;
+      --code-ink: #20262c;
+      --mockup-bg-start: #f6f7f8;
+      --mockup-bg-end: #e8ecef;
     }
 
-    body[data-theme="gallery"] button:not(.job-row) {
-      background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
-      color: white;
-      border: none;
-      box-shadow: 0 4px 12px rgba(244, 63, 94, 0.25);
-    }
-    
-    body[data-theme="gallery"] button:not(.job-row):hover:not(:disabled) {
-      box-shadow: 0 6px 16px rgba(244, 63, 94, 0.35);
-      transform: translateY(-2px);
-    }
-
-    body[data-theme="gallery"] button.secondary {
-      background: transparent;
-      color: var(--accent);
-      border: 1px solid var(--accent);
-      box-shadow: none;
-    }
-
-    body[data-theme="gallery"] button.ghost {
-      background: transparent;
-      color: var(--muted);
-      border: none;
-      box-shadow: none;
-    }
-    body[data-theme="gallery"] button.ghost:hover {
-      background: var(--ghost-bg);
-      color: var(--ink);
-    }
-
-    body[data-theme="gallery"] .nav-button,
-    body[data-theme="gallery"] .topbar-nav-button {
-      background: transparent;
-      color: var(--sidebar-text);
-      border: 1px solid transparent;
-      box-shadow: none;
-    }
-    body[data-theme="gallery"] .nav-button.active,
-    body[data-theme="gallery"] .topbar-nav-button.active {
-      color: var(--accent);
-      background: var(--nav-active-bg);
-      border-color: var(--nav-active-border);
-      box-shadow: none;
-    }
-    body[data-theme="gallery"] .topbar-nav-button {
-      border: 1px solid var(--line);
+    body[data-theme="sunrise"] {
+      --ink: #2f2d3a;
+      --muted: #6d6778;
+      --line: rgba(211, 92, 112, 0.22);
+      --paper: #fff9f2;
+      --panel: rgba(255, 252, 248, 0.92);
+      --accent: #d35c70;
+      --accent-strong: #8d3040;
+      --accent-soft: rgba(211, 92, 112, 0.12);
+      --nav: #fffdf8;
+      --nav-soft: #f9ece4;
+      --shadow: 0 14px 34px rgba(47, 45, 58, 0.1);
+      --bg-glow: rgba(245, 166, 79, 0.15);
+      --bg-start: #fff9f2;
+      --bg-mid: #f9ece4;
+      --bg-end: #eadfeb;
+      --sidebar-start: #fffdf8;
+      --sidebar-end: #f9ece4;
+      --sidebar-text: #2f2d3a;
+      --sidebar-muted: #6d6778;
+      --sidebar-border: rgba(211, 92, 112, 0.22);
+      --nav-active-bg: rgba(245, 166, 79, 0.16);
+      --nav-active-border: #d35c70;
+      --topbar-bg: rgba(255, 252, 248, 0.92);
+      --field-bg: #ffffff;
+      --ghost-bg: rgba(211, 92, 112, 0.08);
+      --ghost-border: rgba(211, 92, 112, 0.3);
+      --status-bg: rgba(245, 166, 79, 0.16);
+      --status-border: #d88735;
+      --code-bg: #f9ece4;
+      --code-ink: #2f2d3a;
+      --mockup-bg-start: #f9ece4;
+      --mockup-bg-end: #eadfeb;
     }
 
-    body[data-theme="gallery"] {
-      background:
-        radial-gradient(circle at top left, rgba(236, 72, 153, 0.08), transparent 40%),
-        radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.08), transparent 40%),
-        linear-gradient(135deg, #ffffff 0%, #fdf2f8 50%, #f0fdfa 100%);
+    body[data-theme="blueprint"] {
+      --ink: #14233a;
+      --muted: #5b6980;
+      --line: rgba(39, 86, 140, 0.22);
+      --paper: #f7f9fc;
+      --panel: rgba(255, 255, 255, 0.92);
+      --accent: #27568c;
+      --accent-strong: #183960;
+      --accent-soft: rgba(39, 86, 140, 0.11);
+      --nav: #ffffff;
+      --nav-soft: #eaf0f7;
+      --shadow: 0 14px 34px rgba(20, 35, 58, 0.09);
+      --bg-glow: rgba(150, 169, 194, 0.14);
+      --bg-start: #f7f9fc;
+      --bg-mid: #eaf0f7;
+      --bg-end: #dbe5f0;
+      --sidebar-start: #ffffff;
+      --sidebar-end: #eaf0f7;
+      --sidebar-text: #14233a;
+      --sidebar-muted: #5b6980;
+      --sidebar-border: rgba(39, 86, 140, 0.22);
+      --nav-active-bg: rgba(39, 86, 140, 0.1);
+      --nav-active-border: #27568c;
+      --topbar-bg: rgba(255, 255, 255, 0.92);
+      --field-bg: #ffffff;
+      --ghost-bg: rgba(39, 86, 140, 0.07);
+      --ghost-border: rgba(39, 86, 140, 0.3);
+      --status-bg: rgba(150, 169, 194, 0.18);
+      --status-border: #27568c;
+      --code-bg: #eaf0f7;
+      --code-ink: #14233a;
+      --mockup-bg-start: #eaf0f7;
+      --mockup-bg-end: #dbe5f0;
     }
 
-    body[data-theme="gallery"] .sidebar {
-      backdrop-filter: blur(20px);
-      border-right: 1px solid rgba(236, 72, 153, 0.1);
-    }
 
     * { box-sizing: border-box; }
         body {
       margin: 0;
-      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: var(--app-font, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
       color: var(--ink);
       background:
         radial-gradient(circle at top left, var(--bg-glow), rgba(255,255,255,0) 34%),
         linear-gradient(135deg, var(--bg-start) 0%, var(--bg-mid) 45%, var(--bg-end) 100%);
       min-height: 100vh;
     }
-
-        body[data-theme="framershaven"] {
-      --ink: #111111;
-      --muted: #555555;
-      --line: #F9C6D3; /* Pink border */
-      --paper: #ffffff;
-      --panel: #ffffff;
-      --accent: #F9C6D3; /* Pink */
-      --accent-strong: #0f6f69;
-      --accent-soft: #53C2BA; /* Teal */
-      --nav: #ffffff;
-      --nav-soft: #f0f7f7; /* Very light teal */
-      --shadow: 0 18px 40px rgba(17, 17, 17, 0.08);
-      --bg-glow: rgba(249, 198, 211, 0.15); /* Soft pink */
-      --bg-start: #ffffff;
-      --bg-mid: #ffffff;
-      --bg-end: #e6f5f4; /* Soft teal */
-      --sidebar-start: #ffffff;
-      --sidebar-end: #f8fafc;
-      --sidebar-text: #111111;
-      --sidebar-muted: #555555;
-      --sidebar-border: #F9C6D3;
-      --nav-active-bg: #fff0f4; /* Light pink */
-      --nav-active-border: #53C2BA; /* Teal */
-      --topbar-bg: rgba(255, 255, 255, 0.94);
-      --field-bg: #ffffff;
-      --ghost-bg: #e6f5f4;
-      --ghost-border: #53C2BA;
-      --status-bg: #fff0f4;
-      --status-border: #F9C6D3;
-      --code-bg: #f8fafc;
-      --code-ink: #111111;
-      --mockup-bg-start: #ffffff;
-      --mockup-bg-end: #e6f5f4;
-    }
-
 
     .shell {
       display: grid;
@@ -439,6 +564,158 @@
       margin-top: 3px;
       color: var(--muted);
       font-size: 10px;
+    }
+    .appearance-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) minmax(280px, 0.9fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .theme-preset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .theme-preset-button {
+      display: grid;
+      gap: 8px;
+      width: 100%;
+      margin: 0;
+      padding: 10px;
+      text-align: left;
+      background: var(--field-bg);
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: none;
+    }
+
+    .theme-preset-button.active {
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 1px var(--accent);
+    }
+
+    .theme-preset-name {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .theme-preset-detail {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .theme-swatch-row {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .theme-swatch {
+      width: 22px;
+      height: 22px;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 999px;
+    }
+
+    .custom-theme-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .custom-theme-grid label {
+      display: grid;
+      gap: 5px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .custom-theme-grid input[type="color"] {
+      width: 100%;
+      min-height: 38px;
+      padding: 3px;
+      border-radius: 8px;
+    }
+
+    .custom-theme-grid select {
+      min-height: 38px;
+      margin-top: 0;
+    }
+
+    .theme-preview-card {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      color: var(--theme-preview-ink, var(--ink));
+      background: linear-gradient(135deg, var(--theme-preview-bg-start, var(--bg-start)), var(--theme-preview-bg-end, var(--bg-end)));
+      border: 1px solid var(--theme-preview-line, var(--line));
+      border-radius: 8px;
+    }
+
+    .theme-preview-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .theme-preview-card strong {
+      font-size: 16px;
+    }
+
+    .theme-preview-card small {
+      color: var(--theme-preview-muted, var(--muted));
+    }
+
+    .theme-preview-chip {
+      padding: 5px 8px;
+      color: var(--theme-preview-accent-strong, var(--accent-strong));
+      background: var(--theme-preview-accent-soft, var(--accent-soft));
+      border: 1px solid var(--theme-preview-accent, var(--accent));
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .theme-preview-panel {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      background: var(--theme-preview-panel, var(--panel));
+      border: 1px solid var(--theme-preview-line, var(--line));
+      border-radius: 8px;
+    }
+
+    .theme-preview-bars {
+      display: grid;
+      gap: 6px;
+    }
+
+    .theme-preview-bars span {
+      display: block;
+      height: 8px;
+      background: var(--theme-preview-accent-soft, var(--accent-soft));
+      border-radius: 999px;
+    }
+
+    .theme-preview-bars span:nth-child(2) {
+      width: 72%;
+      background: var(--theme-preview-nav-soft, var(--nav-soft));
+    }
+
+    .theme-preview-bars span:nth-child(3) {
+      width: 48%;
+      background: var(--theme-preview-accent, var(--accent));
+    }
     }
 
     .workspace {
@@ -868,16 +1145,6 @@
 
     body[data-theme="framershaven"] .nav-button.active {
       color: #111111;
-    }
-
-    body[data-theme="gallery"] .nav-button {
-      color: var(--sidebar-text);
-    }
-
-    body[data-theme="gallery"] .nav-button.active {
-      color: var(--accent);
-      background: var(--nav-active-bg);
-      border-color: var(--nav-active-border);
     }
 
     .inline-actions {
@@ -1543,12 +1810,6 @@
     body[data-theme="framershaven"] .material-slot.has-selection {
       border-color: #F9C6D3;
       box-shadow: inset 0 0 0 2px #53C2BA;
-      background: var(--nav-soft);
-    }
-
-    body[data-theme="gallery"] .material-slot.has-selection {
-      border-color: var(--accent);
-      box-shadow: inset 0 0 0 2px var(--accent-soft);
       background: var(--nav-soft);
     }
 
@@ -3909,20 +4170,6 @@
       color: var(--paper);
     }
 
-    body[data-theme="gallery"] .order-stage-button,
-    body[data-theme="gallery"] .jobs-table-head button {
-      background: var(--field-bg);
-      color: var(--ink);
-      border: 1px solid var(--line);
-      box-shadow: none;
-    }
-
-    body[data-theme="gallery"] .order-stage-button.active {
-      background: var(--ink);
-      color: white;
-      border-color: var(--ink);
-    }
-
     .orders-search-wrap {
       flex: 1 1 260px;
       margin-left: auto;
@@ -4079,7 +4326,6 @@
     }
 
     body .order-inspector-tabs button,
-    body[data-theme="gallery"] .order-inspector-tabs button,
     body[data-theme="framershaven"] .order-inspector-tabs button {
       width: auto;
       min-width: 0;
@@ -4094,7 +4340,6 @@
     }
 
     body .order-inspector-tabs button.active,
-    body[data-theme="gallery"] .order-inspector-tabs button.active,
     body[data-theme="framershaven"] .order-inspector-tabs button.active {
       border-bottom-color: var(--accent) !important;
       color: var(--ink) !important;
@@ -4226,6 +4471,10 @@
     }
 
     @media (max-width: 1180px) {
+      .appearance-grid {
+        grid-template-columns: 1fr;
+      }
+
       .jobs-table-head {
         display: grid;
       }
@@ -4261,10 +4510,14 @@
       .document-preview-actions {
         justify-content: flex-start;
       }
+
+      .custom-theme-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
-<body data-theme="gallery" data-workspace="design" data-user-role="{{ current_user.role }}">
+<body data-theme="classic" data-workspace="design" data-user-role="{{ current_user.role }}">
   <div class="shell">
     <aside class="sidebar drawer-active">
       <div class="brand">
@@ -4379,11 +4632,16 @@
           <div class="theme-picker">
             <label for="themeSelect">Theme</label>
             <select id="themeSelect" onchange="onThemeChange(this.value)" title="Switch the workstation theme.">
-              <option value="classic">Classic</option>
+              <option value="classic">Studio Classic</option>
               <option value="framershaven">FramersHaven</option>
-              <option value="gallery">Gallery Neon (Light)</option>
+              <option value="coastal">Coastal Blue</option>
+              <option value="heritage">Heritage Green</option>
+              <option value="warm-gallery">Warm Gallery</option>
+              <option value="clean-mono">Clean Mono</option>
+              <option value="sunrise">Sunrise Retail</option>
+              <option value="blueprint">Blueprint</option>
+              <option value="custom">Custom</option>
             </select>
-            <small id="themeStatus">Warm neutral default</small>
           </div>
         </div>
       </div>
@@ -5193,6 +5451,7 @@
               <button type="button" class="admin-view-button" data-admin-view="pricing" aria-pressed="false" onclick="setAdminView('pricing', this)">Pricing</button>
               <button type="button" class="admin-view-button" data-admin-view="services" aria-pressed="false" onclick="setAdminView('services', this)">Services</button>
               <button type="button" class="admin-view-button" data-admin-view="studio" aria-pressed="false" onclick="setAdminView('studio', this)">Studio</button>
+              <button type="button" class="admin-view-button" data-admin-view="appearance" aria-pressed="false" onclick="setAdminView('appearance', this)">Appearance</button>
               <button type="button" class="admin-view-button" data-admin-view="assistant" aria-pressed="false" onclick="setAdminView('assistant', this)">Assistant</button>
               <button type="button" class="admin-view-button" data-admin-view="accounting" aria-pressed="false" onclick="setAdminView('accounting', this)">Accounting</button>
               <button type="button" class="admin-view-button" data-admin-view="backups" aria-pressed="false" onclick="setAdminView('backups', this)">Backups</button>
@@ -5492,6 +5751,64 @@
                 <img id="studioLogoPreview" class="brand-logo" alt="Current studio logo" hidden />
                 <input id="studioLogoFile" type="file" accept="image/png,image/webp" />
                 <div class="inline-actions"><button type="button" onclick="uploadStudioLogo()">Upload Logo</button><button type="button" class="secondary" onclick="removeStudioLogo()">Remove Logo</button></div>
+              </div>
+              <div class="card admin-utility-panel" data-admin-panel="appearance">
+                <h3>Appearance</h3>
+                <p>Choose a ready-made look or build a color scheme that matches the shop.</p>
+                <div class="appearance-grid">
+                  <div>
+                    <div class="section-head">
+                      <div>
+                        <h3>Preset Schemes</h3>
+                        <p>Light, readable starting points with different brand personalities.</p>
+                      </div>
+                    </div>
+                    <div id="themePresetGrid" class="theme-preset-grid"></div>
+                  </div>
+                  <div>
+                    <div class="section-head">
+                      <div>
+                        <h3>Custom Scheme</h3>
+                        <p>Brand colors, workspace surfaces, and type.</p>
+                      </div>
+                    </div>
+                    <div class="custom-theme-grid">
+                      <label for="customThemeInk">Text<input id="customThemeInk" type="color" data-theme-field="ink" /></label>
+                      <label for="customThemeMuted">Quiet Text<input id="customThemeMuted" type="color" data-theme-field="muted" /></label>
+                      <label for="customThemeAccent">Accent<input id="customThemeAccent" type="color" data-theme-field="accent" /></label>
+                      <label for="customThemeAccentStrong">Deep Accent<input id="customThemeAccentStrong" type="color" data-theme-field="accentStrong" /></label>
+                      <label for="customThemePaper">Page<input id="customThemePaper" type="color" data-theme-field="paper" /></label>
+                      <label for="customThemePanel">Panels<input id="customThemePanel" type="color" data-theme-field="panel" /></label>
+                      <label for="customThemeSidebar">Sidebar<input id="customThemeSidebar" type="color" data-theme-field="sidebar" /></label>
+                      <label for="customThemeSidebarText">Sidebar Text<input id="customThemeSidebarText" type="color" data-theme-field="sidebarText" /></label>
+                      <label class="span-all" for="customThemeFont">Font
+                        <select id="customThemeFont" data-theme-field="font">
+                          <option value="system">System Sans</option>
+                          <option value="serif">Classic Serif</option>
+                          <option value="friendly">Friendly Rounded</option>
+                          <option value="compact">Compact Workstation</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div class="inline-actions">
+                      <button type="button" onclick="saveCustomTheme()">Save Custom Scheme</button>
+                      <button type="button" class="secondary" onclick="resetCustomTheme()">Reset Custom</button>
+                    </div>
+                    <div id="themePreviewCard" class="theme-preview-card" aria-live="polite">
+                      <div class="theme-preview-top">
+                        <div>
+                          <strong>Framing Studio</strong>
+                          <small>Quote workspace preview</small>
+                        </div>
+                        <span class="theme-preview-chip">Active</span>
+                      </div>
+                      <div class="theme-preview-panel">
+                        <strong>Design Desk</strong>
+                        <div class="theme-preview-bars" aria-hidden="true"><span></span><span></span><span></span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div class="card admin-utility-panel" data-admin-panel="assistant">
                 <h3>Framewise Assistant</h3>
