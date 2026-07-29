@@ -5,7 +5,10 @@ import csv
 import hashlib
 import io
 import json
+import os
 import re
+import urllib.error
+import urllib.request
 import zipfile
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -60,6 +63,11 @@ def _static_asset_version(*relative_paths: str) -> str:
 
 
 STATIC_ASSET_VERSION = _static_asset_version("moulding-render.js", "app.js")
+APP_VERSION = (ROOT.parent / "VERSION").read_text(encoding="utf-8").strip()
+VERSION_CHECK_URL = os.environ.get(
+    "FRAMERSHAVEN_VERSION_CHECK_URL",
+    "http://framershaven.com/version.json",
+)
 
 
 @asynccontextmanager
@@ -239,6 +247,8 @@ async def index(request: Request) -> HTMLResponse:
             "asset_version": STATIC_ASSET_VERSION,
             "brand": _get_studio_profile(),
             "current_user": PUBLIC_WORKSTATION_USER,
+            "app_version": APP_VERSION,
+            "version_check_url": VERSION_CHECK_URL,
         },
     )
 
@@ -246,6 +256,55 @@ async def index(request: Request) -> HTMLResponse:
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/version")
+def app_version() -> dict[str, str]:
+    return {
+        "version": APP_VERSION,
+        "version_check_url": VERSION_CHECK_URL,
+    }
+
+
+def _parse_version_payload(payload: bytes) -> dict[str, Any]:
+    try:
+        data = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("Update endpoint did not return valid JSON") from exc
+    if not isinstance(data, dict):
+        raise ValueError("Update endpoint returned an unexpected payload")
+    return data
+
+
+@app.get("/api/update-check")
+def update_check() -> dict[str, Any]:
+    try:
+        request = urllib.request.Request(
+            VERSION_CHECK_URL,
+            headers={"User-Agent": f"FramersHaven/{APP_VERSION} update-check"},
+        )
+        with urllib.request.urlopen(request, timeout=4) as response:
+            remote = _parse_version_payload(response.read(32_768))
+    except (OSError, ValueError, urllib.error.URLError) as exc:
+        return {
+            "ok": False,
+            "version": APP_VERSION,
+            "version_check_url": VERSION_CHECK_URL,
+            "error": str(exc),
+        }
+
+    latest = str(remote.get("latest_version") or remote.get("version") or "").strip()
+    release_url = str(remote.get("release_url") or "").strip()
+    message = str(remote.get("message") or "A newer FramersHaven release is available.").strip()
+    return {
+        "ok": True,
+        "version": APP_VERSION,
+        "latest_version": latest,
+        "update_available": bool(latest and latest != APP_VERSION),
+        "release_url": release_url,
+        "message": message,
+        "version_check_url": VERSION_CHECK_URL,
+    }
 
 
 @app.get("/api/edition")

@@ -9,6 +9,7 @@ import unittest
 import zipfile
 from html import unescape
 from pathlib import Path
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 from PIL import Image
@@ -84,6 +85,42 @@ class ApiTests(unittest.TestCase):
         self.assertIn('/static/moulding-render.js?v=', home.text)
         self.assertIn('/static/app.js?v=', home.text)
         self.assertEqual(home.text.count(f'?v={main_module.STATIC_ASSET_VERSION}'), 2)
+
+    def test_version_endpoint_reports_local_version_and_check_url(self):
+        response = self.client.get("/api/version")
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["version"], main_module.APP_VERSION)
+        self.assertEqual(data["version_check_url"], main_module.VERSION_CHECK_URL)
+
+    def test_update_check_reports_new_release_from_public_payload(self):
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self, _limit):
+                return json.dumps(
+                    {
+                        "latest_version": "v9.9.9",
+                        "release_url": "https://example.test/release",
+                        "message": "A test update is available.",
+                    }
+                ).encode("utf-8")
+
+        with patch("app.main.urllib.request.urlopen", return_value=FakeResponse()):
+            response = self.client.get("/api/update-check")
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["ok"])
+        self.assertTrue(data["update_available"])
+        self.assertEqual(data["version"], main_module.APP_VERSION)
+        self.assertEqual(data["latest_version"], "v9.9.9")
+        self.assertEqual(data["release_url"], "https://example.test/release")
 
     def test_appearance_theme_builder_replaces_old_theme_factory(self):
         home = self.client.get("/")

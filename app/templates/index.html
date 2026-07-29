@@ -738,6 +738,40 @@
       display: block;
     }
 
+    .update-notice {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+      padding: 10px 12px;
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      background: var(--accent-soft);
+      color: var(--ink);
+      box-shadow: var(--shadow);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .update-notice[hidden] {
+      display: none;
+    }
+
+    .update-notice strong {
+      white-space: nowrap;
+    }
+
+    .update-notice span {
+      color: var(--muted);
+    }
+
+    .update-notice a {
+      margin-left: auto;
+      color: var(--accent-strong);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
     .catalog-drawer {
       position: static;
       width: 100%;
@@ -4646,6 +4680,7 @@
         </div>
       </div>
       <div id="notice" class="notice"></div>
+      <div id="updateNotice" class="update-notice" hidden></div>
 
       <div class="workspace">
         <section id="tab-design" class="tab-panel active">

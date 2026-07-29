@@ -56,6 +56,8 @@ const catalogDrawerState = { kind: 'mat', slot: 'topMat' };
 const mockupInteraction = { type: null, scale: 1, handle: null, positionBox: null };
 let pendingOpeningArtworkId = null;
 const openingArtworkCache = new Map();
+const UPDATE_CHECK_STORAGE_KEY = 'framershaven-update-check';
+const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const DESIGN_PRESETS = {
   single_mat: {
     label: 'Moulding & Single Mat',
@@ -274,6 +276,46 @@ async function fetchJson(url, options = {}) {
     throw new Error(data.detail || response.statusText || 'Request failed');
   }
   return data;
+}
+
+function shouldRunUpdateCheck() {
+  try {
+    const previous = Number(window.localStorage.getItem(UPDATE_CHECK_STORAGE_KEY) || 0);
+    return !previous || Date.now() - previous > UPDATE_CHECK_INTERVAL_MS;
+  } catch {
+    return true;
+  }
+}
+
+function markUpdateCheckRan() {
+  try {
+    window.localStorage.setItem(UPDATE_CHECK_STORAGE_KEY, String(Date.now()));
+  } catch {
+    // Private browsing or locked-down workstations can block localStorage.
+  }
+}
+
+function renderUpdateNotice(update) {
+  const notice = document.getElementById('updateNotice');
+  if (!notice || !update?.update_available || !update.release_url) return;
+  notice.hidden = false;
+  notice.innerHTML = `
+    <strong>Update available: FramersHaven ${escapeHtml(update.latest_version)}</strong>
+    <span>${escapeHtml(update.message || 'A newer FramersHaven release is available.')}</span>
+    <a href="${escapeHtml(update.release_url)}" target="_blank" rel="noopener">Download update</a>
+  `;
+}
+
+async function checkForUpdates({ force = false } = {}) {
+  if (!force && !shouldRunUpdateCheck()) return null;
+  markUpdateCheckRan();
+  try {
+    const update = await fetchJson('/api/update-check');
+    renderUpdateNotice(update);
+    return update;
+  } catch {
+    return null;
+  }
 }
 
 function switchTab(tab, button) {
@@ -5982,6 +6024,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   bindMockupDesigner();
   bindDesignInputs();
   clearNotice();
+  checkForUpdates();
   syncMatLayerUI();
   updateMatSlotState();
   syncOpeningPositionInputs();
