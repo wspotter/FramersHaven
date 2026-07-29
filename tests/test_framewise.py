@@ -185,7 +185,7 @@ class FramewiseTests(unittest.TestCase):
         self.assertIn('id="framewiseProviderType"', home.text)
         self.assertIn("SmolVLM2", home.text)
         self.assertIn('id="framewiseSubjectPrompt"', home.text)
-        self.assertIn("Suggest Looks", home.text)
+        self.assertIn("Suggest 3 Looks", home.text)
         self.assertIn("Extra details or questions", home.text)
         self.assertIn("/api/framewise/config", home.text)
 

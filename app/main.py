@@ -68,6 +68,10 @@ VERSION_CHECK_URL = os.environ.get(
     "FRAMERSHAVEN_VERSION_CHECK_URL",
     "http://framershaven.com/version.json",
 )
+VERSION_CHECK_FALLBACK_URL = os.environ.get(
+    "FRAMERSHAVEN_VERSION_CHECK_FALLBACK_URL",
+    "https://raw.githubusercontent.com/wspotter/FramersHaven/main/docs/version.json",
+)
 
 
 @asynccontextmanager
@@ -263,6 +267,7 @@ def app_version() -> dict[str, str]:
     return {
         "version": APP_VERSION,
         "version_check_url": VERSION_CHECK_URL,
+        "version_check_fallback_url": VERSION_CHECK_FALLBACK_URL,
     }
 
 
@@ -278,19 +283,33 @@ def _parse_version_payload(payload: bytes) -> dict[str, Any]:
 
 @app.get("/api/update-check")
 def update_check() -> dict[str, Any]:
-    try:
-        request = urllib.request.Request(
-            VERSION_CHECK_URL,
-            headers={"User-Agent": f"FramersHaven/{APP_VERSION} update-check"},
-        )
-        with urllib.request.urlopen(request, timeout=4) as response:
-            remote = _parse_version_payload(response.read(32_768))
-    except (OSError, ValueError, urllib.error.URLError) as exc:
+    errors: list[str] = []
+    remote: dict[str, Any] | None = None
+    used_url = ""
+    urls = [VERSION_CHECK_URL]
+    if VERSION_CHECK_FALLBACK_URL and VERSION_CHECK_FALLBACK_URL not in urls:
+        urls.append(VERSION_CHECK_FALLBACK_URL)
+
+    for url in urls:
+        used_url = url
+        try:
+            request = urllib.request.Request(
+                url,
+                headers={"User-Agent": f"FramersHaven/{APP_VERSION} update-check"},
+            )
+            with urllib.request.urlopen(request, timeout=4) as response:
+                remote = _parse_version_payload(response.read(32_768))
+            break
+        except (OSError, ValueError, urllib.error.URLError) as exc:
+            errors.append(f"{url}: {exc}")
+
+    if remote is None:
         return {
             "ok": False,
             "version": APP_VERSION,
             "version_check_url": VERSION_CHECK_URL,
-            "error": str(exc),
+            "version_check_fallback_url": VERSION_CHECK_FALLBACK_URL,
+            "error": "; ".join(errors),
         }
 
     latest = str(remote.get("latest_version") or remote.get("version") or "").strip()
@@ -304,6 +323,8 @@ def update_check() -> dict[str, Any]:
         "release_url": release_url,
         "message": message,
         "version_check_url": VERSION_CHECK_URL,
+        "version_check_fallback_url": VERSION_CHECK_FALLBACK_URL,
+        "used_version_check_url": used_url,
     }
 
 
