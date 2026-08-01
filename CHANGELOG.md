@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.3.1-open-preview - 2026-08-01
+
+- Add a single per-user `FramersHaven-Setup.exe` that bundles the application
+  runtime and requires no Python, Git, terminal, or administrator setup.
+- Preserve customer data across upgrades and uninstall/reinstall under
+  `%LOCALAPPDATA%\FramersHaven\Data`.
+- Migrate data from the earlier Windows installer layout on first launch.
+- Add Windows CI coverage for the bundle, migration, install, upgrade,
+  uninstall data retention, reinstall, and packaged application health.
+- Update public Windows help to use the setup executable download path.
+- Fix the windowed launcher so Uvicorn does not require a console during startup.
+
 ## v0.2.0-rc1 - 2026-06-18
 
 Public release candidate for the local Community and Workstation editions.

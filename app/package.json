@@ -1,6 +1,6 @@
 {
   "name": "framershaven-browser-tests",
-  "version": "0.2.0-rc1",
+  "version": "0.3.1-open-preview",
   "private": true,
   "type": "module",
   "scripts": {

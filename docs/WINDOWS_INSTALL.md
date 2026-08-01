@@ -1,46 +1,41 @@
 # Windows Install
 
-FramersHaven runs as a local app on a trusted Windows workstation. It starts a small local web server and opens the app in your browser.
+FramersHaven runs locally on Windows 10 or Windows 11. It starts a private
+local server and opens the workstation in the default browser.
 
-## Install on a Fresh Windows Machine
+## Install
 
-On Windows 10 or Windows 11, open PowerShell and run:
+1. Download [FramersHaven-Setup.exe](https://github.com/wspotter/FramersHaven/releases/latest/download/FramersHaven-Setup.exe).
+2. Open the downloaded file.
+3. Finish setup, then launch FramersHaven from the Start menu or desktop.
 
-```powershell
-$installer="$env:TEMP\FramersHaven-install.ps1"; Invoke-WebRequest https://raw.githubusercontent.com/wspotter/FramersHaven/main/install_windows.ps1 -OutFile $installer; & ([scriptblock]::Create((Get-Content -Raw $installer)))
-```
+The installer includes everything FramersHaven needs. It does not require
+Python, Git, administrator rights, or command-line work.
 
-The installer:
+## Windows SmartScreen
 
-- installs the app under `%LOCALAPPDATA%\FramersHaven`
-- uses Python 3.11 or newer when it is already installed
-- installs Python 3.12 through `winget` only when Python 3.11 or newer is missing
-- creates the app's virtual environment and installs its dependencies
-- creates fictional demo data only when `studio.db` does not exist
-- creates a FramersHaven shortcut on the Windows Desktop
-- starts the app and opens it in the default browser
+Windows may show **Windows protected your PC** while FramersHaven is new and
+building a download reputation. Confirm the download came from the official
+`wspotter/FramersHaven` release, then:
 
-If the installer cannot be downloaded, use the manual fallback below.
+1. Select **More info**.
+2. Select **Run anyway**.
 
-## Manual ZIP Fallback
-
-1. Download the repository ZIP from GitHub.
-2. Unzip it into a folder on the workstation.
-3. Open that folder and double-click `run_windows.bat`.
-
-The launcher creates `venv\` if needed, installs dependencies, creates the
-fictional demo workspace only if `studio.db` is missing, opens
-`http://127.0.0.1:8000`, and keeps the app running until you press `Ctrl-C`.
-
-For this fallback, install Python 3.11 or newer first. If you install Python
-manually, enable **Add python.exe to PATH**.
+Do not bypass a warning for a copy obtained from an unofficial link.
 
 ## Existing Data
 
-The installer reuses an existing FramersHaven installation at
-`%LOCALAPPDATA%\FramersHaven`; it does not delete or replace that installation.
-Neither install path overwrites an existing `studio.db`. If you already have
-data, the launcher starts the existing workspace.
+Program files are installed at:
+
+```text
+%LOCALAPPDATA%\Programs\FramersHaven
+```
+
+Customer data is stored separately at:
+
+```text
+%LOCALAPPDATA%\FramersHaven\Data
+```
 
 Runtime data stays local:
 
@@ -51,7 +46,14 @@ Runtime data stays local:
 - `catalog_previews\`
 - `catalog_imports\`
 
-Back up these files before moving the app to another workstation.
+Installing a newer version preserves this data folder. Uninstalling and
+reinstalling FramersHaven also preserves it. On first launch, the new installer
+moves customer data from the earlier `%LOCALAPPDATA%\FramersHaven` layout into
+the `Data` folder without deleting the earlier program files.
+
+Use the in-app backup function before moving data to another workstation.
+Launcher diagnostics are written to
+`%LOCALAPPDATA%\FramersHaven\Data\logs\launcher.log`.
 
 ## Optional Framewise AI
 
@@ -59,7 +61,7 @@ FramersHaven works without Ollama or a model. To add the recommended local
 vision model after the basic install, open PowerShell and run:
 
 ```powershell
-& "$env:LOCALAPPDATA\FramersHaven\setup_ai_windows.ps1"
+& "$env:LOCALAPPDATA\Programs\FramersHaven\setup_ai_windows.ps1"
 ```
 
 This explicit AI setup installs Ollama from its official installer when it is
@@ -69,40 +71,20 @@ the final Framewise enable-and-test step.
 
 ## If Installation Stops
 
-- If Python was just installed but cannot be detected, close PowerShell, open a
-  new PowerShell window, and run the install command again.
-- If `winget` is unavailable or Python installation fails, install Python 3.12
-  from [python.org](https://www.python.org/downloads/windows/), then rerun the
-  command.
-- If `%LOCALAPPDATA%\FramersHaven` already exists but is not a FramersHaven
-  installation, rename that folder and rerun the command. Do not delete it if
-  it may contain data you need.
-- If the launcher reports that an existing `venv` uses Python older than 3.11,
-  rename or remove only the `venv` folder, then run the launcher again. This
-  does not remove `studio.db` or the runtime-data folders listed above.
-- If the raw installer cannot be downloaded, use the manual ZIP fallback.
-- If Windows Defender or another security product blocks the downloaded script,
-  verify that the URL is the official `wspotter/FramersHaven` repository. Use
-  the manual ZIP fallback if your workstation policy does not allow PowerShell
-  bootstrap scripts. Do not disable antivirus protection.
-- If the browser does not open, leave the terminal running and open the local
-  address printed in that terminal.
-- If port 8000 is already in use, the launcher automatically tries ports
-  8001-8010. To choose one yourself, run `set PORT=8010` before
-  `run_windows.bat`.
+- Rerun the installer. An interrupted setup does not remove customer data.
+- If Windows reports a security policy block without a **Run anyway** option,
+  do not disable antivirus protection; that workstation requires its
+  administrator to approve the application.
+- If FramersHaven does not open, review
+  `%LOCALAPPDATA%\FramersHaven\Data\logs\launcher.log` and include that file in
+  a support request.
+- If port 8000 is busy, FramersHaven automatically tries the next available
+  local port.
 
-## Trusted LAN Use
+## Network Boundary
 
-By default, the Windows launcher binds to the local machine only.
-
-To let another computer on the same trusted private LAN connect, run:
-
-```cmd
-set HOST=0.0.0.0
-run_windows.bat
-```
-
-Then open `http://WORKSTATION-IP:8000` from the other computer.
+The packaged Windows application binds to the local machine only. Source
+developers can configure access from a trusted private LAN separately.
 
 Do not expose FramersHaven directly to the public internet. It does not include
 internet-facing authentication hardening, TLS termination, or hosted-service

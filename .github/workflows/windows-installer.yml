@@ -1,0 +1,142 @@
+name: Windows Installer
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  windows-installer:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install build and test dependencies
+        run: python -m pip install -r requirements-dev.txt -r requirements-windows-build.txt
+
+      - name: Install Node dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Run JavaScript tests
+        working-directory: app
+        run: node --test src/*.test.js
+
+      - name: Run Windows packaging tests
+        run: >-
+          python -m pytest -q
+          tests/test_windows_bundle.py
+          tests/test_windows_installer.py
+          tests/test_build_windows_package.py
+
+      - name: Install verified Inno Setup compiler
+        shell: pwsh
+        run: |
+          $installer = Join-Path $env:RUNNER_TEMP "innosetup-7.0.2-x64.exe"
+          Invoke-WebRequest -Uri "https://github.com/jrsoftware/issrc/releases/download/is-7_0_2/innosetup-7.0.2-x64.exe" -OutFile $installer
+          $signature = Get-AuthenticodeSignature $installer
+          if ($signature.Status -ne "Valid" -or $signature.SignerCertificate.Subject -notmatch "Pyrsys B.V.") {
+            throw "Inno Setup download did not have the expected valid publisher signature."
+          }
+          $process = Start-Process -FilePath $installer -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-" -Wait -PassThru
+          if ($process.ExitCode -ne 0) {
+            throw "Inno Setup installation failed with exit code $($process.ExitCode)."
+          }
+
+      - name: Build bundle and installer
+        shell: pwsh
+        run: |
+          $baseVersion = (Get-Content VERSION -Raw).Trim().TrimStart("v")
+          $version = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME.TrimStart("v") } else { "$baseVersion-ci.$env:GITHUB_RUN_NUMBER" }
+          .\packaging\windows\build.ps1 -Version $version
+
+      - name: Run FramersHaven.exe --smoke-test from bundle
+        shell: pwsh
+        run: |
+          $data = Join-Path $env:RUNNER_TEMP "bundle-smoke-data"
+          $process = Start-Process -FilePath ".\dist\FramersHaven\FramersHaven.exe" -ArgumentList "--smoke-test", "--data-dir", $data -Wait -PassThru
+          if ($process.ExitCode -ne 0) {
+            Get-Content (Join-Path $data "logs\launcher.log") -ErrorAction SilentlyContinue
+            throw "Bundled executable smoke test failed."
+          }
+          if (-not (Test-Path (Join-Path $data "studio.db"))) { throw "Bundled executable did not create its database." }
+
+      - name: Test legacy migration, install, upgrade, uninstall retention, and reinstall
+        shell: pwsh
+        run: |
+          $setup = (Resolve-Path ".\dist\installer\FramersHaven-Setup.exe").Path
+          $installDir = Join-Path $env:LOCALAPPDATA "Programs\FramersHaven"
+          $legacyDir = Join-Path $env:LOCALAPPDATA "FramersHaven"
+          $dataDir = Join-Path $legacyDir "Data"
+          $installLog = Join-Path $env:RUNNER_TEMP "framershaven-install.log"
+
+          $legacyProcess = Start-Process -FilePath ".\dist\FramersHaven\FramersHaven.exe" -ArgumentList "--smoke-test", "--data-dir", $legacyDir -Wait -PassThru
+          if ($legacyProcess.ExitCode -ne 0) { throw "Legacy-layout fixture creation failed." }
+          Set-Content -Path (Join-Path $legacyDir "uploads\legacy-migration-test.txt") -Value "legacy"
+
+          function Invoke-Setup {
+            $process = Start-Process -FilePath $setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-", "/LOG=$installLog" -Wait -PassThru
+            if ($process.ExitCode -ne 0) { throw "Installer failed with exit code $($process.ExitCode)." }
+          }
+
+          function Invoke-PackagedSmoke {
+            $exe = Join-Path $installDir "FramersHaven.exe"
+            if (-not (Test-Path $exe)) { throw "Installed executable is missing." }
+            $process = Start-Process -FilePath $exe -ArgumentList "--smoke-test" -Wait -PassThru
+            if ($process.ExitCode -ne 0) {
+              Get-Content (Join-Path $dataDir "logs\launcher.log") -ErrorAction SilentlyContinue
+              throw "Installed executable smoke test failed."
+            }
+          }
+
+          Invoke-Setup
+          Invoke-PackagedSmoke
+          if (-not (Test-Path (Join-Path $dataDir "studio.db"))) { throw "Legacy database was not migrated." }
+          if ((Get-Content (Join-Path $dataDir "uploads\legacy-migration-test.txt") -Raw).Trim() -ne "legacy") { throw "Legacy uploads were not migrated." }
+
+          $sentinel = Join-Path $dataDir "upgrade-preservation-test.txt"
+          Set-Content -Path $sentinel -Value "keep"
+          Invoke-Setup
+          if ((Get-Content $sentinel -Raw).Trim() -ne "keep") { throw "Upgrade did not preserve user data." }
+          Invoke-PackagedSmoke
+
+          $uninstaller = Join-Path $installDir "unins000.exe"
+          $process = Start-Process -FilePath $uninstaller -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Uninstaller failed with exit code $($process.ExitCode)." }
+          if (Test-Path (Join-Path $installDir "FramersHaven.exe")) { throw "Uninstall left the application executable behind." }
+          if ((Get-Content $sentinel -Raw).Trim() -ne "keep") { throw "Uninstall removed user data." }
+
+          Invoke-Setup
+          Invoke-PackagedSmoke
+          Copy-Item $installLog ".\dist\installer\windows-install-test.log"
+
+      - name: Upload tested Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            dist/installer/FramersHaven-Setup.exe
+            dist/installer/FramersHaven-Setup.exe.sha256
+            dist/installer/windows-install-test.log

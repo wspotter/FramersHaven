@@ -4,6 +4,13 @@ This file is the source of truth for implemented behavior so sprint work does no
 
 ## Current Implemented Features
 
+### Windows Distribution
+- A per-user setup executable bundles FramersHaven and its Python runtime.
+- Program files and customer data use separate local application-data folders.
+- Upgrades and uninstall/reinstall preserve customer databases and assets.
+- First launch migrates data from the earlier Windows installer layout.
+- The app checks the public version endpoint daily and links operators to the current release when an update is available.
+
 ### Intake & Gallery
 - Upload JPG/PNG artwork files.
 - Attach physical artwork size in inches.

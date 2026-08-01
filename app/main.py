@@ -41,18 +41,17 @@ from .edition import (
 )
 from .framewise import router as framewise_router
 from .pricing import QuoteRequest, calculate_quote
+from .runtime_paths import RUNTIME_PATHS, install_bundled_demo_previews
 
 ROOT = Path(__file__).resolve().parent
-UPLOAD_DIR = ROOT.parent / "uploads"
-EXPORT_DIR = ROOT.parent / "exports"
-BACKUP_DIR = ROOT.parent / "backups"
-PREVIEW_DIR = ROOT.parent / "catalog_previews"
-CATALOG_IMPORT_DIR = ROOT.parent / "catalog_imports"
+UPLOAD_DIR = RUNTIME_PATHS.uploads
+EXPORT_DIR = RUNTIME_PATHS.exports
+BACKUP_DIR = RUNTIME_PATHS.backups
+PREVIEW_DIR = RUNTIME_PATHS.catalog_previews
+CATALOG_IMPORT_DIR = RUNTIME_PATHS.catalog_imports
 HELP_DIR = ROOT / "static" / "help"
-UPLOAD_DIR.mkdir(exist_ok=True)
-EXPORT_DIR.mkdir(exist_ok=True)
-BACKUP_DIR.mkdir(exist_ok=True)
-PREVIEW_DIR.mkdir(exist_ok=True)
+RUNTIME_PATHS.ensure_directories()
+install_bundled_demo_previews(RUNTIME_PATHS)
 
 
 def _static_asset_version(*relative_paths: str) -> str:
@@ -259,7 +258,7 @@ async def index(request: Request) -> HTMLResponse:
 
 @app.get("/api/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    return {"status": "ok", "app": "FramersHaven"}
 
 
 @app.get("/api/version")
@@ -279,6 +278,27 @@ def _parse_version_payload(payload: bytes) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise ValueError("Update endpoint returned an unexpected payload")
     return data
+
+
+def _is_newer_version(latest: str, current: str) -> bool:
+    latest_clean = latest.strip().lower().lstrip("v")
+    current_clean = current.strip().lower().lstrip("v")
+    if not latest_clean or latest_clean == current_clean:
+        return False
+
+    latest_match = re.match(r"^(\d+(?:\.\d+){1,3})", latest_clean)
+    current_match = re.match(r"^(\d+(?:\.\d+){1,3})", current_clean)
+    if not latest_match or not current_match:
+        return latest_clean != current_clean
+
+    latest_parts = tuple(int(part) for part in latest_match.group(1).split("."))
+    current_parts = tuple(int(part) for part in current_match.group(1).split("."))
+    width = max(len(latest_parts), len(current_parts))
+    latest_parts += (0,) * (width - len(latest_parts))
+    current_parts += (0,) * (width - len(current_parts))
+    if latest_parts != current_parts:
+        return latest_parts > current_parts
+    return latest_clean != current_clean
 
 
 @app.get("/api/update-check")
@@ -319,7 +339,7 @@ def update_check() -> dict[str, Any]:
         "ok": True,
         "version": APP_VERSION,
         "latest_version": latest,
-        "update_available": bool(latest and latest != APP_VERSION),
+        "update_available": _is_newer_version(latest, APP_VERSION),
         "release_url": release_url,
         "message": message,
         "version_check_url": VERSION_CHECK_URL,

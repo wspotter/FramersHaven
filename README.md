@@ -2,7 +2,7 @@
 
 FramersHaven is a local-first workstation for custom framing shops. It combines artwork intake, visual design, material selection, quoting, production tracking, customer records, document previews, and backups in one browser-based application.
 
-Current release candidate: **v0.2.0-rc1**. The application is ready for controlled evaluation. Installer scripts are covered by repository tests, but release sign-off still needs fresh-machine checks on the supported operating systems.
+Current open preview: **v0.3.1-open-preview**. The one-file Windows installer is exercised on Windows CI and validated on a clean Windows 11 virtual machine.
 
 The included demo uses the fictional **FramersHaven** identity and generated sample data. No customer records, vendor catalogs, or operational credentials are distributed with the repository.
 
@@ -80,20 +80,20 @@ downloaded during the basic install.
 
 ### Windows
 
-On a fresh Windows 10 or Windows 11 machine, open PowerShell and run:
+Download [FramersHaven-Setup.exe](https://github.com/wspotter/FramersHaven/releases/latest/download/FramersHaven-Setup.exe), open it, and finish setup.
+The installer includes the application runtime, needs no Python or Git setup,
+and does not require administrator rights. It adds a Start menu shortcut and
+can add a desktop shortcut.
 
-```powershell
-$installer="$env:TEMP\FramersHaven-install.ps1"; Invoke-WebRequest https://raw.githubusercontent.com/wspotter/FramersHaven/main/install_windows.ps1 -OutFile $installer; & ([scriptblock]::Create((Get-Content -Raw $installer)))
-```
+Windows may show a SmartScreen warning while this new application builds a
+download reputation. Confirm the file came from the official FramersHaven
+release, select **More info**, then **Run anyway**.
 
-This installs FramersHaven under `%LOCALAPPDATA%\FramersHaven`, uses an existing
-Python 3.11 or newer installation, or installs Python 3.12 through `winget` only
-when one is missing. It creates a Desktop shortcut, preserves existing
-FramersHaven data, starts the local app, and opens it on localhost.
-
-If the installer download fails, use the manual fallback: download the
-repository ZIP, unzip it, and double-click `run_windows.bat` in the extracted
-folder.
+Program files are installed under `%LOCALAPPDATA%\Programs\FramersHaven`.
+Customer data is kept separately under `%LOCALAPPDATA%\FramersHaven\Data` and
+is preserved during upgrades and uninstall/reinstall. Existing data from the
+earlier FramersHaven Windows installer is moved into this data folder on first
+launch.
 
 See [Windows install](docs/WINDOWS_INSTALL.md) for details.
 

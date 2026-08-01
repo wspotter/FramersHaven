@@ -51,15 +51,15 @@ This is a local-first app. It does not provide payment processing, email/SMS sen
 
 ## Starting the App
 
-On Windows, double-click the FramersHaven Desktop shortcut or
-`run_windows.bat`. On macOS, double-click `Start FramersHaven.command`. On
-Linux, open FramersHaven from the application menu or run
-`~/.local/bin/framershaven`.
+On Windows, install `FramersHaven-Setup.exe`, then open FramersHaven from the
+Start menu or desktop shortcut. The Windows installer includes the application
+runtime and requires no Python or command-line setup. On macOS, double-click
+`Start FramersHaven.command`. On Linux, open FramersHaven from the application
+menu or run `~/.local/bin/framershaven`.
 
-Keep the launcher terminal open while using the app. The browser opens
-automatically; `/help/` on the printed local URL opens the multi-page operator
-guide. Launchers bind to `127.0.0.1` by default. A shop must explicitly set
-`HOST=0.0.0.0` to allow access from another computer on a trusted private LAN.
+The browser opens automatically; `/help/` on the local URL opens the multi-page
+operator guide. The packaged Windows app binds to `127.0.0.1` so only that
+workstation can connect.
 
 ## Operator Help Site
 
