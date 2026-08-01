@@ -1,9 +1,9 @@
 :root {
   color-scheme: light;
-  --printery-pink: #f4a9bd;
-  --printery-pink-soft: #fff0f4;
-  --printery-teal: #237f79;
-  --printery-teal-soft: #e8f5f3;
+  --framershaven-pink: #f4a9bd;
+  --framershaven-pink-soft: #fff0f4;
+  --framershaven-teal: #237f79;
+  --framershaven-teal-soft: #e8f5f3;
   --ink: #171717;
   --muted: #646464;
   --line: #dedbd8;
@@ -34,7 +34,7 @@ body {
 }
 
 a {
-  color: var(--printery-teal);
+  color: var(--framershaven-teal);
 }
 
 a:hover {
@@ -42,7 +42,7 @@ a:hover {
 }
 
 :where(a, summary):focus-visible {
-  outline: 3px solid var(--printery-pink);
+  outline: 3px solid var(--framershaven-pink);
   outline-offset: 3px;
 }
 
@@ -94,7 +94,7 @@ a:hover {
   height: 7px;
   margin-bottom: 18px;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--printery-pink) 0 50%, #53c2ba 50%);
+  background: linear-gradient(90deg, var(--framershaven-pink) 0 50%, #53c2ba 50%);
 }
 
 .help-brand strong,
@@ -148,7 +148,7 @@ a:hover {
 .help-nav a.active {
   border-color: rgba(244, 169, 189, 0.45);
   color: var(--ink);
-  background: var(--printery-pink);
+  background: var(--framershaven-pink);
 }
 
 .back-to-app {
@@ -194,7 +194,7 @@ a:hover {
 
 .section-label {
   margin: 0 0 10px;
-  color: var(--printery-teal);
+  color: var(--framershaven-teal);
   font-size: 0.76rem;
   font-weight: 800;
   letter-spacing: 0.13em;
@@ -323,8 +323,8 @@ h3 {
   place-items: center;
   border-radius: 50%;
   color: var(--ink);
-  background: var(--printery-pink-soft);
-  box-shadow: inset 0 0 0 1px var(--printery-pink);
+  background: var(--framershaven-pink-soft);
+  box-shadow: inset 0 0 0 1px var(--framershaven-pink);
   content: counter(steps, decimal-leading-zero);
   font-size: 0.78rem;
   font-weight: 850;
@@ -338,14 +338,14 @@ h3 {
 .callout {
   margin: 22px 0 0;
   padding: 18px 20px;
-  border-left: 5px solid var(--printery-teal);
+  border-left: 5px solid var(--framershaven-teal);
   border-radius: 0 14px 14px 0;
-  background: var(--printery-teal-soft);
+  background: var(--framershaven-teal-soft);
 }
 
 .callout.warning {
   border-left-color: #c56d85;
-  background: var(--printery-pink-soft);
+  background: var(--framershaven-pink-soft);
 }
 
 .callout strong {
@@ -404,7 +404,7 @@ h3 {
 }
 
 .status-flow b {
-  color: var(--printery-teal);
+  color: var(--framershaven-teal);
   font-size: 1.2rem;
 }
 

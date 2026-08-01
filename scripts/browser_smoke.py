@@ -187,8 +187,8 @@ def assert_printing_options_and_line_discounts(page) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Smoke-test the critical framing quote flow in a real browser.")
     parser.add_argument("--url", default="http://127.0.0.1:8000", help="Running app URL")
-    parser.add_argument("--login", default=os.getenv("PRINTERY_SMOKE_USER", "admin"), help="Studio login username/email")
-    parser.add_argument("--password", default=os.getenv("PRINTERY_SMOKE_PASSWORD", "admin"), help="Studio login password")
+    parser.add_argument("--login", default=os.getenv("FRAMERSHAVEN_SMOKE_USER", "admin"), help="Studio login username/email")
+    parser.add_argument("--password", default=os.getenv("FRAMERSHAVEN_SMOKE_PASSWORD", "admin"), help="Studio login password")
     parser.add_argument("--headed", action="store_true", help="Run with a visible browser window")
     parser.add_argument(
         "--browser-executable",

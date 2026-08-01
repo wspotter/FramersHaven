@@ -32,18 +32,16 @@ from .routes_admin import admin_router
 from .routes_quote import quote_router
 from .template_compat import Jinja2Templates
 from .pricing import QuoteRequest, calculate_quote
+from .runtime_paths import RUNTIME_PATHS
 
 ROOT = Path(__file__).resolve().parent
-UPLOAD_DIR = ROOT.parent / "uploads"
-EXPORT_DIR = ROOT.parent / "exports"
-BACKUP_DIR = ROOT.parent / "backups"
-PREVIEW_DIR = ROOT.parent / "catalog_previews"
-PFD_DIR = ROOT.parent / "pfd"
+UPLOAD_DIR = RUNTIME_PATHS.uploads
+EXPORT_DIR = RUNTIME_PATHS.exports
+BACKUP_DIR = RUNTIME_PATHS.backups
+PREVIEW_DIR = RUNTIME_PATHS.catalog_previews
+PFD_DIR = RUNTIME_PATHS.pfd
 HELP_DIR = ROOT / "static" / "help"
-UPLOAD_DIR.mkdir(exist_ok=True)
-EXPORT_DIR.mkdir(exist_ok=True)
-BACKUP_DIR.mkdir(exist_ok=True)
-PREVIEW_DIR.mkdir(exist_ok=True)
+RUNTIME_PATHS.ensure_directories()
 
 
 @asynccontextmanager
@@ -55,11 +53,11 @@ async def lifespan(_: FastAPI):
     yield
 
 
-EXPOSE_API_DOCS = os.getenv("PRINTERY_EXPOSE_API_DOCS", "").strip().lower() in {"1", "true", "yes", "on"}
-SESSION_SECRET = os.getenv("PRINTERY_SESSION_SECRET") or secrets.token_urlsafe(32)
+EXPOSE_API_DOCS = os.getenv("FRAMERSHAVEN_EXPOSE_API_DOCS", "").strip().lower() in {"1", "true", "yes", "on"}
+SESSION_SECRET = os.getenv("FRAMERSHAVEN_SESSION_SECRET") or secrets.token_urlsafe(32)
 
 app = FastAPI(
-    title="Printery Framing Studio",
+    title="FramersHaven",
     lifespan=lifespan,
     openapi_url="/openapi.json" if EXPOSE_API_DOCS else None,
     docs_url="/docs" if EXPOSE_API_DOCS else None,
@@ -88,7 +86,7 @@ async def favicon():
     return FileResponse(ROOT / "static" / "logo.ico")
 
 
-# Session middleware for admin auth. Set PRINTERY_SESSION_SECRET for sessions
+# Session middleware for admin auth. Set FRAMERSHAVEN_SESSION_SECRET for sessions
 # that survive app restarts; otherwise the public app gets a per-process secret.
 from starlette.middleware.sessions import SessionMiddleware
 app.add_middleware(StudioAuthMiddleware)
@@ -96,7 +94,7 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=SESSION_SECRET,
     same_site="lax",
-    https_only=os.getenv("PRINTERY_SESSION_HTTPS_ONLY", "").strip().lower() in {"1", "true", "yes", "on"},
+    https_only=os.getenv("FRAMERSHAVEN_SESSION_HTTPS_ONLY", "").strip().lower() in {"1", "true", "yes", "on"},
 )
 
 # Admin and quote routers
@@ -162,15 +160,15 @@ CATALOG_CATEGORY_ALIASES = {
 }
 
 BRAND = {
-    "business_name": "The Printery Framing Studio",
-    "owner": "Katherine Potter",
-    "phone": "1.606.229.0767",
-    "email": "sales@theprintery.biz",
-    "street": "216 W Court St",
-    "city": "Prestonsburg",
-    "state": "Kentucky",
-    "postal_code": "41653",
-    "address": "216 W Court St, Prestonsburg, Kentucky 41653",
+    "business_name": "FramersHaven",
+    "owner": "Studio Owner",
+    "phone": "",
+    "email": "admin@framershaven.local",
+    "street": "",
+    "city": "",
+    "state": "",
+    "postal_code": "",
+    "address": "",
 }
 
 STUDIO_PROFILE_SETTING_KEYS = {
@@ -258,7 +256,7 @@ async def index(request: Request) -> HTMLResponse:
 
 @app.get("/api/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    return {"status": "ok", "app": "FramersHaven"}
 
 
 @app.get("/api/config")
@@ -447,7 +445,7 @@ def _get_settings() -> dict[str, float]:
 
 def _list_backups() -> list[dict[str, Any]]:
     backups = []
-    for path in sorted(BACKUP_DIR.glob("printery_backup_*.zip"), reverse=True):
+    for path in sorted(BACKUP_DIR.glob("*_backup_*.zip"), reverse=True):
         stat = path.stat()
         backups.append(
             {
@@ -1053,7 +1051,7 @@ def list_backups() -> dict[str, list[dict[str, Any]]]:
 @app.post("/api/backups")
 def create_backup() -> dict[str, Any]:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
-    filename = f"printery_backup_{stamp}.zip"
+    filename = f"framershaven_backup_{stamp}.zip"
     target = BACKUP_DIR / filename
     snapshot_dir = BACKUP_DIR / f"snapshot_{stamp}"
     snapshot_dir.mkdir(exist_ok=True)
@@ -2670,7 +2668,7 @@ def _draw_wrapped(c: canvas.Canvas, text: str, x: float, y: float, max_width: fl
     return y
 
 
-def _draw_printery_logo(c: canvas.Canvas) -> None:
+def _draw_framershaven_logo(c: canvas.Canvas) -> None:
     profile = _get_studio_profile()
     candidates = []
     if profile["logo_filename"]:
@@ -2866,7 +2864,7 @@ def _export_order_form_pdf(order: dict[str, Any], payload: dict[str, Any], targe
     c.drawString(margin, 748, brand["business_name"])
     c.drawString(margin, 734, brand["address"])
     c.drawString(margin, 720, _brand_phone_for_forms())
-    _draw_printery_logo(c)
+    _draw_framershaven_logo(c)
 
     c.setFont("Helvetica", 11)
     c.drawString(margin, 672, "Customer")

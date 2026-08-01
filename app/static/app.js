@@ -203,9 +203,9 @@ const THEMES = {
     label: 'Studio Classic',
     detail: 'Warm studio neutral default',
   },
-  printery: {
-    label: 'Printery',
-    detail: 'Printery pink, teal, black, and white',
+  framershaven: {
+    label: 'Studio',
+    detail: 'Studio pink, teal, black, and white',
   },
   gallery: {
     label: 'Gallery Neon (Light)',
@@ -440,7 +440,7 @@ function applyTheme(themeName, persist = true) {
     status.textContent = THEMES[theme].detail;
   }
   if (persist) {
-    window.localStorage.setItem('printery-theme', theme);
+    window.localStorage.setItem('framershaven-theme', theme);
   }
 }
 
@@ -3836,7 +3836,7 @@ async function importPfdCatalog(source) {
     const summary = `Last ${source} import: ${data.inserted} inserted, ${data.updated} updated, ${data.skipped} skipped${previewText}`;
     setNotice(summary, 'success');
     document.getElementById('catalogStats').textContent = summary;
-    window.localStorage.setItem('printery-last-import', summary);
+    window.localStorage.setItem('framershaven-last-import', summary);
     window.localStorage.setItem('lastImportSummary', summary);
   } catch (error) {
     setNotice(error.message, 'error');
@@ -3858,7 +3858,7 @@ async function importCatalog() {
     const summary = `Last CSV import: ${data.inserted} inserted, ${data.updated} updated, ${data.skipped} skipped`;
     setNotice(summary, 'success');
     document.getElementById('catalogStats').textContent = summary;
-    window.localStorage.setItem('printery-last-import', summary);
+    window.localStorage.setItem('framershaven-last-import', summary);
     window.localStorage.setItem('lastImportSummary', summary);
     fileInput.value = '';
   } catch (error) {
@@ -5618,7 +5618,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       closeCatalogEditor();
     }
   });
-  applyTheme(window.localStorage.getItem('printery-theme') || 'classic', false);
+  applyTheme(window.localStorage.getItem('framershaven-theme') || 'classic', false);
   loadLocalPreview();
   bindMockupDesigner();
   bindDesignInputs();
@@ -5633,7 +5633,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   updateQuoteSummary(null);
   renderMockup();
   await Promise.all([listImages(), listOrders(), listCustomers(), searchCatalog(true), loadPricingSettings(), loadServiceOptions(), loadPrintingOptions(), listBackups()]);
-  const lastImport = window.localStorage.getItem('printery-last-import');
+  const lastImport = window.localStorage.getItem('framershaven-last-import');
   if (lastImport) {
     const stats = document.getElementById('catalogStats');
     if (stats) stats.textContent = lastImport;

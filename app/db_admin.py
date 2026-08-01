@@ -26,13 +26,13 @@ def init_admin_tables():
     -- Business info
     CREATE TABLE IF NOT EXISTS business_info (
         id INTEGER PRIMARY KEY,
-        company TEXT DEFAULT 'The Printery',
-        address TEXT DEFAULT '216 W Court St',
-        city TEXT DEFAULT 'Prestonsburg',
-        state TEXT DEFAULT 'Kentucky',
+        company TEXT DEFAULT 'FramersHaven',
+        address TEXT DEFAULT '',
+        city TEXT DEFAULT '',
+        state TEXT DEFAULT '',
         country TEXT DEFAULT 'United States',
-        zip TEXT DEFAULT '41653',
-        phone TEXT DEFAULT '606-229-0767',
+        zip TEXT DEFAULT '',
+        phone TEXT DEFAULT '',
         business_number TEXT,
         bank_account TEXT
     );
@@ -106,22 +106,23 @@ def init_admin_tables():
             cur.execute(f"ALTER TABLE orders ADD COLUMN {col} {ddl}")
 
     # 3. Initialize Default Data
-    # Public/demo default owner user. Override with PRINTERY_BOOTSTRAP_* in production.
+    # Public/demo default owner user. Override with FRAMERSHAVEN_BOOTSTRAP_* in production.
     from app.auth import hash_password
     
     cur.execute("SELECT COUNT(*) FROM users")
     if cur.fetchone()[0] == 0:
-        pw_hash = hash_password(os.getenv("PRINTERY_BOOTSTRAP_PASSWORD", "admin"))
-        admin_email = os.getenv("PRINTERY_BOOTSTRAP_EMAIL", "admin@theprintery.biz")
+        bootstrap_password = os.getenv("FRAMERSHAVEN_BOOTSTRAP_PASSWORD") or "admin"
+        admin_email = os.getenv("FRAMERSHAVEN_BOOTSTRAP_EMAIL") or "admin@framershaven.local"
+        pw_hash = hash_password(bootstrap_password)
         cur.execute("""
             INSERT INTO users (email, password_hash, role, first_name, last_name)
             VALUES (?, ?, ?, ?, ?)
-        """, (admin_email, pw_hash, "owner", "Admin", "Printery"))
+        """, (admin_email, pw_hash, "owner", "Studio", "Owner"))
         
     # Insert default business_info
     cur.execute("SELECT COUNT(*) FROM business_info")
     if cur.fetchone()[0] == 0:
-        cur.execute("INSERT INTO business_info (id, company) VALUES (1, 'The Printery')")
+        cur.execute("INSERT INTO business_info (id, company) VALUES (1, 'FramersHaven')")
         
     # Insert default order_statuses
     statuses = [

@@ -15,10 +15,37 @@ FramersHaven is a **local-first** web application designed to run on a framing s
 ## Directory Structure
 - `app/main.py`: The core FastAPI application, routing, and business logic.
 - `app/db.py` & `app/db_admin.py`: SQLite connection handling and table initialization.
+- `app/runtime_paths.py`: The single boundary for database and mutable asset paths.
 - `app/pricing.py`: The quote calculation engine.
+- `framershaven_launcher.py`: Packaged Windows process, health check, browser launch, and single-instance coordination.
+- `packaging/windows/`: PyInstaller bundle and Inno Setup installer definitions.
 - `app/templates/index.html`: The monolithic Jinja2 template containing the entire Single Page Application (SPA) UI.
 - `app/static/app.js`: The monolithic vanilla JavaScript file handling frontend state, UI updates, and API communication.
 - `studio.db`, `uploads/`, `exports/`, `backups/`: Ignored local storage for the database, artwork, generated documents, and backups.
+
+## Runtime and Packaging Flow
+
+```mermaid
+flowchart LR
+    Shortcut[Start menu shortcut] --> Launcher[FramersHaven.exe]
+    Launcher --> Health[Local health check]
+    Launcher --> Server[FastAPI on 127.0.0.1]
+    Launcher --> Browser[Default browser]
+    Server --> Data[Local application data]
+    Data --> DB[(studio.db)]
+    Data --> Assets[uploads / exports / backups]
+```
+
+The packaged Windows application stores mutable data under
+`%LOCALAPPDATA%\FramersHaven\Data`; program files live separately under
+`%LOCALAPPDATA%\Programs\FramersHaven`. This separation is load-bearing:
+upgrades and uninstall/reinstall cycles replace program files without deleting
+customer data. Source checkouts retain the repository-root data layout unless
+`FRAMERSHAVEN_DATA_DIR` is set.
+
+The launcher persists a generated session secret and a verified server-state
+record in the data directory. A second launch reopens only a process that
+answers with the FramersHaven health identity; stale state is discarded.
 
 ## Backend Architecture
 
@@ -64,3 +91,4 @@ When artwork is uploaded, `Cropper.js` is used to allow the operator to crop the
 1. **Local-First:** Operational data stays on the workstation. The backup system packages the database and generated assets for recovery.
 2. **Speed over Modularity:** The monolithic JS/HTML approach allowed for rapid prototyping and iteration of the complex framing builder without boilerplate overhead, though it introduces technical debt for future scalability.
 3. **Data Boundary:** There is a strict boundary between materials (mats/mouldings, imported from operator-supplied local catalog files) and shop services (labor/mounting, managed manually).
+4. **Installer Boundary:** Windows packaging bundles executable code and web assets only. Runtime databases, imports, uploads, and exports never live under the installer-owned directory.

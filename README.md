@@ -17,21 +17,30 @@ The included demo uses the fictional **FramersHaven** identity and generated sam
 
 ## Quick Start
 
-Requires Python 3.11 or newer.
-
 ### Windows
 
-Double-click `run_windows.bat`, or run:
+Download `FramersHaven-Setup.exe` from the latest GitHub release and open it.
+The installer does not require Python, Git, administrator rights, or a terminal.
+It adds a Start menu shortcut and can add a desktop shortcut.
+
+FramersHaven opens in the default browser and keeps its database, artwork,
+exports, and backups under `%LOCALAPPDATA%\FramersHaven\Data`. Installing an
+update or uninstalling the program does not delete that data.
+
+Source developers can still run:
 
 ```powershell
 .\run_windows.bat
 ```
 
-The Windows launcher creates `venv/`, installs dependencies, creates demo data if needed, starts the local app, and opens `http://127.0.0.1:8000`.
+That source launcher requires Python 3.11 or newer and installs dependencies
+into a local virtual environment.
 
 See [Windows install](docs/WINDOWS_INSTALL.md) for details.
 
 ### macOS / Linux
+
+Requires Python 3.11 or newer.
 
 ```bash
 python3 -m venv venv
@@ -46,10 +55,11 @@ Open `http://127.0.0.1:8000`. The launcher listens on `0.0.0.0:8000` by default 
 HOST=127.0.0.1 ./scripts/run.sh
 ```
 
-The demo/admin login is `admin` / `admin` unless you set
-`PRINTERY_BOOTSTRAP_EMAIL` and `PRINTERY_BOOTSTRAP_PASSWORD` before the first
-database is created. Set `PRINTERY_SESSION_SECRET` for sessions that should
-survive app restarts. `PRINTERY_ALLOW_OPEN_ADMIN=1` is available only for
+The initial admin login is `admin` / `admin` unless you set
+`FRAMERSHAVEN_BOOTSTRAP_EMAIL` and `FRAMERSHAVEN_BOOTSTRAP_PASSWORD` before the
+first database is created. The packaged Windows app creates and reuses its own
+local session secret. Source installs can set `FRAMERSHAVEN_SESSION_SECRET` for
+the same behavior. `FRAMERSHAVEN_ALLOW_OPEN_ADMIN=1` is available only for
 intentional trusted local/demo installs.
 
 ## Development

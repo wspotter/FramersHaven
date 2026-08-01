@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT))
 
 from app import db
 from app.db_admin import init_admin_tables
+from app.runtime_paths import RUNTIME_PATHS
 
 DEMO_MARKER_KEY = "demo_seed_version"
 DEMO_MARKER_VALUE = "1"
@@ -173,8 +174,8 @@ def create_demo_data(db_path: Path, upload_dir: Path, force: bool = False) -> No
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--force", action="store_true", help="Replace a non-demo database")
-    parser.add_argument("--db", type=Path, default=ROOT / "studio.db")
-    parser.add_argument("--uploads", type=Path, default=ROOT / "uploads")
+    parser.add_argument("--db", type=Path, default=RUNTIME_PATHS.database)
+    parser.add_argument("--uploads", type=Path, default=RUNTIME_PATHS.uploads)
     args = parser.parse_args()
     try:
         create_demo_data(args.db.resolve(), args.uploads.resolve(), force=args.force)

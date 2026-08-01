@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import sqlite3
-from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parent.parent / "studio.db"
+from .runtime_paths import RUNTIME_PATHS
+
+
+DB_PATH = RUNTIME_PATHS.database
 
 
 def get_connection() -> sqlite3.Connection:

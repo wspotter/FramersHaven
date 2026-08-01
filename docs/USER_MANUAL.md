@@ -1,8 +1,8 @@
-# Printery Framing Studio User Manual
+# FramersHaven User Manual
 
 ## Purpose
 
-Printery Framing Studio is a local-first workstation app for intake, framing design, quoting, production tracking, and customer handoff.
+FramersHaven is a local-first workstation app for intake, framing design, quoting, production tracking, and customer handoff.
 
 The app is organized into separate workspaces so operators do not have to manage the whole workflow on one screen.
 
@@ -16,7 +16,7 @@ The app is organized into separate workspaces so operators do not have to manage
 `./scripts/run.sh` listens on `0.0.0.0:8000`, so another shop computer can open the app using this workstation's LAN IP address.
 
 Admin pages require login by default. Demo installs use `admin` / `admin`
-unless `PRINTERY_BOOTSTRAP_EMAIL` and `PRINTERY_BOOTSTRAP_PASSWORD` were set
+unless `FRAMERSHAVEN_BOOTSTRAP_EMAIL` and `FRAMERSHAVEN_BOOTSTRAP_PASSWORD` were set
 before the first database was created.
 
 ## Operator Help Site
@@ -29,7 +29,7 @@ before the first database was created.
 
 ## Workspace Overview
 
-- The top bar includes a `Theme` selector. `Printery` applies the shop palette with pink as the main color, teal as the secondary color, and black/white neutrals.
+- The top bar includes a `Theme` selector. `Studio` applies the shop palette with pink as the main color, teal as the secondary color, and black/white neutrals.
 - The top bar switches between the main workspaces. The catalog sidebar is visible only in Design; other workspaces expand to the full window. Returning to Design restores the previous drawer and search state.
 
 ### Design
@@ -197,7 +197,7 @@ node -c app/static/app.js
 
 1. Stop the app.
 2. Copy the current `studio.db`, `uploads/`, `exports/`, and `catalog_previews/` somewhere safe if they still exist.
-3. Unzip the chosen `backups/printery_backup_*.zip` into a temporary folder.
+3. Unzip the chosen `backups/*_backup_*.zip` into a temporary folder.
 4. Replace `studio.db` with the backed-up database file.
 5. Restore backed-up `uploads/` and `exports/` files into their matching project folders.
 6. Start the app with `./scripts/run.sh`.

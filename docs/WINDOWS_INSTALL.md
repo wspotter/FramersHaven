@@ -1,40 +1,25 @@
 # Windows Install
 
-FramersHaven runs as a local app on a trusted Windows workstation. It starts a small local web server and opens the app in your browser.
+FramersHaven runs locally on Windows 10 or Windows 11. It starts a private
+local server and opens the workstation in the default browser.
 
-## Requirements
+## Installer
 
-- Windows 10 or Windows 11
-- Python 3.11 or newer
-- Git, if cloning the repository instead of downloading a ZIP
+1. Download `FramersHaven-Setup.exe` from the latest GitHub release.
+2. Open the downloaded installer.
+3. Finish setup, then launch FramersHaven from the Start menu or desktop.
 
-When installing Python, enable **Add python.exe to PATH**.
-
-## One-Click Local Start
-
-1. Download or clone FramersHaven.
-2. Open the FramersHaven folder.
-3. Double-click `run_windows.bat`.
-
-The launcher will:
-
-- create `venv/` if needed
-- install Python dependencies
-- create the fictional demo workspace if `studio.db` does not exist
-- open `http://127.0.0.1:8000`
-- keep the app running until you press `Ctrl-C`
-
-## PowerShell Install
-
-```powershell
-git clone https://github.com/wspotter/FramersHaven.git
-cd FramersHaven
-.\run_windows.bat
-```
+The installer is per-user. It does not require Python, Git, administrator
+rights, or command-line work. Starting FramersHaven again while it is already
+running reopens the existing local session instead of starting a second copy.
 
 ## Existing Data
 
-`run_windows.bat` does not overwrite an existing `studio.db`. If you already have data, the launcher starts the existing workspace.
+The installer keeps working data separate from program files at:
+
+```text
+%LOCALAPPDATA%\FramersHaven\Data
+```
 
 Runtime data stays local:
 
@@ -45,13 +30,22 @@ Runtime data stays local:
 - `catalog_previews\`
 - `catalog_imports\`
 
-Back up these files before moving the app to another workstation.
+Installing a newer version preserves this folder. Uninstalling FramersHaven
+also preserves it so an accidental uninstall does not erase shop records.
+Use the in-app backup function before moving data to another workstation.
+
+Launcher diagnostics are written to
+`%LOCALAPPDATA%\FramersHaven\Data\logs\launcher.log`.
+
+## Source Setup
+
+Developers who clone the repository can run `run_windows.bat`. The source path
+requires Python 3.11 or newer and creates a project-local virtual environment.
 
 ## Trusted LAN Use
 
-By default, the Windows launcher binds to the local machine only.
-
-To let another computer on the same trusted private LAN connect, run:
+The packaged installer binds to the local machine only. To make the source
+launcher available to another computer on the same trusted private LAN, run:
 
 ```cmd
 set HOST=0.0.0.0

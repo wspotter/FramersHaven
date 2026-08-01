@@ -25,7 +25,7 @@ def logout_user(request):
 
 
 def open_admin_mode_enabled() -> bool:
-    return os.getenv("PRINTERY_ALLOW_OPEN_ADMIN", "").strip().lower() in {"1", "true", "yes", "on"}
+    return os.getenv("FRAMERSHAVEN_ALLOW_OPEN_ADMIN", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _local_operator_user() -> dict:
@@ -50,7 +50,7 @@ def _local_operator_user() -> dict:
         return dict(row)
     return {
         "id": 0,
-        "email": "local@theprintery.biz",
+        "email": "local@framershaven.local",
         "first_name": "Local",
         "last_name": "Operator",
         "role": "owner",
@@ -90,7 +90,7 @@ def require_current_user(request: Request) -> dict[str, Any]:
 def normalize_login_identifier(identifier: str) -> str:
     value = (identifier or "").strip().lower()
     if "@" not in value and value:
-        return f"{value}@theprintery.biz"
+        return f"{value}@framershaven.local"
     return value
 
 def find_user_by_login(identifier: str):

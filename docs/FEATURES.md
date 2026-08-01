@@ -1,4 +1,4 @@
-# Printery Framing Studio Feature Ledger
+# FramersHaven Feature Ledger
 
 This file is the source of truth for implemented behavior so sprint work does not get lost.
 
@@ -22,7 +22,7 @@ This file is the source of truth for implemented behavior so sprint work does no
 - Each workspace keeps its own detail panel instead of stacking the full flow on one screen.
 - Workspace actions now surface success/error notices instead of relying only on raw JSON output.
 - Key operator controls include inline tooltips for less-obvious actions and framing fields.
-- Top bar includes a persistent theme selector with a Printery pink/teal palette option.
+- Top bar includes a persistent theme selector with a Studio pink/teal palette option.
 
 ### Operator Help Site
 - A multi-page operator guide is served locally at `/help/`; `/help` redirects to the same guide.
@@ -132,7 +132,8 @@ This file is the source of truth for implemented behavior so sprint work does no
 - Backups include the SQLite database, uploads, exports, and a catalog snapshot for recovery.
 
 ### Branding Defaults
-- Owner/contact/address values are preloaded from The Printery defaults and used by exports/UI.
+- New workspaces use neutral FramersHaven identity fields until the operator
+  enters the studio's own contact and address details.
 
 ## Non-Goals in Current Build
 - POS integration.

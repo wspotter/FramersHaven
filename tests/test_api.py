@@ -469,7 +469,7 @@ console.log(JSON.stringify({ ok, before, after, notice: nodes.notice.textContent
         self.assertEqual(redirect.headers["location"], "http://testserver/help/")
 
         pages = {
-            "/help/": "Printery Framing Studio Operator Guide",
+            "/help/": "FramersHaven Operator Guide",
             "/help/design-workspace.html": "Design Workspace",
             "/help/gallery-intake.html": "Gallery & Intake",
             "/help/orders-quotes.html": "Orders & Quotes",
@@ -491,7 +491,7 @@ console.log(JSON.stringify({ ok, before, after, notice: nodes.notice.textContent
         stylesheet = self.client.get("/help/css/help-style.css")
         self.assertEqual(stylesheet.status_code, 200)
         self.assertIn("text/css", stylesheet.headers["content-type"])
-        self.assertIn("--printery-pink", stylesheet.text)
+        self.assertIn("--framershaven-pink", stylesheet.text)
 
     def test_studio_profile_updates_branding_used_by_the_app_and_handoffs(self):
         saved = self.client.post(
@@ -502,7 +502,7 @@ console.log(JSON.stringify({ ok, before, after, notice: nodes.notice.textContent
                 "phone": "606-555-0142",
                 "email": "ada@example.com",
                 "street": "10 Main Street",
-                "city": "Prestonsburg",
+                "city": "Riverton",
                 "state": "KY",
                 "postal_code": "41653",
             },
@@ -510,7 +510,7 @@ console.log(JSON.stringify({ ok, before, after, notice: nodes.notice.textContent
         self.assertEqual(saved.status_code, 200)
         profile = saved.json()["profile"]
         self.assertEqual(profile["business_name"], "Mountain Frame House")
-        self.assertEqual(profile["address"], "10 Main Street, Prestonsburg, KY 41653")
+        self.assertEqual(profile["address"], "10 Main Street, Riverton, KY 41653")
 
         fetched = self.client.get("/api/studio-profile")
         self.assertEqual(fetched.status_code, 200)
@@ -1762,7 +1762,7 @@ console.log(JSON.stringify({ ok, before, after, notice: nodes.notice.textContent
         handoff = self.client.get(f"/api/orders/{order_id}/handoff")
         self.assertEqual(handoff.status_code, 200)
         payload = handoff.json()
-        self.assertIn("The Printery Framing Studio quote", payload["email_subject"])
+        self.assertIn("FramersHaven quote", payload["email_subject"])
         self.assertIn("2 openings", payload["email_body"])
         self.assertIn("attach the PDF quote and mockup JPG", payload["email_body"])
         self.assertNotIn("/api/", payload["email_body"])
@@ -2509,13 +2509,13 @@ console.log(JSON.stringify({ ok, before, after, notice: nodes.notice.textContent
         """Verify customer search matches on partial name."""
         self.client.post(
             "/api/customers",
-            data={"name": "Katherine Potter", "contact": "606-555-0114", "notes": "owner"},
+            data={"name": "Casey Morgan", "contact": "606-555-0114", "notes": "owner"},
         )
 
-        found = self.client.get("/api/customers", params={"q": "Kath"})
+        found = self.client.get("/api/customers", params={"q": "Case"})
         self.assertEqual(found.status_code, 200)
         self.assertEqual(len(found.json()["customers"]), 1)
-        self.assertEqual(found.json()["customers"][0]["name"], "Katherine Potter")
+        self.assertEqual(found.json()["customers"][0]["name"], "Casey Morgan")
 
         not_found = self.client.get("/api/customers", params={"q": "Zzz"})
         self.assertEqual(len(not_found.json()["customers"]), 0)

@@ -12,7 +12,7 @@ templates = Jinja2Templates(directory=str(ROOT / "templates"))
 
 quote_router = APIRouter(prefix="/admin")
 
-# SimulArt-style Presets config
+# Common framing layout presets
 PRESETS = [
     {"id": 1000001, "name": "Moulding & Single Mat", "openings": 1, "moulding": "I1100-50", "mat": "A109", "notes": "Basic"},
     {"id": 1000002, "name": "Moulding & Double Mat", "openings": 1, "moulding": "I1100-50", "mat": "A109+A109", "notes": "Double mat"},
@@ -22,7 +22,7 @@ PRESETS = [
     {"id": 1000006, "name": "Mat Only", "openings": 1, "moulding": None, "mat": "A109", "notes": "No moulding"},
     {"id": 1000007, "name": "Stretched Canvas - Mirror Side", "openings": 0, "moulding": None, "mat": None, "notes": "Special"},
     {"id": 1000008, "name": "Framed Mirror", "openings": 0, "moulding": "I1100-50", "mat": None, "notes": "Mirror glazing", "glazing": "MIRROR"},
-    {"id": 1000009, "name": "Frame & Mat - 2 Openings", "id_simulart": 1000009, "openings": 2, "moulding": "I1100-50", "mat": "A109", "notes": "Split"},
+    {"id": 1000009, "name": "Frame & Mat - 2 Openings", "openings": 2, "moulding": "I1100-50", "mat": "A109", "notes": "Split"},
     {"id": 1000010, "name": "Frame & Mat - 3 Openings", "openings": 3, "moulding": "I1100-50", "mat": "A109", "notes": "Triptych"},
     {"id": 1000011, "name": "Frame & Mat - 4 Openings", "openings": 4, "moulding": "I1100-50", "mat": "A109", "notes": "Quad"},
     {"id": 1000012, "name": "Frame & Mat - 12 Openings", "openings": 12, "moulding": "I1100-50", "mat": "A109", "notes": "Gallery wall"},

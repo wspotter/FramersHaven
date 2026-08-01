@@ -1,5 +1,5 @@
 """
-Pricing engine for the Printery Framing Studio.
+Pricing engine for FramersHaven.
 Supports two methods:
 1. Cost & Markup: price = (cost * markup) + factor
 2. Price Table: look up price based on half-perimeter (width + height)
