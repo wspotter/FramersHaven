@@ -273,7 +273,10 @@ def main(argv: list[str] | None = None) -> int:
         configure_runtime_environment(data_dir)
         log_path = setup_logging(data_dir)
         logging.exception("FramersHaven startup failed")
-        show_fatal_error(str(exc), log_path)
+        if args.smoke_test:
+            print(f"FramersHaven smoke test failed: {exc}", file=sys.stderr)
+        else:
+            show_fatal_error(str(exc), log_path)
         return 1
 
 
