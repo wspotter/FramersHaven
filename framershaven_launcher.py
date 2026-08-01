@@ -69,11 +69,14 @@ def configure_runtime_environment(data_dir: Path, env: MutableMapping[str, str] 
 
 def ensure_initial_workspace(data_dir: Path) -> None:
     database = data_dir / "studio.db"
-    if database.exists():
-        return
-    from scripts.seed_demo import create_demo_data
+    from scripts.seed_demo import create_demo_data, ensure_demo_catalog
 
-    create_demo_data(database, data_dir / "uploads")
+    if database.exists():
+        mouldings, mats = ensure_demo_catalog(database)
+        if mouldings or mats:
+            logging.info("Added %s demo mouldings and %s demo mats", mouldings, mats)
+    else:
+        create_demo_data(database, data_dir / "uploads")
 
 
 def select_available_port(start_port: int = DEFAULT_PORT, attempts: int = PORT_ATTEMPTS) -> int:

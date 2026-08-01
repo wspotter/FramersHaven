@@ -19,6 +19,8 @@ from app.runtime_paths import RUNTIME_PATHS
 
 DEMO_MARKER_KEY = "demo_seed_version"
 DEMO_MARKER_VALUE = "1"
+DEMO_CATALOG_MARKER_KEY = "demo_catalog_version"
+DEMO_CATALOG_MARKER_VALUE = "2"
 
 DEMO_MOULDINGS = [
     ("DEMO-M-001", "Mahogany Reverse Stairs", 5.00, 1.5, 0.625, "mouldings/demo-0354-3029.jpg", "#5b3825"),
@@ -127,6 +129,79 @@ DEMO_MATS = [
 ]
 
 
+def _demo_catalog_rows() -> list[tuple]:
+    return [
+        (
+            sku,
+            name,
+            "moulding",
+            cost,
+            "Framewise Demo",
+            width,
+            None,
+            rabbet,
+            preview_filename,
+            json.dumps({"color": color, "source": "public demo"}),
+        )
+        for sku, name, cost, width, rabbet, preview_filename, color in DEMO_MOULDINGS
+    ] + [
+        (
+            sku,
+            name,
+            "mat",
+            cost,
+            "Framewise Demo",
+            32.0,
+            40.0,
+            None,
+            None,
+            json.dumps({"color": color, "core": "white", "source": "public demo"}),
+        )
+        for sku, name, cost, color in DEMO_MATS
+    ]
+
+
+def ensure_demo_catalog(db_path: Path) -> tuple[int, int]:
+    """Add the bundled sample catalog once without changing existing rows."""
+    db.DB_PATH = db_path
+    db.init_db()
+    conn = db.get_connection()
+    try:
+        marker = conn.execute(
+            "SELECT value FROM settings WHERE key = ?", (DEMO_CATALOG_MARKER_KEY,)
+        ).fetchone()
+        if marker and marker[0] == DEMO_CATALOG_MARKER_VALUE:
+            return 0, 0
+
+        existing = {
+            (row[0], row[1])
+            for row in conn.execute("SELECT sku, category FROM catalog_items")
+        }
+        missing = [row for row in _demo_catalog_rows() if (row[0], row[2]) not in existing]
+        conn.executemany(
+            """
+            INSERT INTO catalog_items
+                (sku, name, category, cost, vendor, width_in, height_in, rabbet_in, preview_filename, metadata_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            missing,
+        )
+        conn.execute(
+            """
+            INSERT INTO settings (key, value)
+            VALUES (?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+            """,
+            (DEMO_CATALOG_MARKER_KEY, DEMO_CATALOG_MARKER_VALUE),
+        )
+        conn.commit()
+        mouldings = sum(1 for row in missing if row[2] == "moulding")
+        mats = sum(1 for row in missing if row[2] == "mat")
+        return mouldings, mats
+    finally:
+        conn.close()
+
+
 def _is_demo_database(path: Path) -> bool:
     if not path.is_file():
         return False
@@ -175,48 +250,16 @@ def create_demo_data(db_path: Path, upload_dir: Path, force: bool = False) -> No
     db.init_db()
     init_admin_tables()
     _make_demo_art(upload_dir)
+    ensure_demo_catalog(db_path)
 
     conn = db.get_connection()
     try:
-        conn.executemany(
+        conn.execute(
             """
             INSERT INTO catalog_items
                 (sku, name, category, cost, vendor, width_in, height_in, rabbet_in, preview_filename, metadata_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            [
-                (
-                    sku,
-                    name,
-                    "moulding",
-                    cost,
-                    "Framewise Demo",
-                    width,
-                    None,
-                    rabbet,
-                    preview_filename,
-                    json.dumps({"color": color, "source": "public demo"}),
-                )
-                for sku, name, cost, width, rabbet, preview_filename, color in DEMO_MOULDINGS
-            ]
-            + [
-                (
-                    sku,
-                    name,
-                    "mat",
-                    cost,
-                    "Framewise Demo",
-                    32.0,
-                    40.0,
-                    None,
-                    None,
-                    json.dumps({"color": color, "core": "white", "source": "public demo"}),
-                )
-                for sku, name, cost, color in DEMO_MATS
-            ]
-            + [
-                ("DEMO-GLZ-1", "Conservation Clear", "glazing", 2.25, "Framewise Demo", None, None, None, None, "{}"),
-            ],
+            VALUES ('DEMO-GLZ-1', 'Conservation Clear', 'glazing', 2.25, 'Framewise Demo', NULL, NULL, NULL, NULL, '{}')
+            """
         )
         conn.executemany(
             """

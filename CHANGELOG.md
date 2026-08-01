@@ -3,6 +3,8 @@
 ## v0.3.2-open-preview - 2026-08-01
 
 - Use the verified GitHub Pages HTTPS endpoint as the primary in-app update feed.
+- Backfill all missing bundled demo mouldings and mats during upgrades without
+  overwriting existing catalog records.
 
 ## v0.3.1-open-preview - 2026-08-01
 

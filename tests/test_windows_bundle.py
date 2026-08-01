@@ -111,5 +111,6 @@ def test_windows_ci_exercises_the_installed_application_lifecycle():
     assert "FramersHaven.exe --smoke-test" in workflow
     assert "FramersHaven-Setup.exe" in workflow
     assert "upgrade-preservation-test.txt" in workflow
+    assert "Expected 50 demo mouldings and 50 demo mats" in workflow
     assert 'Get-Content (Join-Path $data "logs\\launcher.log")' in workflow
     assert "windows-installer" in workflow

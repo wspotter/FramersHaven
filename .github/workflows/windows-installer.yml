@@ -93,6 +93,17 @@ jobs:
           $legacyProcess = Start-Process -FilePath ".\dist\FramersHaven\FramersHaven.exe" -ArgumentList "--smoke-test", "--data-dir", $legacyDir -Wait -PassThru
           if ($legacyProcess.ExitCode -ne 0) { throw "Legacy-layout fixture creation failed." }
           Set-Content -Path (Join-Path $legacyDir "uploads\legacy-migration-test.txt") -Value "legacy"
+          @'
+          import sqlite3
+          import sys
+
+          conn = sqlite3.connect(sys.argv[1])
+          conn.execute("DELETE FROM catalog_items WHERE sku > 'DEMO-M-005' AND sku LIKE 'DEMO-M-%'")
+          conn.execute("DELETE FROM catalog_items WHERE sku > 'DEMO-MAT-005' AND sku LIKE 'DEMO-MAT-%'")
+          conn.execute("DELETE FROM settings WHERE key = 'demo_catalog_version'")
+          conn.commit()
+          conn.close()
+          '@ | python - (Join-Path $legacyDir "studio.db")
 
           function Invoke-Setup {
             $process = Start-Process -FilePath $setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-", "/LOG=$installLog" -Wait -PassThru
@@ -113,6 +124,17 @@ jobs:
           Invoke-PackagedSmoke
           if (-not (Test-Path (Join-Path $dataDir "studio.db"))) { throw "Legacy database was not migrated." }
           if ((Get-Content (Join-Path $dataDir "uploads\legacy-migration-test.txt") -Raw).Trim() -ne "legacy") { throw "Legacy uploads were not migrated." }
+          @'
+          import sqlite3
+          import sys
+
+          conn = sqlite3.connect(sys.argv[1])
+          mouldings = conn.execute("SELECT COUNT(*) FROM catalog_items WHERE category = 'moulding' AND sku LIKE 'DEMO-M-%'").fetchone()[0]
+          mats = conn.execute("SELECT COUNT(*) FROM catalog_items WHERE category = 'mat' AND sku LIKE 'DEMO-MAT-%'").fetchone()[0]
+          conn.close()
+          if (mouldings != 50 or mats != 50:
+              raise SystemExit(f"Expected 50 demo mouldings and 50 demo mats, got {mouldings} and {mats}")
+          '@ | python - (Join-Path $dataDir "studio.db")
 
           $sentinel = Join-Path $dataDir "upgrade-preservation-test.txt"
           Set-Content -Path $sentinel -Value "keep"

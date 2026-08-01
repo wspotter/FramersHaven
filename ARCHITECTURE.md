@@ -42,7 +42,9 @@ The packaged app installs program files under
 `%LOCALAPPDATA%\FramersHaven\Data`. Upgrades and uninstall/reinstall replace
 program files without deleting customer data. On first packaged launch, data
 from the earlier `%LOCALAPPDATA%\FramersHaven` installer layout is moved into
-the `Data` directory. Source checkouts retain the repository-root layout unless
+the `Data` directory. A versioned, one-time catalog migration adds any missing
+bundled demo mouldings and mats by SKU without changing existing shop records.
+Source checkouts retain the repository-root layout unless
 `FRAMERSHAVEN_DATA_DIR` is set.
 
 ## Backend Architecture
