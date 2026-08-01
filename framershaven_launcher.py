@@ -188,8 +188,8 @@ def prepare_workspace(data_dir: Path) -> None:
 
 
 def run_smoke_test(data_dir: Path, requested_port: int = DEFAULT_PORT) -> int:
-    prepare_workspace(data_dir)
     setup_logging(data_dir)
+    prepare_workspace(data_dir)
     port = select_available_port(requested_port)
 
     import uvicorn
@@ -274,7 +274,7 @@ def main(argv: list[str] | None = None) -> int:
         log_path = setup_logging(data_dir)
         logging.exception("FramersHaven startup failed")
         if args.smoke_test:
-            print(f"FramersHaven smoke test failed: {exc}", file=sys.stderr)
+            logging.error("FramersHaven smoke test failed: %s", exc)
         else:
             show_fatal_error(str(exc), log_path)
         return 1

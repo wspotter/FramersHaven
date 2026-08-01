@@ -75,7 +75,10 @@ jobs:
         run: |
           $data = Join-Path $env:RUNNER_TEMP "bundle-smoke-data"
           $process = Start-Process -FilePath ".\dist\FramersHaven\FramersHaven.exe" -ArgumentList "--smoke-test", "--data-dir", $data -Wait -PassThru
-          if ($process.ExitCode -ne 0) { throw "Bundled executable smoke test failed." }
+          if ($process.ExitCode -ne 0) {
+            Get-Content (Join-Path $data "logs\launcher.log") -ErrorAction SilentlyContinue
+            throw "Bundled executable smoke test failed."
+          }
           if (-not (Test-Path (Join-Path $data "studio.db"))) { throw "Bundled executable did not create its database." }
 
       - name: Test legacy migration, install, upgrade, uninstall retention, and reinstall
@@ -100,7 +103,10 @@ jobs:
             $exe = Join-Path $installDir "FramersHaven.exe"
             if (-not (Test-Path $exe)) { throw "Installed executable is missing." }
             $process = Start-Process -FilePath $exe -ArgumentList "--smoke-test" -Wait -PassThru
-            if ($process.ExitCode -ne 0) { throw "Installed executable smoke test failed." }
+            if ($process.ExitCode -ne 0) {
+              Get-Content (Join-Path $dataDir "logs\launcher.log") -ErrorAction SilentlyContinue
+              throw "Installed executable smoke test failed."
+            }
           }
 
           Invoke-Setup
