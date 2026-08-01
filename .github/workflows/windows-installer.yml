@@ -132,7 +132,7 @@ jobs:
           mouldings = conn.execute("SELECT COUNT(*) FROM catalog_items WHERE category = 'moulding' AND sku LIKE 'DEMO-M-%'").fetchone()[0]
           mats = conn.execute("SELECT COUNT(*) FROM catalog_items WHERE category = 'mat' AND sku LIKE 'DEMO-MAT-%'").fetchone()[0]
           conn.close()
-          if (mouldings != 50 or mats != 50:
+          if mouldings != 50 or mats != 50:
               raise SystemExit(f"Expected 50 demo mouldings and 50 demo mats, got {mouldings} and {mats}")
           '@ | python - (Join-Path $dataDir "studio.db")
 
