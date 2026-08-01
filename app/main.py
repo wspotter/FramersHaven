@@ -65,7 +65,7 @@ STATIC_ASSET_VERSION = _static_asset_version("moulding-render.js", "app.js")
 APP_VERSION = (ROOT.parent / "VERSION").read_text(encoding="utf-8").strip()
 VERSION_CHECK_URL = os.environ.get(
     "FRAMERSHAVEN_VERSION_CHECK_URL",
-    "http://framershaven.com/version.json",
+    "https://wspotter.github.io/FramersHaven/version.json",
 )
 VERSION_CHECK_FALLBACK_URL = os.environ.get(
     "FRAMERSHAVEN_VERSION_CHECK_FALLBACK_URL",

@@ -6,7 +6,8 @@ from pathlib import Path
 
 from PIL import Image
 
-from scripts.seed_demo import ROOT, create_demo_data
+from app import db
+from scripts.seed_demo import ROOT, create_demo_data, ensure_demo_catalog
 
 
 class DemoSeedTests(unittest.TestCase):
@@ -61,6 +62,42 @@ class DemoSeedTests(unittest.TestCase):
         self.assertTrue(all(filename.startswith("mouldings/demo-") for filename in previews.values()))
         for preview_filename in previews.values():
             self.assertTrue((ROOT / "catalog_previews" / preview_filename).is_file())
+
+    def test_catalog_migration_adds_both_sample_sets_without_overwriting_shop_data(self):
+        db.DB_PATH = self.db_path
+        db.init_db()
+        conn = sqlite3.connect(self.db_path)
+        conn.execute(
+            """
+            INSERT INTO catalog_items (sku, name, category, cost)
+            VALUES ('SHOP-001', 'Shop moulding', 'moulding', 99),
+                   ('DEMO-M-001', 'Operator edited sample', 'moulding', 88)
+            """
+        )
+        conn.commit()
+        conn.close()
+
+        self.assertEqual(ensure_demo_catalog(self.db_path), (49, 50))
+        self.assertEqual(ensure_demo_catalog(self.db_path), (0, 0))
+
+        conn = sqlite3.connect(self.db_path)
+        self.assertEqual(
+            conn.execute("SELECT name FROM catalog_items WHERE sku = 'DEMO-M-001'").fetchone()[0],
+            "Operator edited sample",
+        )
+        self.assertEqual(
+            conn.execute("SELECT COUNT(*) FROM catalog_items WHERE category = 'moulding'").fetchone()[0],
+            51,
+        )
+        self.assertEqual(
+            conn.execute("SELECT COUNT(*) FROM catalog_items WHERE category = 'mat'").fetchone()[0],
+            50,
+        )
+        conn.execute("DELETE FROM catalog_items WHERE sku = 'DEMO-M-002'")
+        conn.commit()
+        conn.close()
+
+        self.assertEqual(ensure_demo_catalog(self.db_path), (0, 0))
 
     def test_primary_demo_art_centers_the_oval_horizontally(self):
         create_demo_data(self.db_path, self.upload_dir)
