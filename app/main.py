@@ -280,6 +280,27 @@ def _parse_version_payload(payload: bytes) -> dict[str, Any]:
     return data
 
 
+def _is_newer_version(latest: str, current: str) -> bool:
+    latest_clean = latest.strip().lower().lstrip("v")
+    current_clean = current.strip().lower().lstrip("v")
+    if not latest_clean or latest_clean == current_clean:
+        return False
+
+    latest_match = re.match(r"^(\d+(?:\.\d+){1,3})", latest_clean)
+    current_match = re.match(r"^(\d+(?:\.\d+){1,3})", current_clean)
+    if not latest_match or not current_match:
+        return latest_clean != current_clean
+
+    latest_parts = tuple(int(part) for part in latest_match.group(1).split("."))
+    current_parts = tuple(int(part) for part in current_match.group(1).split("."))
+    width = max(len(latest_parts), len(current_parts))
+    latest_parts += (0,) * (width - len(latest_parts))
+    current_parts += (0,) * (width - len(current_parts))
+    if latest_parts != current_parts:
+        return latest_parts > current_parts
+    return latest_clean != current_clean
+
+
 @app.get("/api/update-check")
 def update_check() -> dict[str, Any]:
     errors: list[str] = []
@@ -318,7 +339,7 @@ def update_check() -> dict[str, Any]:
         "ok": True,
         "version": APP_VERSION,
         "latest_version": latest,
-        "update_available": bool(latest and latest != APP_VERSION),
+        "update_available": _is_newer_version(latest, APP_VERSION),
         "release_url": release_url,
         "message": message,
         "version_check_url": VERSION_CHECK_URL,

@@ -122,6 +122,11 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(data["latest_version"], "v9.9.9")
         self.assertEqual(data["release_url"], "https://example.test/release")
 
+    def test_update_version_comparison_never_offers_an_older_release(self):
+        self.assertFalse(main_module._is_newer_version("v0.3.0-open-preview", "0.3.1-open-preview"))
+        self.assertFalse(main_module._is_newer_version("v0.3.1-open-preview", "0.3.1-open-preview"))
+        self.assertTrue(main_module._is_newer_version("v0.4.0", "0.3.1-open-preview"))
+
     def test_appearance_theme_builder_replaces_old_theme_factory(self):
         home = self.client.get("/")
         self.assertEqual(home.status_code, 200)
