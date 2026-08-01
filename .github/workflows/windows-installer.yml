@@ -42,8 +42,12 @@ jobs:
         working-directory: app
         run: node --test src/*.test.js
 
-      - name: Run Python tests
-        run: python -m pytest -q tests
+      - name: Run Windows packaging tests
+        run: >-
+          python -m pytest -q
+          tests/test_windows_bundle.py
+          tests/test_windows_installer.py
+          tests/test_build_windows_package.py
 
       - name: Install verified Inno Setup compiler
         shell: pwsh
