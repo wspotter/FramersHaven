@@ -196,7 +196,14 @@ def run_smoke_test(data_dir: Path, requested_port: int = DEFAULT_PORT) -> int:
     from app.main import app
 
     server = uvicorn.Server(
-        uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning", access_log=False)
+        uvicorn.Config(
+            app,
+            host="127.0.0.1",
+            port=port,
+            log_level="warning",
+            access_log=False,
+            log_config=None,
+        )
     )
     thread = threading.Thread(target=server.run, name="framershaven-smoke-server", daemon=True)
     thread.start()
@@ -241,7 +248,14 @@ def run_application(data_dir: Path, requested_port: int, open_browser: bool = Tr
         import uvicorn
         from app.main import app
 
-        uvicorn.run(app, host="127.0.0.1", port=port, log_level="info", access_log=False)
+        uvicorn.run(
+            app,
+            host="127.0.0.1",
+            port=port,
+            log_level="info",
+            access_log=False,
+            log_config=None,
+        )
         return 0
     except Exception as exc:
         logging.exception("FramersHaven startup failed")

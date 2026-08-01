@@ -98,6 +98,12 @@ def test_pyinstaller_bundle_contains_current_app_assets():
     assert "collect_all" in spec
 
 
+def test_windowed_launcher_does_not_require_a_console_for_uvicorn_logging():
+    launcher = (ROOT / "framershaven_launcher.py").read_text(encoding="utf-8")
+
+    assert launcher.count("log_config=None") == 2
+
+
 def test_windows_ci_exercises_the_installed_application_lifecycle():
     workflow = (ROOT / ".github" / "workflows" / "windows-installer.yml").read_text(encoding="utf-8")
 
