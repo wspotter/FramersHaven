@@ -41,18 +41,17 @@ from .edition import (
 )
 from .framewise import router as framewise_router
 from .pricing import QuoteRequest, calculate_quote
+from .runtime_paths import RUNTIME_PATHS, install_bundled_demo_previews
 
 ROOT = Path(__file__).resolve().parent
-UPLOAD_DIR = ROOT.parent / "uploads"
-EXPORT_DIR = ROOT.parent / "exports"
-BACKUP_DIR = ROOT.parent / "backups"
-PREVIEW_DIR = ROOT.parent / "catalog_previews"
-CATALOG_IMPORT_DIR = ROOT.parent / "catalog_imports"
+UPLOAD_DIR = RUNTIME_PATHS.uploads
+EXPORT_DIR = RUNTIME_PATHS.exports
+BACKUP_DIR = RUNTIME_PATHS.backups
+PREVIEW_DIR = RUNTIME_PATHS.catalog_previews
+CATALOG_IMPORT_DIR = RUNTIME_PATHS.catalog_imports
 HELP_DIR = ROOT / "static" / "help"
-UPLOAD_DIR.mkdir(exist_ok=True)
-EXPORT_DIR.mkdir(exist_ok=True)
-BACKUP_DIR.mkdir(exist_ok=True)
-PREVIEW_DIR.mkdir(exist_ok=True)
+RUNTIME_PATHS.ensure_directories()
+install_bundled_demo_previews(RUNTIME_PATHS)
 
 
 def _static_asset_version(*relative_paths: str) -> str:
@@ -259,7 +258,7 @@ async def index(request: Request) -> HTMLResponse:
 
 @app.get("/api/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    return {"status": "ok", "app": "FramersHaven"}
 
 
 @app.get("/api/version")

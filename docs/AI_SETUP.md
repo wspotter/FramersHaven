@@ -22,7 +22,7 @@ on macOS Sonoma or newer, but local model inference is CPU-only.
 After the basic install, open PowerShell and run:
 
 ```powershell
-& "$env:LOCALAPPDATA\FramersHaven\setup_ai_windows.ps1"
+& "$env:LOCALAPPDATA\Programs\FramersHaven\setup_ai_windows.ps1"
 ```
 
 ## macOS

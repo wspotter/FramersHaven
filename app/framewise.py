@@ -15,12 +15,13 @@ from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, Field
 
 from .db import get_connection
+from .runtime_paths import RUNTIME_PATHS
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/framewise", tags=["framewise"])
 
-UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
+UPLOAD_DIR = RUNTIME_PATHS.uploads
 RECOMMENDED_FRAMEWISE_MODEL = "hf.co/ggml-org/SmolVLM2-2.2B-Instruct-GGUF:Q4_K_M"
 
 FRAMEWISE_DEFAULTS: dict[str, str] = {

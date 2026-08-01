@@ -8,10 +8,9 @@ SHELL_LAUNCHER = ROOT / "scripts" / "run.sh"
 PYTHON_LAUNCHER = ROOT / "scripts" / "launch.py"
 WINDOWS_INSTALL_DOC = ROOT / "docs" / "WINDOWS_INSTALL.md"
 START_HERE_WINDOWS = ROOT / "START_HERE_WINDOWS.txt"
-POWERSHELL_INSTALL_COMMAND = (
-    '$installer="$env:TEMP\\FramersHaven-install.ps1"; Invoke-WebRequest '
-    'https://raw.githubusercontent.com/wspotter/FramersHaven/main/install_windows.ps1 '
-    '-OutFile $installer; & ([scriptblock]::Create((Get-Content -Raw $installer)))'
+SETUP_DOWNLOAD_URL = (
+    "https://github.com/wspotter/FramersHaven/releases/latest/download/"
+    "FramersHaven-Setup.exe"
 )
 
 
@@ -94,11 +93,11 @@ def test_launcher_rejects_an_existing_venv_older_than_python311():
     assert "exit /b 1" in guard_body
 
 
-def test_readme_publishes_the_one_command_installer():
+def test_readme_publishes_the_setup_executable():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert "raw.githubusercontent.com/wspotter/FramersHaven/main/install_windows.ps1" in readme
+    assert SETUP_DOWNLOAD_URL in readme
+    assert "FramersHaven-install.ps1" not in readme
     assert "%LOCALAPPDATA%" in readme
-    assert "127.0.0.1" in readme
 
 
 def test_readme_documents_the_curated_catalog_preview_exception():
@@ -109,11 +108,13 @@ def test_readme_documents_the_curated_catalog_preview_exception():
     ) in readme
 
 
-def test_public_windows_docs_publish_the_same_exact_installer_command():
+def test_public_windows_docs_publish_the_same_setup_download():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     windows_install = WINDOWS_INSTALL_DOC.read_text(encoding="utf-8")
-    assert readme.count(POWERSHELL_INSTALL_COMMAND) == 1
-    assert windows_install.count(POWERSHELL_INSTALL_COMMAND) == 1
+    assert readme.count(SETUP_DOWNLOAD_URL) == 1
+    assert windows_install.count(SETUP_DOWNLOAD_URL) == 1
+    assert "run_windows.bat" not in windows_install
+    assert "winget" not in windows_install
 
 
 def test_shell_launcher_defaults_to_localhost():

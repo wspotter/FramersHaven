@@ -1,4 +1,4 @@
-FramersHaven v0.2.0-rc1 - Start Here
+FramersHaven - Windows Start Here
 
 This is a release-candidate Windows ZIP/folder workflow for local-first custom framing shops.
 It does not include vendor catalogs, customer records, accounting credentials,
@@ -8,52 +8,35 @@ Release-candidate features and packaging may still change after Windows validati
 No payment processing, email/SMS sending, or accounting API sync is included.
 Do not expose this app directly to the public internet.
 
-Requirements
-- Windows 10 or Windows 11
-- Python 3.11 or newer (enable "Add python.exe to PATH" during install)
+Install
+1. Download FramersHaven-Setup.exe from the official FramersHaven release.
+2. Open it and finish setup.
+3. Launch FramersHaven from the Start menu or desktop.
 
-Already Downloaded ZIP - Quick Start
-1. Unzip this package into a folder on the workstation.
-2. Double-click run_windows.bat.
-3. The launcher will:
-   - create a Python virtual environment if needed
-   - install dependencies
-   - create fictional demo data if studio.db does not exist
-   - start the local app
-   - open FramersHaven in your browser
-4. Open http://127.0.0.1:8000/help/ for the operator guide.
+No Python, Git, administrator rights, or command-line setup is required.
 
-run_windows.bat handles this already-downloaded ZIP or folder. For a fresh
-Windows machine that does not have the app files yet, use the one-line
-PowerShell installer in README.md. That installer places FramersHaven under
-%LOCALAPPDATA%\FramersHaven and installs Python 3.12 through winget only if
-Python 3.11 or newer is missing. It also creates a FramersHaven Desktop
-shortcut. If that download fails, use this ZIP workflow.
-
-Stopping
-- Press Ctrl-C in the terminal running the app.
+If Windows displays "Windows protected your PC", confirm the file came from
+the official wspotter/FramersHaven release, click More info, and click Run
+anyway. Do not bypass warnings for files from unofficial links.
 
 Restarting
-- Double-click the FramersHaven Desktop shortcut, or run run_windows.bat again.
-- Existing studio.db is preserved and not overwritten.
+- Open FramersHaven from the Start menu or desktop.
+- Starting it again reopens the running local app.
 
 Optional Local AI
 - The basic app works without Ollama or a model.
-- To add Framewise vision, run setup_ai_windows.ps1 in PowerShell.
+- To add Framewise vision, run setup_ai_windows.ps1 from the FramersHaven
+  program folder in PowerShell.
 - Then open Admin > Framewise in the app, enable it, and click Save and Test.
 
-LAN Use
-- By default the app listens on the local machine only.
-- To let another computer on the same trusted private LAN connect:
-  set HOST=0.0.0.0
-  run_windows.bat
-- Then open http://WORKSTATION-IP:8000 from the other computer.
+Network Use
+- The packaged app listens on the local machine only.
 - Do not expose FramersHaven directly to the public internet.
 
 Data Location
-- studio.db, uploads, exports, backups, catalog_previews, and catalog_imports
-  are created under this package folder.
-- Back up these files before moving the app to another workstation.
+- Customer data is stored under %LOCALAPPDATA%\FramersHaven\Data.
+- Updates and uninstall/reinstall preserve that folder.
+- Use the in-app backup before moving to another workstation.
 
 Support
 - This is a local-first release candidate.
