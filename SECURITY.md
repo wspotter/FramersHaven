@@ -2,7 +2,14 @@
 
 ## Supported Use
 
-FramersHaven is designed for a trusted local workstation or private LAN. It does not include internet-facing authentication, TLS termination, or multi-tenant authorization. Do not expose the development server directly to the public internet.
+FramersHaven is designed for a trusted local workstation or private LAN. Admin
+routes require a login by default, but the app does not include TLS
+termination, internet-facing rate limiting, or multi-tenant authorization. Do
+not expose the development server directly to the public internet.
+
+Set `PRINTERY_SESSION_SECRET` in production-style local installs so admin
+sessions survive app restarts. `PRINTERY_ALLOW_OPEN_ADMIN=1` intentionally
+restores open admin mode for trusted demo/workstation use only.
 
 ## Reporting
 

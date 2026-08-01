@@ -46,6 +46,12 @@ Open `http://127.0.0.1:8000`. The launcher listens on `0.0.0.0:8000` by default 
 HOST=127.0.0.1 ./scripts/run.sh
 ```
 
+The demo/admin login is `admin` / `admin` unless you set
+`PRINTERY_BOOTSTRAP_EMAIL` and `PRINTERY_BOOTSTRAP_PASSWORD` before the first
+database is created. Set `PRINTERY_SESSION_SECRET` for sessions that should
+survive app restarts. `PRINTERY_ALLOW_OPEN_ADMIN=1` is available only for
+intentional trusted local/demo installs.
+
 ## Development
 
 ```bash
@@ -75,7 +81,10 @@ Runtime data is deliberately ignored by Git:
 - `catalog_previews/`
 - `catalog_imports/`
 
-The app is intended for a trusted workstation or private LAN. It does not provide internet-facing authentication, TLS termination, payment processing, or automated message delivery. Do not expose it directly to the public internet.
+The app is intended for a trusted workstation or private LAN. Admin routes
+require login by default, but the app does not provide TLS termination,
+internet-facing rate limiting, payment processing, or automated message
+delivery. Do not expose it directly to the public internet.
 
 ## Documentation
 

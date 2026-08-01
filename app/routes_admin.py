@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Request, Depends, Form, HTTPException, Response
 from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse, StreamingResponse
-from app.auth import find_user_by_login, get_current_user, login_user, logout_user, verify_password, AdminAuthMiddleware
+from app.auth import find_user_by_login, get_current_user, login_user, logout_user, open_admin_mode_enabled, require_current_user, verify_password, AdminAuthMiddleware
 from app.template_compat import Jinja2Templates
 import sqlite3
 import json
 import re
+from urllib.parse import urlencode
 from pathlib import Path
 from app.db import get_connection
 from app.pricing import (
@@ -25,6 +26,24 @@ def _form_truthy(raw: str | None) -> bool:
 def _has_customer_phone(raw: str | None) -> bool:
     return len(re.sub(r"\D", "", raw or "")) >= 7
 
+
+def _safe_next(raw: str | None) -> str:
+    value = (raw or "/").strip()
+    if not value.startswith("/") or value.startswith("//") or "\\" in value:
+        return "/"
+    return value
+
+
+def _public_user(user: dict) -> dict:
+    return {
+        "id": user.get("id"),
+        "email": user.get("email"),
+        "first_name": user.get("first_name"),
+        "last_name": user.get("last_name"),
+        "role": user.get("role"),
+        "created_at": user.get("created_at"),
+    }
+
 # --- Auth Routes ---
 @admin_router.post("/login")
 async def admin_login(
@@ -37,10 +56,10 @@ async def admin_login(
     user = find_user_by_login(email)
     if user and verify_password(password, user['password_hash']):
         login_user(request, user)
-        safe_next = next if next.startswith("/") and not next.startswith("//") else "/"
-        return RedirectResponse(url=safe_next, status_code=303)
+        return RedirectResponse(url=_safe_next(next), status_code=303)
     
-    return RedirectResponse(url=f"/admin/login?error=Invalid credentials&next={next}", status_code=303)
+    query = urlencode({"error": "Invalid credentials", "next": _safe_next(next)})
+    return RedirectResponse(url=f"/admin/login?{query}", status_code=303)
 
 @admin_router.get("/logout")
 async def admin_logout(request: Request):
@@ -48,8 +67,8 @@ async def admin_logout(request: Request):
     return RedirectResponse(url="/", status_code=303)
 
 @admin_router.get("/me")
-async def admin_me(current_user: dict = Depends(get_current_user)):
-    return current_user
+async def admin_me(current_user: dict = Depends(require_current_user)):
+    return _public_user(current_user)
 
 # --- User/Business Routes ---
 @admin_router.get("/account_edit", response_class=HTMLResponse)
@@ -373,7 +392,13 @@ async def customer_add(name: str = Form(...), email: str = Form(""), phone: str 
 
 @admin_router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    return RedirectResponse(url="/", status_code=303)
+    if open_admin_mode_enabled() or get_current_user(request):
+        return RedirectResponse(url=_safe_next(request.query_params.get("next")), status_code=303)
+    return templates.TemplateResponse("admin/login.html", {
+        "request": request,
+        "error": request.query_params.get("error"),
+        "next": _safe_next(request.query_params.get("next")),
+    })
 
 @admin_router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_page(request: Request):

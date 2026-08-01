@@ -15,6 +15,10 @@ The app is organized into separate workspaces so operators do not have to manage
 
 `./scripts/run.sh` listens on `0.0.0.0:8000`, so another shop computer can open the app using this workstation's LAN IP address.
 
+Admin pages require login by default. Demo installs use `admin` / `admin`
+unless `PRINTERY_BOOTSTRAP_EMAIL` and `PRINTERY_BOOTSTRAP_PASSWORD` were set
+before the first database was created.
+
 ## Operator Help Site
 
 - The local help home is `/help/`; `/help` redirects there automatically.

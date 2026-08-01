@@ -5,7 +5,9 @@ import csv
 import io
 import json
 import math
+import os
 import re
+import secrets
 import zipfile
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -53,7 +55,16 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="Printery Framing Studio", lifespan=lifespan)
+EXPOSE_API_DOCS = os.getenv("PRINTERY_EXPOSE_API_DOCS", "").strip().lower() in {"1", "true", "yes", "on"}
+SESSION_SECRET = os.getenv("PRINTERY_SESSION_SECRET") or secrets.token_urlsafe(32)
+
+app = FastAPI(
+    title="Printery Framing Studio",
+    lifespan=lifespan,
+    openapi_url="/openapi.json" if EXPOSE_API_DOCS else None,
+    docs_url="/docs" if EXPOSE_API_DOCS else None,
+    redoc_url="/redoc" if EXPOSE_API_DOCS else None,
+)
 
 
 @app.middleware("http")
@@ -61,6 +72,9 @@ async def prevent_stale_local_assets(request: Request, call_next):
     response = await call_next(request)
     if request.url.path.startswith("/static/"):
         response.headers["Cache-Control"] = "no-store"
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "same-origin")
     return response
 
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
@@ -74,10 +88,16 @@ async def favicon():
     return FileResponse(ROOT / "static" / "logo.ico")
 
 
-# Session middleware for admin auth (fixed secret key for session persistence)
+# Session middleware for admin auth. Set PRINTERY_SESSION_SECRET for sessions
+# that survive app restarts; otherwise the public app gets a per-process secret.
 from starlette.middleware.sessions import SessionMiddleware
 app.add_middleware(StudioAuthMiddleware)
-app.add_middleware(SessionMiddleware, secret_key="printery-framing-studio-session-key-2026-secure")
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SESSION_SECRET,
+    same_site="lax",
+    https_only=os.getenv("PRINTERY_SESSION_HTTPS_ONLY", "").strip().lower() in {"1", "true", "yes", "on"},
+)
 
 # Admin and quote routers
 app.include_router(admin_router)

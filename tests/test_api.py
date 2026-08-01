@@ -226,7 +226,7 @@ mutation.then(() => console.log(JSON.stringify({
 
     def test_quote_markup_exposes_discount_column_and_printing_option_ids(self):
         home = self.client.get("/")
-        self.assertIn("Discount %", home.text)
+        self.assertIn("Disc. %", home.text)
         for field_id in (
             "discountMoulding", "discountTopMat", "discountSecondMat", "discountThirdMat",
             "discountGlazing", "discountLabor", "discountBacking", "discountMounting",
@@ -552,7 +552,7 @@ console.log(JSON.stringify({ ok, before, after, notice: nodes.notice.textContent
         home = self.client.get("/")
         self.assertIn('/static/app.js?v=', home.text)
 
-    def test_studio_opens_locally_without_login(self):
+    def test_public_default_blocks_admin_without_login(self):
         self.client.get("/admin/logout", follow_redirects=False)
 
         home = self.client.get("/", follow_redirects=False)
@@ -561,13 +561,19 @@ console.log(JSON.stringify({ ok, before, after, notice: nodes.notice.textContent
         api = self.client.get("/api/config")
         self.assertEqual(api.status_code, 200)
 
-        me = self.client.get("/admin/me")
-        self.assertEqual(me.status_code, 200)
-        self.assertIn(me.json()["role"], ["admin", "owner"])
+        me = self.client.get("/admin/me", follow_redirects=False)
+        self.assertEqual(me.status_code, 303)
+        self.assertTrue(me.headers["location"].startswith("/admin/login?next=%2Fadmin%2Fme"))
 
         login_page = self.client.get("/admin/login", follow_redirects=False)
-        self.assertEqual(login_page.status_code, 303)
-        self.assertEqual(login_page.headers["location"], "/")
+        self.assertEqual(login_page.status_code, 200)
+        self.assertIn("Admin Login", login_page.text)
+
+        admin_orders = self.client.get("/admin/orders", follow_redirects=False)
+        self.assertEqual(admin_orders.status_code, 303)
+        self.assertTrue(admin_orders.headers["location"].startswith("/admin/login?next=%2Fadmin%2Forders"))
+
+        self.assertEqual(self.client.get("/openapi.json", follow_redirects=False).status_code, 404)
 
         login = self.client.post(
             "/admin/login",
@@ -577,6 +583,11 @@ console.log(JSON.stringify({ ok, before, after, notice: nodes.notice.textContent
         self.assertEqual(login.status_code, 303)
         self.assertEqual(login.headers["location"], "/")
         self.assertEqual(self.client.get("/").status_code, 200)
+
+        authed_me = self.client.get("/admin/me")
+        self.assertEqual(authed_me.status_code, 200)
+        self.assertIn(authed_me.json()["role"], ["admin", "owner"])
+        self.assertNotIn("password_hash", authed_me.json())
 
     def test_studio_logo_upload_validates_format_size_and_dimensions(self):
         valid = io.BytesIO()

@@ -1,5 +1,10 @@
+import os
+from typing import Any
+from urllib.parse import urlencode
+
 import bcrypt
-from fastapi import Request
+from fastapi import HTTPException, Request
+from fastapi.responses import JSONResponse, RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from app.db import get_connection
 
@@ -17,6 +22,10 @@ def login_user(request, user):
 
 def logout_user(request):
     request.session.clear()
+
+
+def open_admin_mode_enabled() -> bool:
+    return os.getenv("PRINTERY_ALLOW_OPEN_ADMIN", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _local_operator_user() -> dict:
@@ -49,10 +58,12 @@ def _local_operator_user() -> dict:
     }
 
 
-def get_current_user(request: Request):
+def get_current_user(request: Request) -> dict[str, Any] | None:
     user_id = request.session.get("user_id")
     if not user_id:
-        return _local_operator_user()
+        if open_admin_mode_enabled():
+            return _local_operator_user()
+        return None
     
     conn = get_connection()
     cur = conn.cursor()
@@ -60,11 +71,21 @@ def get_current_user(request: Request):
     row = cur.fetchone()
     conn.close()
     if not row:
-        return _local_operator_user()
+        if open_admin_mode_enabled():
+            return _local_operator_user()
+        return None
     return dict(row)
 
 def is_admin(request):
-    return True
+    user = get_current_user(request)
+    return bool(user and user.get("role") in {"owner", "admin"})
+
+
+def require_current_user(request: Request) -> dict[str, Any]:
+    user = get_current_user(request)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Admin login required")
+    return user
 
 def normalize_login_identifier(identifier: str) -> str:
     value = (identifier or "").strip().lower()
@@ -82,7 +103,18 @@ def find_user_by_login(identifier: str):
     return user
 
 class StudioAuthMiddleware(BaseHTTPMiddleware):
+    _PUBLIC_ADMIN_PATHS = {"/admin/login", "/admin/logout"}
+
     async def dispatch(self, request, call_next):
+        path = request.url.path.rstrip("/") or "/"
+        if path.startswith("/admin") and path not in self._PUBLIC_ADMIN_PATHS:
+            if get_current_user(request) is None:
+                if request.method == "GET":
+                    next_path = request.url.path
+                    if request.url.query:
+                        next_path = f"{next_path}?{request.url.query}"
+                    return RedirectResponse(url=f"/admin/login?{urlencode({'next': next_path})}", status_code=303)
+                return JSONResponse({"detail": "Admin login required"}, status_code=401)
         return await call_next(request)
 
 # Backwards-compatible name for any older imports.

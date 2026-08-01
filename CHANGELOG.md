@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Require an admin session for `/admin/*` by default instead of silently
+  granting owner access to anonymous visitors.
+- Add the missing admin login page, remove password hashes from `/admin/me`,
+  move the session secret to `PRINTERY_SESSION_SECRET`, and hide FastAPI API
+  docs unless `PRINTERY_EXPOSE_API_DOCS=1` is set.
+- Keep an explicit `PRINTERY_ALLOW_OPEN_ADMIN=1` local/demo escape hatch for
+  trusted workstation installs that intentionally want open admin mode.
+
 ## v0.1.0 - 2026-06-15
 
 Initial public release of FramersHaven.
