@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.3.2-open-preview - 2026-08-01
+
+- Use the verified GitHub Pages HTTPS endpoint as the primary in-app update feed.
+
 ## v0.3.1-open-preview - 2026-08-01
 
 - Add a single per-user `FramersHaven-Setup.exe` that bundles the application

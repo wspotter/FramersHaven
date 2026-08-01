@@ -2,7 +2,7 @@
 
 FramersHaven is a local-first workstation for custom framing shops. It combines artwork intake, visual design, material selection, quoting, production tracking, customer records, document previews, and backups in one browser-based application.
 
-Current open preview: **v0.3.1-open-preview**. The one-file Windows installer is exercised on Windows CI and validated on a clean Windows 11 virtual machine.
+Current open preview: **v0.3.2-open-preview**. The one-file Windows installer is exercised on Windows CI and validated on a clean Windows 11 virtual machine.
 
 The included demo uses the fictional **FramersHaven** identity and generated sample data. No customer records, vendor catalogs, or operational credentials are distributed with the repository.
 
