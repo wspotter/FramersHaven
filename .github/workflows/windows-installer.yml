@@ -127,13 +127,16 @@ jobs:
           @'
           import sqlite3
           import sys
+          from scripts.seed_demo import DEMO_MATS, DEMO_MOULDINGS
 
           conn = sqlite3.connect(sys.argv[1])
-          mouldings = conn.execute("SELECT COUNT(*) FROM catalog_items WHERE category = 'moulding' AND sku LIKE 'DEMO-M-%'").fetchone()[0]
-          mats = conn.execute("SELECT COUNT(*) FROM catalog_items WHERE category = 'mat' AND sku LIKE 'DEMO-MAT-%'").fetchone()[0]
+          mouldings = {row[0] for row in conn.execute("SELECT sku FROM catalog_items WHERE category = 'moulding' AND sku LIKE 'DEMO-M-%'")}
+          mats = {row[0] for row in conn.execute("SELECT sku FROM catalog_items WHERE category = 'mat' AND sku LIKE 'DEMO-MAT-%'")}
           conn.close()
-          if mouldings != 50 or mats != 50:
-              raise SystemExit(f"Expected 50 demo mouldings and 50 demo mats, got {mouldings} and {mats}")
+          expected_mouldings = {row[0] for row in DEMO_MOULDINGS}
+          expected_mats = {row[0] for row in DEMO_MATS}
+          if mouldings != expected_mouldings or mats != expected_mats:
+              raise SystemExit("Installed sample catalog does not match the bundled SKU sets")
           '@ | python - (Join-Path $dataDir "studio.db")
 
           $sentinel = Join-Path $dataDir "upgrade-preservation-test.txt"
